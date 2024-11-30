@@ -22,11 +22,11 @@ To use:
 1. Create an EDMFlightFile object (See EDMFlightFile.hpp).
 2.  Register one or more callbacks with it:
 
-     virtual void setFileHeaderCompletionCb(std::function<void(EDMFileHeaderSet)> cb);
-     virtual void setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader)> cb);
-     virtual void setFlightRecordCompletionCb(std::function<void(EDMFlightRecord)> cb);
-     virtual void setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb);
-     virtual void setFileFooterCompletionCb(std::function<void(void)> cb);
+    virtual void setFileHeaderCompletionCb(std::function<void(EDMFileHeaderSet)> cb);
+    virtual void setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader)> cb);
+    virtual void setFlightRecordCompletionCb(std::function<void(EDMFlightRecord)> cb);
+    virtual void setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb);
+    virtual void setFileFooterCompletionCb(std::function<void(void)> cb);
 
 3. Open a JPI file as an iostream.
 4. Call EDMFlightFile's processFile().
