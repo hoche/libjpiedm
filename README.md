@@ -61,7 +61,7 @@ callback.
 EDMFlightRecords is an (ordered) map of the data that's in each sample. I've figured out a
 bunch of the fields by cross-indexing with EZTrends, but there're still a bunch I don't know.
 
-At the moment, the best way to see how this works is to look at the sample_app provided.
+At the moment, the best way to see how this works is to look at the sample app provided.
 It's not very pretty, but should serve as a starting point.
 
 Note: because of the way JPI structures their file, it's difficult to jump directly to a
