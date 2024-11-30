@@ -61,7 +61,7 @@ class EDMFlightRecord
 {
   public:
     EDMFlightRecord() = delete;
-    EDMFlightRecord(int recordSeq) : m_recordSeq(recordSeq){};
+    EDMFlightRecord(int recordSeq, bool isFast) : m_recordSeq(recordSeq), m_isFast(isFast) {};
     virtual ~EDMFlightRecord(){};
 
     enum Measurement {
@@ -105,12 +105,14 @@ class EDMFlightRecord
         LNG
     };
 
+    static const int MARK_IDX = 16;
+
     // ordered map
     // TODO: add more of these as they're figured out
     const std::map<Measurement, std::vector<int>> offsets = {
         {EGT1, {0, 48}}, {EGT2, {1, 49}}, {EGT3, {2, 50}}, {EGT4, {3, 51}}, {EGT5, {4, 52}},
         {EGT6, {5, 53}}, {CHT1, {8}},     {CHT2, {9}},     {CHT3, {10}},    {CHT4, {11}},
-        {CHT5, {12}},    {CHT6, {13}},    {CLD, {14}},     {OILT, {15}},    {MARK, {16}},
+        {CHT5, {12}},    {CHT6, {13}},    {CLD, {14}},     {OILT, {15}},    {MARK, {MARK_IDX}},
         {OILP, {17}},    {CARB, {18}},    {VOLTS, {20}},   {OAT, {21}},     {USD, {22}},
         {FF, {23}},      {HP, {30}},      {MAP, {40}},     {RPM, {41, 42}}, {AMPS, {64}},
         {RFL, {67}},     {LFL, {68}},     {FP, {69}},      {RAUX, {71}},    {LAUX, {84}},
@@ -120,6 +122,7 @@ class EDMFlightRecord
 
   public:
     int m_recordSeq;
+    bool m_isFast;
     std::map<int, int> m_dataMap; // ordered map
 };
 

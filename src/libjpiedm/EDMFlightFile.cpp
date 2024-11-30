@@ -290,8 +290,7 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
     }
 }
 
-void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
-                                       std::vector<int> &values)
+void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool& isFast)
 {
 #ifdef DEBUG_FLIGHTS
     std::cout << "-----------------------------------\n";
@@ -382,12 +381,14 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
 #endif
 
     if (recordSeq == 0) {
+        m_stdRecs = 0;
+        m_fastRecs = 0;
         std::vector<int> default_values(128, 0xF0);
         std::vector<int> specialdefaults{30, 42, 48, 49, 50, 51, 52, 53, 79};
         for (auto i : specialdefaults)
             default_values[i] = 0; // special cases with defaults of 0x00 instead of 0xF0
 
-        values = default_values;
+        m_values = default_values;
     }
 
 #ifdef DEBUG_FLIGHTS
@@ -405,9 +406,9 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
                 std::cout << "\n";
             }
 #endif
-            signMap[k] ? values[k] -= diff : values[k] += diff;
+            signMap[k] ? m_values[k] -= diff : m_values[k] += diff;
         } else if (recordSeq == 0) {
-            values[k] = 0;
+            m_values[k] = 0;
         }
     }
 
@@ -417,9 +418,20 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     std::cout << std::flush;
 #endif
 
+    // special test for the MARK value.
+    switch (m_values[EDMFlightRecord::MARK_IDX]) {
+        case 0x02:
+            isFast = true;
+            break;
+        case 0x03:
+            isFast = false;
+            break;
+    }
+
+
     if (m_flightRecCompletionCb) {
-        EDMFlightRecord fr(recordSeq);
-        fr.apply(values);
+        EDMFlightRecord fr(recordSeq, isFast);
+        fr.apply(m_values);
         m_flightRecCompletionCb(fr);
     }
 }
@@ -437,15 +449,20 @@ bool EDMFlightFile::parse(std::istream &stream)
     parseFileHeaders(stream);
     for (auto &&flightDataCount : m_flightDataCounts) {
         auto startOff{stream.tellg()};
-        unsigned long recordSeq{0};
 #ifdef DEBUG_PARSE
-        std::cout << "======== startOff: " << std::hex << stream.tellg() << std::dec << "\n";
+        std::cout << "======== startOff: " << std::hex << startOff << std::dec << "\n";
 #endif
+
         parseFlightHeader(stream, flightDataCount.first);
-        std::vector<int> values(128);
-        for (; (stream.tellg() - startOff) < ((flightDataCount.second - 1) * 2);
-             ++recordSeq) {
-            parseFlightDataRec(stream, recordSeq, values);
+
+        std::vector<int> values{128};
+        unsigned long recordSeq{0};
+        unsigned long stdRecCount{0};
+        unsigned long fastRecCount{0};
+        bool isFast{false};
+
+        for (; (stream.tellg() - startOff) < ((flightDataCount.second - 1) * 2); ++recordSeq) {
+            parseFlightDataRec(stream, recordSeq, isFast);
 #ifdef DEBUG_PARSE
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex
                       << stream.tellg() << std::dec
@@ -453,10 +470,16 @@ bool EDMFlightFile::parse(std::istream &stream)
                       << "\n"
                       << std::flush;
 #endif
+            if (isFast) {
+                ++fastRecCount;
+            } else {
+                ++stdRecCount;
+            }
+
         }
         stream.get(); // pad byte? checksum?
         if (m_flightCompletionCb) {
-            m_flightCompletionCb(recordSeq, stream.tellg() - startOff);
+            m_flightCompletionCb(stdRecCount, fastRecCount);
         }
     }
 

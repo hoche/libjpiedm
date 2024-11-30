@@ -52,12 +52,15 @@ class EDMFlightFile
 
     virtual void parseFileHeaders(std::istream &stream);
     virtual void parseFlightHeader(std::istream &stream, int flightId);
-    virtual void parseFlightDataRec(std::istream &stream, int recordId, std::vector<int> &values);
+    virtual void parseFlightDataRec(std::istream &stream, int recordId, bool& isFast);
     virtual void parseFileFooters(std::istream &stream);
 
   private:
     EDMFileHeaderSet m_fileHeaderSet;
     std::vector<std::pair<int, long>> m_flightDataCounts;
+    std::vector<int> m_values; // storage for the previous values so we can diff them
+    int m_stdRecs;
+    int m_fastRecs;
 
     std::function<void(EDMFileHeaderSet)> m_fileHeaderCompletionCb;
     std::function<void(EDMFlightHeader)> m_flightHeaderCompletionCb;
