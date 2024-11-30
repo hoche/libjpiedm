@@ -1,4 +1,4 @@
-# libedm
+# libjpiedm
 
 C++ library for reading data from JPI EDM Engine Monitors.
 
