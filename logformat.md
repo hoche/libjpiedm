@@ -263,7 +263,7 @@ The values in the 128-bit bitmap are as follows:
     [15]  Oil Temp
 
     byte 2 
-    [16]  MARK (not sure what this does)
+    [16]  MARK (see below)
     [17]  Oil Pressure
     [18]  CRB
     [19]  -
@@ -353,6 +353,16 @@ The values in the 128-bit bitmap are as follows:
     byte 15 
     [120-127] -
 
+
+The MARK value (bit 16) seems to indicate times of which the EDM wants to make a
+special note. I have seen the following values:
+
+    0x02 - the timebase switches to 1 second intervals.
+          EZTrends exports this as the ascii char '['.
+    0x03 - the timebase returns the default interval for the flight (typically 6).
+          EZTrends exports this as the ascii char ']'.
+    0x04 - I'm not sure what this means. It might be the point that the EDM has
+          determined to be LOP or ROP. EZTrends exports this as the ascii char '<'.
 
 ##### Data record header
 
