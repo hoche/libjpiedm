@@ -29,14 +29,22 @@
 
 using jpi_edm::EDMFlightRecord;
 
-void printFlightHeader(jpi_edm::EDMFlightHeader& hdr)
+void printFlightInfo(jpi_edm::EDMFlightHeader& hdr, unsigned long stdReqs, unsigned long fastReqs)
 {
-    time_t flightStartDate = mktime(&hdr.startDate);
-    std::tm local = *std::localtime(&flightStartDate);
-    std::cout << "Flt #" << hdr.flight_num
-              << " - " << std::put_time(&local, "%m/%d/%Y")
-              << " " << std::put_time(&local,   "%T")
-              << " " << hdr.interval << " secs\n";
+    time_t flightStartTime = mktime(&hdr.startDate);
+    std::tm local = *std::localtime(&flightStartTime);
+
+    auto min = (fastReqs/60) + (stdReqs * hdr.interval) / 60;
+    auto hrs = 0.01 + static_cast<float>(min) / 60;
+    //min = min % 60;
+
+    std::cout << "Flt #" << hdr.flight_num << " - ";
+    //std::cout << hrs << ":" << std::setfill('0') << std::setw(2) << min << " Hours";
+    std::cout << std::fixed << std::setprecision(2) << hrs << " Hours";
+    std::cout << " @ " << hdr.interval << " sec";
+    std::cout << " " << std::put_time(&local, "%m/%d/%Y") << " " << std::put_time(&local,   "%T");
+    std::cout << std::endl;
+
 }
 
 // Ugh. these should all be a macro or an inline that range checks.
@@ -102,20 +110,21 @@ void printFlightDataRecord(const jpi_edm::EDMFlightRecord& rec)
 void printAllFlights(std::istream& stream)
 {
     jpi_edm::EDMFlightFile ff;
-    int recordIdx;
-    int interval;
+    jpi_edm::EDMFlightHeader hdr;
     time_t recordTime;
 
     ff.setFileHeaderCompletionCb([](jpi_edm::EDMFileHeaderSet hs) {
         hs.dump();
     });
 
-    ff.setFlightHeaderCompletionCb([&recordIdx, &interval, &recordTime](jpi_edm::EDMFlightHeader hdr) {
-        printFlightHeader(hdr);
-
-        recordIdx = 0;
-        interval = hdr.interval;
+    ff.setFlightHeaderCompletionCb([&hdr, &recordTime](jpi_edm::EDMFlightHeader fh) {
+        hdr = fh;
         recordTime = mktime(&hdr.startDate);
+        std::tm local = *std::localtime(&recordTime);
+
+        std::cout << "Flt #" << hdr.flight_num << "\n";
+        std::cout << "Interval: " << hdr.interval << " sec\n";
+        std::cout << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " " << std::put_time(&local,   "%T");
 
         std::cout << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
                   << ",OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
@@ -123,14 +132,13 @@ void printAllFlights(std::istream& stream)
                   << "\n";
     });
 
-    ff.setFlightRecordCompletionCb([&recordIdx, &interval, &recordTime](jpi_edm::EDMFlightRecord rec) {
+    ff.setFlightRecordCompletionCb([&hdr, &recordTime](jpi_edm::EDMFlightRecord rec) {
         std::tm local = *std::localtime(&recordTime);
 
-        std::cout << recordIdx << "," << std::put_time(&local, "%m/%d/%Y") << "," << std::put_time(&local, "%T") << ",";
+        std::cout << rec.m_recordSeq << "," << std::put_time(&local, "%m/%d/%Y") << "," << std::put_time(&local, "%T") << ",";
         printFlightDataRecord(rec);
 
-        ++recordIdx;
-        recordTime += interval;
+        rec.m_isFast ? ++recordTime : recordTime += hdr.interval;
     });
 
     // Now do the work
@@ -140,21 +148,13 @@ void printAllFlights(std::istream& stream)
 void printAvailableFlights(std::istream& stream)
 {
     jpi_edm::EDMFlightFile ff;
-    unsigned int interval;
-    ff.setFlightHeaderCompletionCb([&interval](jpi_edm::EDMFlightHeader hdr) {
-        printFlightHeader(hdr);
-        interval = hdr.interval;
+    jpi_edm::EDMFlightHeader hdr;
+
+    ff.setFlightHeaderCompletionCb([&hdr](jpi_edm::EDMFlightHeader fh) {
+        hdr = fh;
     });
-    ff.setFlightCompletionCb([&interval](unsigned long numReqs, unsigned long nbytes) {
-        std::cout << "Number of records: " << numReqs << std::endl;
-
-        auto min = (numReqs * interval) / 60;
-        std::cout << "The completely incorrect total flight time is " << min << " minutes";
-
-        auto hrs = min / 60;
-        min = min % 60;
-        
-        std::cout << "  (" << hrs << ":" << std::setfill('0') << std::setw(2) << min << ")" << std::endl;
+    ff.setFlightCompletionCb([&hdr](unsigned long stdReqs, unsigned long fastReqs) {
+        printFlightInfo(hdr, stdReqs, fastReqs);
     });
     ff.processFile(stream);
 }
