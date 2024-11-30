@@ -8,7 +8,7 @@ Some information, particularly about the headers and the old file data
 packing scheme are derived from the uncredited and unlicenced code found
 at http://www.geocities.ws/jpihack/jpihackcpp.txt
 
-## Usage
+## Building
 
 To build:
 
@@ -17,7 +17,16 @@ To build:
     cmake ..
     cmake --build . -j
 
-To use:
+## Using
+
+The library works on a stream basis. The objects get created and destroy as the
+library works its way through the file. The main reason for doing is so that the
+library doesn't have to keep the entire structure in memory. Instead, apps
+using the library must register callbacks. The callbacks get invoked as the
+library parses the file. The apps can then copy or discard the data as they see
+fit.
+
+Usage:
 
 1. Create an EDMFlightFile object (See EDMFlightFile.hpp).
 2.  Register one or more callbacks with it:
@@ -37,7 +46,6 @@ To use:
 
 As the file is processed, the callbacks will be invoked.
 
-
 EDMFileHeaderSet is a fairly transparent container for a number of classes that represent
 the data found in the file header (the ascii portion that has lines that start it $A, $C, etc).
 The classes are currently pretty much just POD (plain old data) structs, with public members
@@ -46,13 +54,20 @@ that can be accessed.
 EDMFlightHeader is similar, but contains the header information for a particular flight,
 including what time it was started and the sample rate. Note that the sample rate can vary
 throughout the flight - occasionally the EDM goes into 1-second-per-sample mode for awhile.
-I'm still figuring out how to detect that.
+The library will detect this and mark a particular EDMFlightRecord as "isFast" as appropriate.
+It will also report the number of standard vs fast samples when it invokes the flight-completion
+callback.
 
 EDMFlightRecords is an (ordered) map of the data that's in each sample. I've figured out a
 bunch of the fields by cross-indexing with EZTrends, but there're still a bunch I don't know.
 
-
 At the moment, the best way to see how this works is to look at the sample_app provided.
+It's not very pretty, but should serve as a starting point.
+
+Note: because of the way JPI structures their file, it's difficult to jump directly to a
+particular flight. The $D records in the header give approximate locations, but they're not
+always correct and I haven't figured out a reliable way to use them to jump directly to
+a particular flight.
 
 ## Platforms
 
