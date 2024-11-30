@@ -84,7 +84,17 @@ void printFlightDataRecord(const jpi_edm::EDMFlightRecord& rec)
     std::cout << rec.m_dataMap.at(EDMFlightRecord::Measurement::LAT) << ",";
     std::cout << rec.m_dataMap.at(EDMFlightRecord::Measurement::LNG) << ",";
 
-    std::cout << ","; // MARK
+    switch (rec.m_dataMap.at(EDMFlightRecord::Measurement::MARK)) {
+        case 0x02:
+            std::cout << "[";
+            break;
+        case 0x03:
+            std::cout << "]";
+            break;
+        case 0x04:
+            std::cout << "<";
+            break;
+    }
 
     std::cout << "\n";
 }
