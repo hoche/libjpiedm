@@ -30,7 +30,8 @@
 
 namespace jpi_edm {
 
-// #define DEBUG_FLIGHTS
+//#define DEBUG_FLIGHTS
+//#define DEBUG_PARSE
 
 const int maxheaderlen = 256;
 
@@ -293,6 +294,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
                                        std::vector<int> &values)
 {
 #ifdef DEBUG_FLIGHTS
+    std::cout << "-----------------------------------\n";
     std::cout << "recordSeq: " << recordSeq << "\n";
     std::cout << "start offset: " << std::hex << stream.tellg() << std::dec << "\n";
 #endif
@@ -358,8 +360,24 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
 
 #ifdef DEBUG_FLIGHTS
     std::cout << "repeatCount: " << hex(repeatCount) << "\n";
-    std::cout << "fieldMap: b" << fieldMap << "\n";
-    std::cout << "signMap: b" << signMap << "\n";
+    {
+        //std::cout << "fieldMap: b" << fieldMap << "\n";
+        for (int count = 0, i = fieldMap.size()/8-1; i>=0; i--) {
+            std::cout << " Byte " << hex(i) << "  ";
+        }
+        std::cout << "\n";
+        for(int count = 0, i = fieldMap.size()-1; i>=0; i--) {
+            std::cout << fieldMap[i];
+            if (++count == 8) {std::cout << " "; count = 0;}
+        }
+        std::cout << "\n";
+        //std::cout << "signMap: b" << signMap << "\n";
+        for(int count = 0, i = signMap.size()-1; i>=0; i--) {
+            std::cout << signMap[i];
+            if (++count == 8) {std::cout << " "; count = 0;}
+        }
+        std::cout << "\n";
+    }
     std::cout << "values to read: " << std::dec << fieldMap.count() << "\n";
 #endif
 
@@ -374,12 +392,19 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
 
 #ifdef DEBUG_FLIGHTS
     std::cout << "values start offset: " << std::hex << stream.tellg() << std::dec << "\n";
+    int printCount = 0;
 #endif
 
     for (int k = 0; k < fieldMap.size(); ++k) {
         if (fieldMap[k]) {
             unsigned char diff;
             stream.read(reinterpret_cast<char *>(&diff), 1);
+#ifdef DEBUG_FLIGHTS
+            std::cout << "[" << k << ":0x" << hex(diff) << "]";
+            if (++printCount%16 == 0) {
+                std::cout << "\n";
+            }
+#endif
             signMap[k] ? values[k] -= diff : values[k] += diff;
         } else if (recordSeq == 0) {
             values[k] = 0;
@@ -387,6 +412,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     }
 
 #ifdef DEBUG_FLIGHTS
+    std::cout << "\n";
     std::cout << "end offset: " << std::hex << (stream.tellg() - 1L) << std::dec << "\n";
     std::cout << std::flush;
 #endif
@@ -412,7 +438,7 @@ bool EDMFlightFile::parse(std::istream &stream)
     for (auto &&flightDataCount : m_flightDataCounts) {
         auto startOff{stream.tellg()};
         unsigned long recordSeq{0};
-#ifdef PARSE_DEBUG
+#ifdef DEBUG_PARSE
         std::cout << "======== startOff: " << std::hex << stream.tellg() << std::dec << "\n";
 #endif
         parseFlightHeader(stream, flightDataCount.first);
@@ -420,7 +446,7 @@ bool EDMFlightFile::parse(std::istream &stream)
         for (; (stream.tellg() - startOff) < ((flightDataCount.second - 1) * 2);
              ++recordSeq) {
             parseFlightDataRec(stream, recordSeq, values);
-#ifdef PARSE_DEBUG
+#ifdef DEBUG_PARSE
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex
                       << stream.tellg() << std::dec
                       << "    (flightDataCount.second-1)*2): " << ((flightDataCount.second - 1) * 2)
