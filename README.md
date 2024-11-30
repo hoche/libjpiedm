@@ -66,8 +66,7 @@ It's not very pretty, but should serve as a starting point.
 
 Note: because of the way JPI structures their file, it's difficult to jump directly to a
 particular flight. The $D records in the header give approximate locations, but they're not
-always correct and I haven't figured out a reliable way to use them to jump directly to
-a particular flight.
+always correct and I haven't figured out a reliable way to use them to jump.
 
 ## Platforms
 
