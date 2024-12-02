@@ -14,18 +14,16 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC ${PROJECT_SOURCE_DIR}/include
 )
 
-
-
 if(WIN32)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 	target_sources(parseedmlog PRIVATE
     		getopt.cpp
 	)
 	target_link_libraries(${PROJECT_NAME}
-		PUBLIC Ws2_32.lib PRIVATE libjpiedm
+		PUBLIC Ws2_32.lib PRIVATE jpiedm
 	)
 else()
 	target_link_libraries(${PROJECT_NAME}
-		PRIVATE libjpiedm
+		PRIVATE jpiedm
 	)
 endif()

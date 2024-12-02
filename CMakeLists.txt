@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
-
-project(JPIUtils
+project(jpiedm
         LANGUAGES CXX
         VERSION 1.0)
 
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
 set(CMAKE_BUILD_TYPE Debug)
-
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS YES CACHE BOOL "Export all symbols")
 
 message("cmake module path: ${CMAKE_MODULE_PATH}")
 message("current cmakelist directory: ${CMAKE_CURRENT_LIST_DIR}")
