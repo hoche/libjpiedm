@@ -19,10 +19,13 @@
 
 #ifdef _WIN32
 #include <winsock2.h>
+#define sscanf sscanf_s
 #else
 #include <arpa/inet.h>
 #endif
 #include <limits.h>
+#include <stdio.h>
+
 
 #include "EDMFileHeaders.hpp"
 #include "EDMFlight.hpp"
@@ -132,7 +135,7 @@ void EDMFlightFile::validate_header_checksum(int lineno, const char *line)
 
     uint16_t testval;
     uint8_t cs = 0;
-    if (sscanf(endp + 1, "%hx", &testval) != 1) {
+    if (sscanf_s(endp + 1, "%hx", &testval) != 1) {
         std::stringstream msg;
         msg << "invalid header checksum format: line " << lineno;
         throw std::invalid_argument{msg.str()};
@@ -431,12 +434,19 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
     unsigned char checksum_xor{0};
 
     stream.seekg(startOff);
-    char buffer[endOff - startOff];
-    stream.read(buffer, endOff - startOff);
-    for (auto&& ch: buffer) {
-        checksum_sum += ch;
-        checksum_xor ^= ch;
+    auto len = endOff - startOff;
+    char* buffer = new char[len];
+    try {
+    	stream.read(buffer, len);
+    } catch ([[maybe_unused]] const std::exception& e) {
+    	delete[] buffer;
+	throw;
     }
+    for (int i = 0; i < len; ++i) {
+        checksum_sum += buffer[i];
+        checksum_xor ^= buffer[i];
+    }
+    delete[] buffer;
     checksum_sum = -checksum_sum;
 
     unsigned char checksum;

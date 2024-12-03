@@ -27,7 +27,12 @@ class EDMFlightHeader
     virtual void dump()
     {
         time_t recordTime = mktime(&startDate);
-        std::tm local = *std::localtime(&recordTime);
+        std::tm local;
+#ifdef _WIN32
+	localtime_s(&local, &recordTime);
+#else
+	local = *std::localtime(&recordTime);
+#endif
         std::cout << "Flight Header:"
                   << "\n    flight_num: " << flight_num
                   << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
