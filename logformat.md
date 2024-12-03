@@ -169,13 +169,18 @@ header record.
 As indicated above there can be multiple flights recorded in a single file. The
 $D header gives the ordering and flight number.
 
-### Binary data fomat
+Each flight consists of a single header followed by a variable number of
+data records. After the last data record there is an extra byte. This is probably
+a checksum of some sort, but I haven't confirmed that.
 
-As this currently only supports the new format, only the new structure is discussed.
+Following that extra byte is the next flight's binary data - its header and then
+data records, extra byte, and so on.
 
-#### Flight information header
+### Flight information header
 
-The flight header follows immediately after the $L record, and is as follows:
+The first flight header follows immediately after the $L record.
+
+#### New format
 
      7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -207,7 +212,7 @@ The flight header follows immediately after the $L record, and is as follows:
     |   hr    |   min     |  sec/2  |
     +-------------------------------/
 
-Old format:
+#### Old format
 
      7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -228,8 +233,9 @@ Old format:
 
 The interval field is in seconds.
 
+### Data records
 
-#### Data records
+#### New format
 
 The data records represent measurements of up to 128 different values.
 The specific values which are updated by a particular data record can be
@@ -243,57 +249,64 @@ The values in the 128-bit bitmap are as follows:
 *'?' means unknown, but it was set*
 
     byte 0
-    [0]   EGT1 low byte
-    [1]   EGT2 low byte
-    [2]   EGT3 low byte
-    [3]   EGT4 low byte
-    [4]   EGT5 low byte
-    [5]   EGT6 low byte
-    [6]   -
-    [7]   -
+    [0]   EGT1 (left engine) low byte
+    [1]   EGT2 (left engine) low byte
+    [2]   EGT3 (left engine) low byte
+    [3]   EGT4 (left engine) low byte
+    [4]   EGT5 (left engine) low byte
+    [5]   EGT6 (left engine) low byte
+    [6]   T1?
+    [7]   T2?
 
     byte 1
-    [8]   CHT1
-    [9]   CHT2
-    [10]  CHT3
-    [11]  CHT4
-    [12]  CHT5
-    [13]  CHT6
+    [8]   CHT1 (left engine)
+    [9]   CHT2 (left engine)
+    [10]  CHT3 (left engine)
+    [11]  CHT4 (left engine)
+    [12]  CHT5 (left engine)
+    [13]  CHT6 (left engine)
     [14]  CLD
-    [15]  Oil Temp
+    [15]  OILT
 
     byte 2 
     [16]  MARK (see below)
     [17]  Oil Pressure
     [18]  CRB
-    [19]  -
+    [19]  IAT  *maybe (intake air temp?)*
     [20]  Volts
     [21]  OAT
     [22]  USD
     [23]  FF
 
     byte 3 
-    [24]  -
-    [25]  -
-    [26]  -
-    [27]  -
-    [28]  -
-    [29]  -
-    [30]  HP
-    [31]  -
+    [24]  EGTR1 (right engine) low byte
+    [25]  EGTR2 (right engine) low byte
+    [26]  EGTR3 (right engine) low byte
+    [27]  EGTR4 (right engine) low byte
+    [28]  EGTR5 (right engine) low byte
+    [29]  EGTR6 (right engine) low byte
+    [30]  HP and/or RT1?
+    [31]  maybe RT2?
 
     byte 4 
-    [32-39] -
+    [32] - CHTR1 (right engine) 
+    [33] - CHTR2 (right engine)
+    [34] - CHTR3 (right engine)
+    [35] - CHTR4 (right engine)
+    [36] - CHTR5 (right engine)
+    [37] - CHTR6 (right engine)
+    [38] - RCLD (right engine)
+    [39] - ROILT (right engine)
 
     byte 5
     [40]  MAP
-    [41]  RPM low byte
-    [42]  RPM high byte
-    [43]  -
-    [44]  -
-    [45]  -
-    [46]  ?
-    [47]  -
+    [41]  RPM low byte (left engine)
+    [42]  RPM high byte (left engine)
+    [43]  RIAT (right engine)
+    [44]  - *maybe RPM low byte for right engine?*
+    [45]  - *maybe RPM high byte for right engine?*
+    [46]  RUSD
+    [47]  RFF
 
     byte 6
     [48]  EGT1 high byte
@@ -366,6 +379,9 @@ special note. I have seen the following values:
 
 ##### Data record header
 
+*The "unknown" value may not belong to this record and may be a checksum of the
+previous record. Stand by while I figure that out.*
+
 Each record starts with a 12-byte header:
 
      7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
@@ -409,11 +425,10 @@ previous value.
 
 Each value is read as a unsigned byte (uint8_t).
 
-##### Initial values
+#### Initial values
 
 For *most* fields, the initial value is 0xF0.
 
 There are some exceptions, which start with 0xFF. These are elements 30, 42, 48, 49, 50, 51, 53, and 79.
 There may be others.
-
 
