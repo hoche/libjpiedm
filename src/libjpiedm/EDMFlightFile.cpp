@@ -247,10 +247,10 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
 
 void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
 {
-    const bool newVersion = true; // XXX Left here to support the old version
+    const bool newVersion = true;
 
 #ifdef DEBUG_FLIGHTS
-    std::cout << "Flight Header start: " << std::hex << stream.tellg() << std::dec << "\n";
+    std::cout << "Flight Header start: " << std::hex << stream.tellg() << std::dec << std::endl;
 #endif
 
     int readlen = newVersion ? 14 : 7;
@@ -258,7 +258,7 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
     stream.read(reinterpret_cast<char *>(v.data()), readlen * sizeof(uint16_t));
 
 #ifdef DEBUG_FLIGHTS
-    std::cout << "Flight Header end: " << std::hex << stream.tellg() << std::dec << "\n";
+    std::cout << "Flight Header end: " << std::hex << stream.tellg() << std::dec << std::endl;
 #endif
 
     EDMFlightHeader flightHeader;
@@ -267,6 +267,9 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
     if (flightHeader.flight_num != flightId) {
         std::stringstream msg;
         msg << "Flight IDs don't match. Offset: " << std::hex << (stream.tellg() - static_cast<std::streamoff>(4L));
+#ifdef DEBUG_FLIGHTS
+        std::cout << msg.str() << std::endl;
+#endif
         throw std::runtime_error{msg.str()};
     }
 
@@ -285,6 +288,10 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
     flightHeader.startDate.tm_min = (tm & 0x07e0) >> 5;
     flightHeader.startDate.tm_hour = ((tm & 0xf800) >> 11) - 1;
 
+    // XXX temporary fix - skip the trailing byte. Is it a checksum?
+    unsigned char checksum;
+    stream.read(reinterpret_cast<char*>(&checksum), 1);
+
     if (m_flightHeaderCompletionCb) {
         m_flightHeaderCompletionCb(flightHeader);
     }
@@ -292,15 +299,12 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
 
 void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool& isFast)
 {
+    auto startOff = stream.tellg();
 #ifdef DEBUG_FLIGHTS
     std::cout << "-----------------------------------\n";
     std::cout << "recordSeq: " << recordSeq << "\n";
-    std::cout << "start offset: " << std::hex << stream.tellg() << std::dec << "\n";
+    std::cout << "start offset: " << std::hex << startOff << std::dec << "\n";
 #endif
-
-    // Unknown byte
-    char unknown;
-    stream.read(&unknown, 1);
 
     // A pair of bitmaps, which should be identical
     // They indicate which bytes of the data bitmap are populated
@@ -308,7 +312,6 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
     stream.read(reinterpret_cast<char *>(bmPopMap.data()), 2 * sizeof(uint16_t));
 
 #ifdef DEBUG_FLIGHTS
-    std::cout << "unknown: " << hex(unknown) << "\n";
     std::cout << "bmPopMap[0]: " << std::hex << bmPopMap[0] << "   bmPopMap[1]: " << bmPopMap[1]
               << std::dec << "\n";
     std::cout << std::flush;
@@ -318,6 +321,9 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
         std::stringstream msg;
         msg << "bmPopMaps don't match (record: " << std::dec << recordSeq << " offset: " << std::hex
             << (stream.tellg() - static_cast<std::streamoff>(4L));
+#ifdef DEBUG_FLIGHTS
+        std::cout << msg.str() << std::endl;
+#endif
         throw std::runtime_error{msg.str()};
     }
     std::bitset<16> flags{ntohs(bmPopMap[0])};
@@ -412,10 +418,43 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
         }
     }
 
+    auto endOff = stream.tellg();
+
 #ifdef DEBUG_FLIGHTS
     std::cout << "\n";
-    std::cout << "end offset: " << std::hex << (stream.tellg() - 1L) << std::dec << "\n";
+    std::cout << "end offset: " << std::hex << endOff << std::dec << "\n";
     std::cout << std::flush;
+#endif
+
+    // checksum
+    unsigned char checksum_sum{0};
+    unsigned char checksum_xor{0};
+
+    stream.seekg(startOff);
+    char buffer[endOff - startOff];
+    stream.read(buffer, endOff - startOff);
+    for (auto&& ch: buffer) {
+        checksum_sum += ch;
+        checksum_xor ^= ch;
+    }
+    checksum_sum = -checksum_sum;
+
+    unsigned char checksum;
+    stream.read(reinterpret_cast<char*>(&checksum), 1);
+    if (checksum != checksum_sum && checksum != checksum_xor) {
+        std::stringstream msg;
+        msg << "checksum failure in record " << std::dec << recordSeq
+            << " file: " << hex(checksum) << " sum: " << checksum_sum << " xor: " << checksum_xor;
+#ifdef DEBUG_FLIGHTS
+        std::cout << msg.str() << std::endl;
+#endif
+        throw std::runtime_error{msg.str()};
+    }
+
+#ifdef DEBUG_FLIGHTS
+        std::cout << "checksum_sum: " << hex(checksum_sum) << "\n";
+        std::cout << "checksum_xor: " << hex(checksum_xor) << "\n";
+        std::cout << "stream checksum: " << hex(checksum) << "\n";
 #endif
 
     // special test for the MARK value.
@@ -461,12 +500,13 @@ bool EDMFlightFile::parse(std::istream &stream)
         unsigned long fastRecCount{0};
         bool isFast{false};
 
-        for (; (stream.tellg() - startOff) < ((flightDataCount.second - 1) * 2); ++recordSeq) {
+        for (; (stream.tellg() - startOff) < ((flightDataCount.second-1L) * 2); ++recordSeq) {
             parseFlightDataRec(stream, recordSeq, isFast);
 #ifdef DEBUG_PARSE
+            auto bytesRead = stream.tellg() - startOff;
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex
                       << stream.tellg() << std::dec
-                      << "    (flightDataCount.second-1)*2): " << ((flightDataCount.second - 1) * 2)
+                      << "    ((flightDataCount.second-1)*2): " << ((flightDataCount.second-1L) * 2)
                       << "\n"
                       << std::flush;
 #endif
@@ -477,7 +517,6 @@ bool EDMFlightFile::parse(std::istream &stream)
             }
 
         }
-        stream.get(); // pad byte? checksum?
         if (m_flightCompletionCb) {
             m_flightCompletionCb(stdRecCount, fastRecCount);
         }
