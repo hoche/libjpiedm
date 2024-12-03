@@ -135,7 +135,7 @@ void EDMFlightFile::validate_header_checksum(int lineno, const char *line)
 
     uint16_t testval;
     uint8_t cs = 0;
-    if (sscanf_s(endp + 1, "%hx", &testval) != 1) {
+    if (sscanf(endp + 1, "%hx", &testval) != 1) {
         std::stringstream msg;
         msg << "invalid header checksum format: line " << lineno;
         throw std::invalid_argument{msg.str()};
