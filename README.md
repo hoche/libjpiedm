@@ -76,8 +76,6 @@ NetBSD system just to make sure I got the byte ordering right.
 
 ## Known Issues
 
-* The data record checksum isn't being calculated correctly, and is in fact being read as part of
-the subsequent record. A fix will be coming shortly.
-
 * It doesn't detect old-style (short) records at all. A fix will be coming...uh. soonish.
+* The multiengine values are just guesses.
 
