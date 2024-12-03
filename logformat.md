@@ -379,20 +379,14 @@ special note. I have seen the following values:
 
 ##### Data record header
 
-*The "unknown" value may not belong to this record and may be a checksum of the
-previous record. Stand by while I figure that out.*
+Each record starts with a 5-byte header:
 
-Each record starts with a 12-byte header:
-
-     7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |    unknown    |            popMap[0]          |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |            popMap[2]          |  repeatcount  |
-    +-----------------------------------------------/
+     7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0 |7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |            popMap[0]          |             popMap[1]          |  repeatCount |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-/
 
     struct rec_hdr_t {
-       uint8_t unknown;
        uint16_t popMap[2];   // these two values must match
        uint8_t repeatcount; // if 0, just repeat the previous record
     }
@@ -425,10 +419,17 @@ previous value.
 
 Each value is read as a unsigned byte (uint8_t).
 
-#### Initial values
+##### Initial values
 
 For *most* fields, the initial value is 0xF0.
 
 There are some exceptions, which start with 0xFF. These are elements 30, 42, 48, 49, 50, 51, 53, and 79.
 There may be others.
+
+##### End-of-Record checksum
+
+At the end of each record there is a checksum. This has one of two forms:
+
+- in very old EDMs, this is an XOR of all the bytes in the record
+- in most EDMs, this is the sum of every byte in the record. The sum is then negated.
 
