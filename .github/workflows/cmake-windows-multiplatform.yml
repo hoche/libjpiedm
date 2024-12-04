@@ -1,6 +1,6 @@
 # This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
-name: CMake on multiple OSX platforms
+name: CMake on multiple platforms
 
 on:
   push:
@@ -23,16 +23,22 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [macos-13, macos-latest]
+        os: [windows-latest, windows-2019]
         build_type: [Release]
-        c_compiler: [clang]
+        c_compiler: [cl,gcc]
         include:
-          - os: macos-13
-            c_compiler: clang
-            cpp_compiler: clang++
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
+          - os: windows-latest
+            c_compiler: gcc
+            cpp_compiler: gcc
+          - os: windows-2019
+            c_compiler: cl
+            cpp_compiler: cl
+          - os: windows-2019
+            c_compiler: gcc
+            cpp_compiler: gcc
 
     steps:
     - uses: actions/checkout@v4
@@ -55,8 +61,8 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build
-      # Build your program with the given configuration.
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
