@@ -24,7 +24,7 @@ class EDMFlightHeader
     EDMFlightHeader(){};
     virtual ~EDMFlightHeader(){};
 
-    virtual void dump()
+    virtual void dump(std::ostream& outStream)
     {
         time_t recordTime = mktime(&startDate);
         std::tm local;
@@ -33,7 +33,7 @@ class EDMFlightHeader
 #else
 	local = *std::localtime(&recordTime);
 #endif
-        std::cout << "Flight Header:"
+        outStream << "Flight Header:"
                   << "\n    flight_num: " << flight_num
                   << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
                   << "\n    interval: " << interval

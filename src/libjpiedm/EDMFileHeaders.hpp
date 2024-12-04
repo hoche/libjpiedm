@@ -34,6 +34,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <iostream>
 
 namespace jpi_edm {
 
@@ -47,7 +48,7 @@ class EDMFileHeader
      * are in the vector.
      */
     virtual void apply(std::vector<unsigned long> values) = 0;
-    virtual void dump() = 0;
+    virtual void dump(std::ostream& outStream) = 0;
 };
 
 /**
@@ -65,7 +66,7 @@ class EDMConfigLimits : public EDMFileHeader
     EDMConfigLimits(){};
     virtual ~EDMConfigLimits(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump();
+    virtual void dump(std::ostream& outStream);
 
   public:
     unsigned long volts_hi;
@@ -114,7 +115,7 @@ class EDMConfigInfo : public EDMFileHeader
     EDMConfigInfo(){};
     virtual ~EDMConfigInfo(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump();
+    virtual void dump(std::ostream& outStream);
     virtual bool tempInC();
 
   public:
@@ -146,7 +147,7 @@ class EDMFuelLimits : public EDMFileHeader
     EDMFuelLimits(){};
     virtual ~EDMFuelLimits(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump();
+    virtual void dump(std::ostream& outStream);
 
   public:
     unsigned long empty;
@@ -171,7 +172,7 @@ class EDMPHeader : public EDMFileHeader
     EDMPHeader(){};
     virtual ~EDMPHeader(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump();
+    virtual void dump(std::ostream& outStream);
 
   public:
     unsigned long value;
@@ -192,7 +193,7 @@ class EDMTimeStamp : public EDMFileHeader
     EDMTimeStamp(){};
     virtual ~EDMTimeStamp(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump();
+    virtual void dump(std::ostream& outStream);
 
   public:
     unsigned long mon;
@@ -213,7 +214,7 @@ class EDMFileHeaderSet
     EDMFileHeaderSet(){};
     virtual ~EDMFileHeaderSet(){};
 
-    virtual void dump();
+    virtual void dump(std::ostream& outStream);
 
   public:
     std::string m_tailNum;

@@ -33,6 +33,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "EDMFileHeaders.hpp"
 
@@ -60,9 +61,9 @@ void EDMConfigLimits::apply(std::vector<unsigned long> values)
     oil_temp_lo = values[7];
 }
 
-void EDMConfigLimits::dump()
+void EDMConfigLimits::dump(std::ostream& outStream)
 {
-    std::cout << "EDMConfigLimits:" << "\n    volts_hi: " << volts_hi
+    outStream << "EDMConfigLimits:" << "\n    volts_hi: " << volts_hi
               << "\n    volts_lo: " << volts_lo << "\n    egt_diff: " << egt_diff
               << "\n    cht_temp_hi: " << cht_temp_hi
               << "\n    shock_cooling_cld: " << shock_cooling_cld
@@ -121,9 +122,9 @@ const uint32_t F_DIF = F_E1 | F_E2; // DIF exists if there's more than one EGT
 const uint32_t F_HP = F_RPM | F_MAP | F_FF;
 const uint32_t F_MARK = 0x00000001; // 1 bit always seems to exist
 
-void EDMConfigInfo::dump()
+void EDMConfigInfo::dump(std::ostream& outStream)
 {
-    std::cout << "EDMConfigInfo:" << "\n    edm_model: " << edm_model << "\n    flags: " << flags
+    outStream << "EDMConfigInfo:" << "\n    edm_model: " << edm_model << "\n    flags: " << flags
               << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags) << ""
               << "\n    unk1: " << unk1 << " 0x" << std::hex << unk1 << std::dec << " b"
               << std::bitset<32>(unk1) << "" << "\n    unk2: " << unk2 << " 0x" << std::hex << unk2
@@ -131,7 +132,7 @@ void EDMConfigInfo::dump()
               << std::hex << unk3 << std::dec << " b" << std::bitset<32>(unk3) << ""
               << "\n    firmware_version: " << firmware_version << "\n    build: " << build_maj
               << "." << build_min << "\n";
-    std::cout << "Temperatures for CHT, EGT, and TIT are in " << (flags & F_TEMP_IN_F ? "F" : "C")
+    outStream << "Temperatures for CHT, EGT, and TIT are in " << (flags & F_TEMP_IN_F ? "F" : "C")
               << "\n";
 }
 
@@ -153,9 +154,9 @@ void EDMFuelLimits::apply(std::vector<unsigned long> values)
     k_factor_2 = values[4];
 }
 
-void EDMFuelLimits::dump()
+void EDMFuelLimits::dump(std::ostream& outStream)
 {
-    std::cout << "EDMFuelLimits:" << "\n    empty: " << empty
+    outStream << "EDMFuelLimits:" << "\n    empty: " << empty
               << "\n    main_tank_size: " << main_tank_size
               << "\n    aux_tank_size: " << aux_tank_size << "\n    k_factor_2: " << k_factor_1
               << "\n    k_factor_1: " << k_factor_2 << "\n";
@@ -172,7 +173,9 @@ void EDMPHeader::apply(std::vector<unsigned long> values)
     value = values[0];
 }
 
-void EDMPHeader::dump() { std::cout << "EDM P Header:" << "\n    value: " << value << "\n"; }
+void EDMPHeader::dump(std::ostream& outStream) {
+    outStream << "EDM P Header:" << "\n    value: " << value << "\n";
+}
 
 /**
  * Timestamp
@@ -191,21 +194,21 @@ void EDMTimeStamp::apply(std::vector<unsigned long> values)
     flight_num = values[5];
 }
 
-void EDMTimeStamp::dump()
+void EDMTimeStamp::dump(std::ostream& outStream)
 {
-    std::cout << "EDMTimeStamp:" << "\n    mon: " << mon << "\n    day: " << day
+    outStream << "EDMTimeStamp:" << "\n    mon: " << mon << "\n    day: " << day
               << "\n    yr: " << yr << "\n    hh: " << hh << "\n    mm: " << mm
               << "\n    flight_num: " << flight_num << "\n";
 }
 
-void EDMFileHeaderSet::dump()
+void EDMFileHeaderSet::dump(std::ostream& outStream)
 {
-    std::cout << "Tailnumber: " << m_tailNum << "\n";
-    m_configLimits.dump();
-    m_configInfo.dump();
-    m_fuelLimits.dump();
-    m_PHeader.dump();
-    m_timeStamp.dump();
+    outStream << "Tailnumber: " << m_tailNum << "\n";
+    m_configLimits.dump(outStream);
+    m_configInfo.dump(outStream);
+    m_fuelLimits.dump(outStream);
+    m_PHeader.dump(outStream);
+    m_timeStamp.dump(outStream);
 }
 
 } // namespace jpi_edm
