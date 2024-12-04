@@ -26,12 +26,14 @@ class EDMFlightHeader
 
     virtual void dump(std::ostream& outStream)
     {
-        time_t recordTime = mktime(&startDate);
+        setenv("TZ", "UTC", 1); // if you don't do this, mktime mucks with the stuct tm on some platforms.
+        time_t recordTime = std::mktime(&startDate);
+
         std::tm local;
 #ifdef _WIN32
-	localtime_s(&local, &recordTime);
+	    localtime_s(&local, &recordTime);
 #else
-	local = *std::localtime(&recordTime);
+	    local = *std::localtime(&recordTime);
 #endif
         outStream << "Flight Header:"
                   << "\n    flight_num: " << flight_num
@@ -50,7 +52,7 @@ class EDMFlightHeader
                          // 7 elements are new.
     unsigned int interval;   // Record interval in seconds. Default is 6. Savvy runs
                          // should be 1.
-    struct tm startDate;
+    struct tm startDate{0};
 };
 
 /**

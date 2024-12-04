@@ -24,9 +24,9 @@ class EDMFlightFile
     EDMFlightFile(){};
     virtual ~EDMFlightFile(){};
 
-    virtual void setFileHeaderCompletionCb(std::function<void(EDMFileHeaderSet)> cb);
-    virtual void setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader)> cb);
-    virtual void setFlightRecordCompletionCb(std::function<void(EDMFlightRecord)> cb);
+    virtual void setFileHeaderCompletionCb(std::function<void(EDMFileHeaderSet&)> cb);
+    virtual void setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader&)> cb);
+    virtual void setFlightRecordCompletionCb(std::function<void(EDMFlightRecord&)> cb);
     virtual void setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb);
     virtual void setFileFooterCompletionCb(std::function<void(void)> cb);
 
@@ -62,9 +62,9 @@ class EDMFlightFile
     int m_stdRecs;
     int m_fastRecs;
 
-    std::function<void(EDMFileHeaderSet)> m_fileHeaderCompletionCb;
-    std::function<void(EDMFlightHeader)> m_flightHeaderCompletionCb;
-    std::function<void(EDMFlightRecord)> m_flightRecCompletionCb;
+    std::function<void(EDMFileHeaderSet&)> m_fileHeaderCompletionCb;
+    std::function<void(EDMFlightHeader&)> m_flightHeaderCompletionCb;
+    std::function<void(EDMFlightRecord&)> m_flightRecCompletionCb;
     std::function<void(unsigned long, unsigned long)> m_flightCompletionCb;
     std::function<void(void)> m_fileFooterCompletionCb;
 };

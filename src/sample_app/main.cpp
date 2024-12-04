@@ -31,7 +31,8 @@ using jpi_edm::EDMFlightRecord;
 
 void printFlightInfo(jpi_edm::EDMFlightHeader& hdr, unsigned long stdReqs, unsigned long fastReqs, std::ostream& outStream)
 {
-    time_t flightStartTime = mktime(&hdr.startDate);
+    setenv("TZ", "UTC", 1);  // prevent mktime() from mucking with the struct tm
+    time_t flightStartTime = std::mktime(&hdr.startDate);
     std::tm local = *std::localtime(&flightStartTime);
 
     auto min = (fastReqs/60) + (stdReqs * hdr.interval) / 60;
@@ -119,12 +120,15 @@ void printAllFlights(std::istream& stream, std::ostream& outStream)
 
     ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream](jpi_edm::EDMFlightHeader fh) {
         hdr = fh;
-        recordTime = mktime(&hdr.startDate);
+        setenv("TZ", "UTC", 1);  // prevent mktime() from mucking with the struct tm
+        recordTime = std::mktime(&hdr.startDate);
         std::tm local = *std::localtime(&recordTime);
 
         outStream << "Flt #" << hdr.flight_num << "\n";
         outStream << "Interval: " << hdr.interval << " sec\n";
-        outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " " << std::put_time(&local,   "%T");
+        outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y")
+                  << " " << std::put_time(&local,   "%T")
+                  << "\n";
 
         outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
                   << ",OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
