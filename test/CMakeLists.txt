@@ -12,7 +12,6 @@ add_test(golden-1-cmp
 add_test(tool_build
         "${CMAKE_COMMAND}"
         --build "${CMAKE_BINARY_DIR}"
-        --config $<CONFIG>
         --target parseedmlog
         )
 
