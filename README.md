@@ -1,6 +1,6 @@
 # libjpiedm
 
-C++ library for reading data from JPI EDM Engine Monitors.
+C++ library for parsing data files from JPI EDM Engine Monitors.
 
 Released under the Creative Commons "CC BY" license (except where otherwise noted).
 
