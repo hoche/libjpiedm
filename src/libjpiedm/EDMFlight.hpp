@@ -26,14 +26,14 @@ class EDMFlightHeader
 
     virtual void dump(std::ostream& outStream)
     {
-        setenv("TZ", "UTC", 1); // if you don't do this, mktime mucks with the stuct tm on some platforms.
-        time_t recordTime = std::mktime(&startDate);
-
         std::tm local;
+
 #ifdef _WIN32
-	    localtime_s(&local, &recordTime);
+        time_t recordTime = _mkgmtime(&startDate);
+	    gmtime_s(&local, &recordTime);
 #else
-	    local = *std::localtime(&recordTime);
+        time_t recordTime = timegm(&startDate);
+	    local = *gmtime(&recordTime);
 #endif
         outStream << "Flight Header:"
                   << "\n    flight_num: " << flight_num

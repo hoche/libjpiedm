@@ -15,7 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
-#include <time.h>
+#include <ctime>
 
 #ifdef _WIN32
 #include "getopt.h"
@@ -31,9 +31,14 @@ using jpi_edm::EDMFlightRecord;
 
 void printFlightInfo(jpi_edm::EDMFlightHeader& hdr, unsigned long stdReqs, unsigned long fastReqs, std::ostream& outStream)
 {
-    setenv("TZ", "UTC", 1);  // prevent mktime() from mucking with the struct tm
-    time_t flightStartTime = std::mktime(&hdr.startDate);
-    std::tm local = *std::localtime(&flightStartTime);
+    std::tm local;
+#ifdef _WIN32
+    time_t flightStartTime = _mkgmtime(&startDate);
+    gmtime_s(&local, &flightStartTime);
+#else
+    time_t flightStartTime = timegm(&hdr.startDate);
+    local = *gmtime(&flightStartTime);
+#endif
 
     auto min = (fastReqs/60) + (stdReqs * hdr.interval) / 60;
     auto hrs = 0.01 + static_cast<float>(min) / 60;
@@ -120,10 +125,15 @@ void printAllFlights(std::istream& stream, std::ostream& outStream)
 
     ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream](jpi_edm::EDMFlightHeader fh) {
         hdr = fh;
-        setenv("TZ", "UTC", 1);  // prevent mktime() from mucking with the struct tm
-        recordTime = std::mktime(&hdr.startDate);
-        std::tm local = *std::localtime(&recordTime);
 
+        std::tm local;
+#ifdef _WIN32
+        recordTime = _mkgmtime(&startDate);
+        gmtime_s(&local, &recordTime);
+#else
+        recordTime = timegm(&hdr.startDate);
+        local = *gmtime(&recordTime);
+#endif
         outStream << "Flt #" << hdr.flight_num << "\n";
         outStream << "Interval: " << hdr.interval << " sec\n";
         outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y")
@@ -137,7 +147,7 @@ void printAllFlights(std::istream& stream, std::ostream& outStream)
     });
 
     ff.setFlightRecordCompletionCb([&hdr, &recordTime, &outStream](jpi_edm::EDMFlightRecord rec) {
-        std::tm local = *std::localtime(&recordTime);
+        std::tm local = *std::gmtime(&recordTime);
 
         outStream << rec.m_recordSeq << "," << std::put_time(&local, "%m/%d/%Y") << "," << std::put_time(&local, "%T") << ",";
         printFlightDataRecord(rec, outStream);
