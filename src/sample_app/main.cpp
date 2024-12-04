@@ -33,7 +33,7 @@ void printFlightInfo(jpi_edm::EDMFlightHeader& hdr, unsigned long stdReqs, unsig
 {
     std::tm local;
 #ifdef _WIN32
-    time_t flightStartTime = _mkgmtime(&startDate);
+    time_t flightStartTime = _mkgmtime(&hdr.startDate);
     gmtime_s(&local, &flightStartTime);
 #else
     time_t flightStartTime = timegm(&hdr.startDate);
@@ -128,12 +128,13 @@ void printAllFlights(std::istream& stream, std::ostream& outStream)
 
         std::tm local;
 #ifdef _WIN32
-        recordTime = _mkgmtime(&startDate);
+        recordTime = _mkgmtime(&hdr.startDate);
         gmtime_s(&local, &recordTime);
 #else
         recordTime = timegm(&hdr.startDate);
         local = *gmtime(&recordTime);
 #endif
+
         outStream << "Flt #" << hdr.flight_num << "\n";
         outStream << "Interval: " << hdr.interval << " sec\n";
         outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y")
