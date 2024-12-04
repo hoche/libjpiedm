@@ -25,6 +25,7 @@ jobs:
         os: [ubuntu-latest, ubuntu-22.04]
         build_type: [Release]
         c_compiler: [gcc, clang]
+        cpp_compiler: [g++, clang++]
         include:
           - os: ubuntu-latest
             c_compiler: gcc
