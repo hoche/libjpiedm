@@ -5,6 +5,7 @@ project(jpiedm
         VERSION 1.0)
 
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS YES CACHE BOOL "Export all symbols")
 
 message("cmake module path: ${CMAKE_MODULE_PATH}")
@@ -23,3 +24,5 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 add_subdirectory(src)
 
+enable_testing()
+add_subdirectory(test)
