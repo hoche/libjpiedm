@@ -113,7 +113,7 @@ void printFlightDataRecord(const jpi_edm::EDMFlightRecord& rec, std::ostream& ou
     outStream << "\n";
 }
 
-void printAllFlights(std::istream& stream, std::ostream& outStream)
+void printFlightData(std::istream& stream, int flightId, std::ostream& outStream)
 {
     jpi_edm::EDMFlightFile ff;
     jpi_edm::EDMFlightHeader hdr;
@@ -123,9 +123,13 @@ void printAllFlights(std::istream& stream, std::ostream& outStream)
         hs.dump(outStream);
     });
 
-    ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream](jpi_edm::EDMFlightHeader fh) {
+    ff.setFlightHeaderCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::EDMFlightHeader fh) {
         hdr = fh;
 
+        if (flightId != -1 && hdr.flight_num != flightId) {
+            return;
+        }
+        
         std::tm local;
 #ifdef _WIN32
         recordTime = _mkgmtime(&hdr.startDate);
@@ -147,7 +151,11 @@ void printAllFlights(std::istream& stream, std::ostream& outStream)
                   << "\n";
     });
 
-    ff.setFlightRecordCompletionCb([&hdr, &recordTime, &outStream](jpi_edm::EDMFlightRecord rec) {
+    ff.setFlightRecordCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::EDMFlightRecord rec) {
+        if (flightId != -1 && hdr.flight_num != flightId) {
+            return;
+        }
+        
         std::tm local = *std::gmtime(&recordTime);
 
         outStream << rec.m_recordSeq << "," << std::put_time(&local, "%m/%d/%Y") << "," << std::put_time(&local, "%T") << ",";
@@ -160,7 +168,7 @@ void printAllFlights(std::istream& stream, std::ostream& outStream)
     ff.processFile(stream);
 }
 
-void printAvailableFlights(std::istream& stream, std::ostream& outStream)
+void printFlightList(std::istream& stream, std::ostream& outStream)
 {
     jpi_edm::EDMFlightFile ff;
     jpi_edm::EDMFlightHeader hdr;
@@ -174,10 +182,12 @@ void printAvailableFlights(std::istream& stream, std::ostream& outStream)
     ff.processFile(stream);
 }
 
-void processFiles(std::vector<std::string>& filelist, bool onlyListFlights, std::string& outputFile)
+void processFiles(std::vector<std::string>& filelist, int flightId, bool onlyListFlights, std::string& outputFile)
 {
     for (auto&& filename : filelist) {
-        std::cout << filename << std::endl;
+        if (filelist.size() > 1) {
+            std::cout << filename << std::endl;
+        }
 
         std::filesystem::path inputFilePath{filename};
         std::error_code ec;
@@ -209,9 +219,9 @@ void processFiles(std::vector<std::string>& filelist, bool onlyListFlights, std:
         std::ostream& outStream = (outputFile.empty() ? std::cout : outFileStream);
 
         if (onlyListFlights) {
-            printAvailableFlights(inStream, outStream);
+            printFlightList(inStream, outStream);
         } else {
-            printAllFlights(inStream, outStream);
+            printFlightData(inStream, flightId, outStream);
         }
 
     }
@@ -219,10 +229,12 @@ void processFiles(std::vector<std::string>& filelist, bool onlyListFlights, std:
 
 void showHelp(char *progName)
 {
-    std::cout << "Usage: " << progName << "[options] file..." << std::endl;
+    std::cout << "Usage: " << progName << "[options] jpifile..." << std::endl;
     std::cout << "Options:" << std::endl;
-    std::cout << "    -h    print this help" << std::endl;
-    std::cout << "    -l    list flights" << std::endl;
+    std::cout << "    -h              print this help" << std::endl;
+    std::cout << "    -f <flightno>   only output a specific flight number" << std::endl;
+    std::cout << "    -l              list flights" << std::endl;
+    std::cout << "    -o <filename>   output to a file" << std::endl;
 }
 
 int main(int argc, char *argv[])
@@ -230,15 +242,23 @@ int main(int argc, char *argv[])
     bool onlyListFlights{false};
     std::vector<std::string> filelist{};
     std::string outputFile{};
+    int flightId{-1};
 
     int c;
-    while ((c = getopt(argc, argv, "hlo:")) != -1) {
+    while ((c = getopt(argc, argv, "hf:lo:")) != -1) {
         switch (c) {
         case 'h':
             if (optarg) {
                 showHelp(argv[0]);
                 return 0;
             }
+            break;
+        case 'f':
+            if (!optarg) {
+                showHelp(argv[0]);
+                return 0;
+            }
+            flightId = atoi(optarg);
             break;
         case 'l':
             if (optarg) {
@@ -266,6 +286,6 @@ int main(int argc, char *argv[])
         filelist.push_back(argv[i]);
     }
 
-    processFiles(filelist, onlyListFlights, outputFile);
+    processFiles(filelist, flightId, onlyListFlights, outputFile);
     return 0;
 }
