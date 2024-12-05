@@ -255,7 +255,7 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
 
 void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
 {
-    const bool newVersion = true;
+    const bool newVersion = (m_fileHeaderSet.m_configInfo.old_file_format == false);
 
 #ifdef DEBUG_FLIGHT_HEADERS
     std::cout << "Flight Header start: " << std::hex << stream.tellg() << std::dec << std::endl;
@@ -323,6 +323,8 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
 
 void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool& isFast)
 {
+    const bool newVersion = (m_fileHeaderSet.m_configInfo.old_file_format == false);
+
     auto startOff = stream.tellg();
 #ifdef DEBUG_FLIGHTS
     std::cout << "-----------------------------------\n";
@@ -374,10 +376,12 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
     }
 
     // The measurements are differences from the previous value. This indicates
-    // whether it should be added to or subtracted from the previous value.
+    // whether it should be added to or subtr
+    // Note that we skip bytes 6 & 7 - they are the high bytes of the EGTs and
+    // aren't used.
     std::bitset<128> signMap;
     for (int i = 0; i < 16; ++i) {
-        if (flags[i] && (i != 6 && i != 7)) { // XXX I don't know why we skip bytes 6 and 7
+        if (flags[i] && (i != 6 && i != 7)) {
             char val;
             stream.read(&val, 1);
             for (int k = 0; k < 8; ++k) {

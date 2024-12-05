@@ -69,14 +69,14 @@ class EDMConfigLimits : public EDMFileHeader
     virtual void dump(std::ostream& outStream);
 
   public:
-    unsigned long volts_hi;
-    unsigned long volts_lo;
-    unsigned long egt_diff;
-    unsigned long cht_temp_hi;
-    unsigned long shock_cooling_cld;
-    unsigned long turbo_inlet_temp_hi;
-    unsigned long oil_temp_hi;
-    unsigned long oil_temp_lo;
+    unsigned long volts_hi{0};
+    unsigned long volts_lo{0};
+    unsigned long egt_diff{0};
+    unsigned long cht_temp_hi{0};
+    unsigned long shock_cooling_cld{0};
+    unsigned long turbo_inlet_temp_hi{0};
+    unsigned long oil_temp_hi{0};
+    unsigned long oil_temp_lo{0};
 };
 
 /**
@@ -119,14 +119,15 @@ class EDMConfigInfo : public EDMFileHeader
     virtual bool tempInC();
 
   public:
-    unsigned long edm_model;
-    uint32_t flags;
-    unsigned long unk1;
-    unsigned long unk2;
-    unsigned long unk3;
-    unsigned long firmware_version; // n.nn * 100
-    unsigned long build_maj;
-    unsigned long build_min;
+    bool old_file_format{false};
+    unsigned long edm_model{0};
+    uint32_t flags{0};
+    unsigned long unk1{0};
+    unsigned long unk2{0};
+    unsigned long unk3{0};
+    unsigned long firmware_version{0}; // n.nn * 100
+    unsigned long build_maj{0};
+    unsigned long build_min{0};
 };
 
 /**
@@ -150,11 +151,11 @@ class EDMFuelLimits : public EDMFileHeader
     virtual void dump(std::ostream& outStream);
 
   public:
-    unsigned long empty;
-    unsigned long main_tank_size;
-    unsigned long aux_tank_size;
-    unsigned long k_factor_1;
-    unsigned long k_factor_2;
+    unsigned long empty{0};
+    unsigned long main_tank_size{0};
+    unsigned long aux_tank_size{0};
+    unsigned long k_factor_1{0};
+    unsigned long k_factor_2{0};
 };
 
 /**
@@ -175,7 +176,7 @@ class EDMPHeader : public EDMFileHeader
     virtual void dump(std::ostream& outStream);
 
   public:
-    unsigned long value;
+    unsigned long value{0};
 };
 
 /**
@@ -196,12 +197,12 @@ class EDMTimeStamp : public EDMFileHeader
     virtual void dump(std::ostream& outStream);
 
   public:
-    unsigned long mon;
-    unsigned long day;
-    unsigned long yr;
-    unsigned long hh;
-    unsigned long mm;
-    unsigned long flight_num;
+    unsigned long mon{0};
+    unsigned long day{0};
+    unsigned long yr{0};
+    unsigned long hh{0};
+    unsigned long mm{0};
+    unsigned long flight_num{0};
 };
 
 /**
@@ -217,7 +218,7 @@ class EDMFileHeaderSet
     virtual void dump(std::ostream& outStream);
 
   public:
-    std::string m_tailNum;
+    std::string m_tailNum{""};
     EDMConfigLimits m_configLimits;
     EDMConfigInfo m_configInfo;
     EDMFuelLimits m_fuelLimits;

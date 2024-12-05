@@ -77,10 +77,19 @@ void EDMConfigInfo::apply(std::vector<unsigned long> values)
     if (values.size() < 5) {
         throw std::invalid_argument{"Incorrect number of arguments in $C line"};
     }
+    if (values.size() < 9) {
+        old_file_format = true;
+    }
 
     edm_model = values[0];
     flags = (values[2] << 16) | (values[1] & 0x0000FFFF);
     unk1 = values[3];
+
+    if (old_file_format) {
+        firmware_version = values[4];
+        return;
+    }
+
     unk2 = values[4];
     unk3 = values[5];
     firmware_version = values[6];
@@ -124,14 +133,16 @@ const uint32_t F_MARK = 0x00000001; // 1 bit always seems to exist
 
 void EDMConfigInfo::dump(std::ostream& outStream)
 {
-    outStream << "EDMConfigInfo:" << "\n    edm_model: " << edm_model << "\n    flags: " << flags
-              << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags) << ""
-              << "\n    unk1: " << unk1 << " 0x" << std::hex << unk1 << std::dec << " b"
-              << std::bitset<32>(unk1) << "" << "\n    unk2: " << unk2 << " 0x" << std::hex << unk2
-              << std::dec << " b" << std::bitset<32>(unk2) << "" << "\n    unk3: " << unk3 << " 0x"
-              << std::hex << unk3 << std::dec << " b" << std::bitset<32>(unk3) << ""
-              << "\n    firmware_version: " << firmware_version << "\n    build: " << build_maj
-              << "." << build_min << "\n";
+    outStream << "EDMConfigInfo:" 
+              << "\n    old_file_format: " << (old_file_format ? "Yes" : "No")
+              << "\n    edm_model: " << edm_model
+              << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
+              << "\n    unk1: " << unk1 << " 0x" << std::hex << unk1 << std::dec << " b" << std::bitset<32>(unk1)
+              << "\n    unk2: " << unk2 << " 0x" << std::hex << unk2 << std::dec << " b" << std::bitset<32>(unk2) 
+              << "\n    unk3: " << unk3 << " 0x" << std::hex << unk3 << std::dec << " b" << std::bitset<32>(unk3)
+              << "\n    firmware_version: " << firmware_version
+              << "\n    build: " << build_maj << "." << build_min
+              << "\n";
     outStream << "Temperatures for CHT, EGT, and TIT are in " << (flags & F_TEMP_IN_F ? "F" : "C")
               << "\n";
 }
