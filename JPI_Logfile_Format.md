@@ -235,14 +235,14 @@ The interval field is in seconds.
 
 ### Data records
 
-#### New format
+The data records represent measurements of up to either 48 different values
+(old format) or 128 different values (new format).
 
-The data records represent measurements of up to 128 different values.
 The specific values which are updated by a particular data record can be
 represented as a bitmap of all possible values. The bits that are 1's
 indicate which values the data record has data.
 
-The values in the 128-bit bitmap are as follows:
+The bits in the bitmap represent the following measurements:
 
 *'-' means unknown and not set in the datafiles I looked at*
 
@@ -307,6 +307,8 @@ The values in the 128-bit bitmap are as follows:
     [45]  - *maybe RPM high byte for right engine?*
     [46]  RUSD
     [47]  RFF
+
+    ---------- end of 48-bit (old version) bitmap ---------
 
     byte 6
     [48]  EGT1 high byte
@@ -377,7 +379,9 @@ special note. I have seen the following values:
     0x04 - I'm not sure what this means. It might be the point that the EDM has
           determined to be LOP or ROP. EZTrends exports this as the ascii char '<'.
 
-##### Data record header
+#### Data record header
+
+##### New version
 
 Each record starts with a 5-byte header:
 
@@ -393,24 +397,19 @@ Each record starts with a 5-byte header:
 
 popMap[0] *MUST* equal popMap[1] or the record is corrupt.
 
-
-The bytes in popMap[0] (or popMap[1]) are used to indicate which bytes of the 128-bit
-bitmap are active for that data rec. Each bit in the popMap represents a word (two bytes)
+The bytes in popMap[0] (or popMap[1]) are a used to indicate which bytes of the 128-bit
+bitmap are populated for that data rec. Each bit in the popMap represents a word (two bytes)
 of the 128-bit measurement bitmap shown in the previous section.
 
-To do this, convert the popMap to host order, then iterate over it, least bit first.
-If the bit is set in the popMap, read a byte from the data stream and map that to the
-approprate word in the 128-bit measurement bitmap. I.e. bit 0 in the popMap represents
-byte 0 in the bitmap. If that bit it is 1, fill out that byte by reading from the stream
-if it is 0, fill byte 1 with 0x00. Then consider bit 1 in the popMap. If it is 1 read
-a byte from the stream, and use that to fill out byte 1 in the bitmap. If it is 0, fill
-with 0x00.
+To create the measurement bitmap, convert the popMap to host order, then iterate over it,
+least bit first. If the bit is set in the popMap, read a byte from the data stream and map
+that to the approprate word in the 128-bit measurement bitmap. I.e. bit 0 in the popMap
+represents byte 0 in the bitmap. If that bit it is 1, fill out that byte by reading from the
+stream if it is 0, fill byte 1 with 0x00. Then consider bit 1 in the popMap, and repeat.
 
 We do this twice. The first time we fill out a the 128-bit bitmap of values available
 (the *fieldMap*). The second time, we fill out a 128-bit bitmap that tells us whether
 to add or subtract from the previous set of measurements (the *signMap*).
-
-##### Data record values
 
 Now that we have the two 128-bit bitmaps filled out, the stream just supplies values. Each
 bit in the fieldMap indicates which value is next in the stream. Each value bit in the sign
@@ -419,14 +418,62 @@ previous value.
 
 Each value is read as a unsigned byte (uint8_t).
 
-##### Initial values
+##### Old version
+
+Each record starts with a 3-byte header:
+
+     7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0|
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |   popMap[0]   |   popMap[1]   |  repeatCount  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-/
+
+    struct rec_hdr_t {
+       uint8_t popMap[2];   // these two values must match
+       uint8_t repeatcount; // if 0, just repeat the previous record
+    }
+
+popMap[0] *MUST* equal popMap[1] or the record is corrupt.
+
+The initial unpacking process is similar to the new version, except that there are only
+8 bytes (48 bits) to deal with, and instead of 16-bit values, we're reading 8-bit values.
+
+The bytes in popMap[0] (or popMap[1]) are used to indicate which bytes of the 48-bit
+bitmap are populated for that data rec. Each bit in the popMap represents a byte of the
+48-bit measurement bitmap shown in the previous section.
+
+As before, to create the measurement bitmap, convert the popMap to host order, then iterate over it,
+least bit first. If the bit is set in the popMap, read a byte from the data stream and map
+that to the approprate word in the 48-bit measurement bitmap. I.e. bit 0 in the popMap
+represents byte 0 in the bitmap. If that bit it is 1, fill out that byte by reading from the stream
+if it is 0, fill byte 1 with 0x00. Then consider bit 1 in the popMap and repeat.
+
+The next steps are where it varies from the 128-bit version.
+
+Only the first 6 bits of the popMap represent fieldFlags that need to be populated.
+The last two (the two high bits) represent scaleFlags that need to be populated.
+
+Then the first 6 bits are again used, but this time to populate the signFlags.
+When populating the signFlags, the last two bits of the popMap are ignored.
+
+The data is then applied in the same way as in the 128-bit version: values are read from the
+stream and the signFlags are used to decide whether to add to or subtract from the previous
+value of that field.
+
+One further difference: The scaleFlags only apply to EGTs, and the bits are used to decide
+whether the value is used to apply to the first byte or the second byte of the previous value.
+So depending on how you're storing them, if a scaleFlag for an EGT is set to 1, it's either
+a bitshift or a multiply-by-256 before you add to or subtract from the previous value.
+The scaleFlags only apply to the first 8 EGT values. In a single-engine, the high byte of
+scaleFlags will always be 0. (I'm not sure how it works for a 9-cyl radial.)
+
+#### Initial values
 
 For *most* fields, the initial value is 0xF0.
 
 There are some exceptions, which start with 0xFF. These are elements 30, 42, 48, 49, 50, 51, 53, and 79.
 There may be others.
 
-##### End-of-Record checksum
+#### End-of-Record checksum
 
 At the end of each record there is a checksum. This has one of two forms:
 
