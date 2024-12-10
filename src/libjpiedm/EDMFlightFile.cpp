@@ -323,8 +323,6 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
 
 void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool& isFast)
 {
-    const bool newVersion = (m_fileHeaderSet.m_configInfo.old_file_format == false);
-
     auto startOff = stream.tellg();
 #ifdef DEBUG_FLIGHTS
     std::cout << "-----------------------------------\n";
@@ -440,6 +438,220 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
                 std::cout << "\n";
             }
 #endif
+            signMap[k] ? m_values[k] -= diff : m_values[k] += diff;
+        } else if (recordSeq == 0) {
+            m_values[k] = 0;
+        }
+    }
+
+    auto endOff = stream.tellg();
+
+#ifdef DEBUG_FLIGHTS
+    std::cout << "\n";
+    std::cout << "end offset: " << std::hex << endOff << std::dec << "\n";
+    std::cout << std::flush;
+#endif
+
+    // checksum
+    unsigned char checksum_sum{0};
+    unsigned char checksum_xor{0};
+
+    stream.seekg(startOff);
+    auto len = endOff - startOff;
+    char* buffer = new char[len];
+    try {
+    	stream.read(buffer, len);
+    } catch ([[maybe_unused]] const std::exception& e) {
+    	delete[] buffer;
+	throw;
+    }
+    for (int i = 0; i < len; ++i) {
+        checksum_sum += buffer[i];
+        checksum_xor ^= buffer[i];
+    }
+    delete[] buffer;
+    checksum_sum = -checksum_sum;
+
+    unsigned char checksum;
+    stream.read(reinterpret_cast<char*>(&checksum), 1);
+    if (checksum != checksum_sum && checksum != checksum_xor) {
+        std::stringstream msg;
+        msg << "checksum failure in record " << std::dec << recordSeq
+            << " file: " << hex(checksum) << " sum: " << checksum_sum << " xor: " << checksum_xor;
+#ifdef DEBUG_FLIGHTS
+        std::cout << msg.str() << std::endl;
+#endif
+        throw std::runtime_error{msg.str()};
+    }
+
+#ifdef DEBUG_FLIGHTS
+        std::cout << "checksum_sum: " << hex(checksum_sum) << "\n";
+        std::cout << "checksum_xor: " << hex(checksum_xor) << "\n";
+        std::cout << "stream checksum: " << hex(checksum) << "\n";
+#endif
+
+    // special test for the MARK value.
+    switch (m_values[EDMFlightRecord::MARK_IDX]) {
+        case 0x02:
+            isFast = true;
+            break;
+        case 0x03:
+            isFast = false;
+            break;
+    }
+
+
+    if (m_flightRecCompletionCb) {
+        EDMFlightRecord fr(recordSeq, isFast);
+        fr.apply(m_values);
+        m_flightRecCompletionCb(fr);
+    }
+}
+
+void EDMFlightFile::parseOldFlightDataRec(std::istream &stream, int recordSeq, bool& isFast)
+{
+    auto startOff = stream.tellg();
+#ifdef DEBUG_FLIGHTS
+    std::cout << "-----------------------------------\n";
+    std::cout << "recordSeq: " << recordSeq << "\n";
+    std::cout << "start offset: " << std::hex << startOff << std::dec << "\n";
+#endif
+
+    // A pair of bitmaps, which should be identical
+    // They indicate which bytes of the data bitmap are populated
+    std::vector<std::uint8_t> bmPopMap(2);
+    stream.read(reinterpret_cast<char *>(bmPopMap.data()), 2 * sizeof(uint8_t));
+
+#ifdef DEBUG_FLIGHTS
+    std::cout << "bmPopMap[0]: " << std::hex << bmPopMap[0] << "   bmPopMap[1]: " << bmPopMap[1]
+              << std::dec << "\n";
+    std::cout << std::flush;
+#endif
+
+    if (bmPopMap[0] != bmPopMap[1]) {
+        std::stringstream msg;
+        msg << "bmPopMaps don't match (record: " << std::dec << recordSeq << " offset: " << std::hex
+            << (stream.tellg() - static_cast<std::streamoff>(2L));
+#ifdef DEBUG_FLIGHTS
+        std::cout << msg.str() << std::endl;
+#endif
+        throw std::runtime_error{msg.str()};
+    }
+    std::bitset<8> flags{ntohs(bmPopMap[0])};
+
+    // a byte indicating whether we should just repeat the previous data record
+    // we don't have to do anything.
+    char repeatCount;
+    stream.read(&repeatCount, 1);
+    if (repeatCount) {
+        return;
+    }
+
+    // The next few bytes indicate which measurements are available
+    std::bitset<48> fieldMap;
+    for (int i = 0; i < 6; ++i) {
+        if (flags[i]) {
+            char val;
+            stream.read(&val, 1);
+            for (int k = 0; k < 8; ++k) {
+                fieldMap.set(i * 8 + k,
+                             val & (1 << k)); // set the proper bit to 1
+            }
+        }
+    }
+
+    // Now we have scale flags for the EGTs
+    std::bitset<16> scaleMap;
+    for (int i = 6; i < 8; ++i) {
+        if (flags[i]) {
+            char val;
+            stream.read(&val, 1);
+            for (int k = 0; k < 8; ++k) {
+                scaleMap.set((i-6) * 8 + k,
+                             val & (1 << k)); // set the proper bit to 1
+            }
+        }
+    }
+
+    // The measurements are differences from the previous value. This indicates
+    // whether it should be added to or subtr
+    // Note that we skip bytes 6 & 7 - they are the high bytes of the EGTs and
+    // aren't used.
+    std::bitset<48> signMap;
+    for (int i = 0; i < 6; ++i) {
+        if (flags[i]) {
+            char val;
+            stream.read(&val, 1);
+            for (int k = 0; k < 8; ++k) {
+                signMap.set(i * 8 + k,
+                            val & (1 << k)); // set the proper bit to 1
+            }
+        }
+    }
+
+#ifdef DEBUG_FLIGHTS
+    std::cout << "repeatCount: " << hex(repeatCount) << "\n";
+    {
+        //std::cout << "fieldMap: b" << fieldMap << "\n";
+        for (int count = 0, i = fieldMap.size()/8-1; i>=0; i--) {
+            std::cout << " Byte " << hex(i) << "  ";
+        }
+        std::cout << "\n";
+        for(int count = 0, i = fieldMap.size()-1; i>=0; i--) {
+            std::cout << fieldMap[i];
+            if (++count == 8) {std::cout << " "; count = 0;}
+        }
+        std::cout << "\n";
+        //std::cout << "signMap: b" << signMap << "\n";
+        for(int count = 0, i = scaleMap.size()-1; i>=0; i--) {
+            std::cout << scaleMap[i];
+            if (++count == 8) {std::cout << " "; count = 0;}
+        }
+        std::cout << "\n"
+        //std::cout << "signMap: b" << signMap << "\n";
+        for(int count = 0, i = signMap.size()-1; i>=0; i--) {
+            std::cout << signMap[i];
+            if (++count == 8) {std::cout << " "; count = 0;}
+        }
+        std::cout << "\n";
+    }
+    std::cout << "values to read: " << std::dec << fieldMap.count() << "\n";
+#endif
+
+    if (recordSeq == 0) {
+        m_stdRecs = 0;
+        m_fastRecs = 0;
+        std::vector<int> default_values(48, 0xF0);
+        std::vector<int> specialdefaults{30, 42};
+        for (auto i : specialdefaults)
+            default_values[i] = 0; // special cases with defaults of 0x00 instead of 0xF0
+
+        m_values = default_values;
+    }
+
+#ifdef DEBUG_FLIGHTS
+    std::cout << "values start offset: " << std::hex << stream.tellg() << std::dec << "\n";
+    int printCount = 0;
+#endif
+
+    for (int k = 0; k < fieldMap.size(); ++k) {
+        if (fieldMap[k]) {
+            unsigned char diff;
+            stream.read(reinterpret_cast<char *>(&diff), 1);
+#ifdef DEBUG_FLIGHTS
+            std::cout << "[" << k << ":0x" << hex(diff) << "]";
+            if (++printCount%16 == 0) {
+                std::cout << "\n";
+            }
+#endif
+            // scale single/left EGT
+            if (k < 8) {
+                if (scaleMap[k]) diff*=16;
+            }
+            // scale right EGT
+            if (k >= 24 && k <=29) {
+                if (scaleMap[k-16]) diff*=16;
+            }
             signMap[k] ? m_values[k] -= diff : m_values[k] += diff;
         } else if (recordSeq == 0) {
             m_values[k] = 0;

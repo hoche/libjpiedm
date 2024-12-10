@@ -53,6 +53,7 @@ class EDMFlightFile
     virtual void parseFileHeaders(std::istream &stream);
     virtual void parseFlightHeader(std::istream &stream, int flightId);
     virtual void parseFlightDataRec(std::istream &stream, int recordId, bool& isFast);
+    virtual void parseOldFlightDataRec(std::istream &stream, int recordId, bool& isFast);
     virtual void parseFileFooters(std::istream &stream);
 
   private:
