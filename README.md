@@ -79,7 +79,6 @@ change is submitted. These are currently set up to run on Linux, Windows, and OS
 
 ## Known Issues
 
-* It can detect old-style file formats (based on the size of the $C header, not on a JPI release
-  version), but doesn't currently parse the shorter (48-element) records. A fix is in the works.
+* It doesn't parse the old-style file formats.
 * The multiengine values are just guesses.
 
