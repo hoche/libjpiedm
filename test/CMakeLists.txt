@@ -1,3 +1,13 @@
+add_test(NAME 830_6cyl-run
+    COMMAND parseedmlog -o 830_6cyl.out
+    ${CMAKE_CURRENT_SOURCE_DIR}/830_6cyl.jpi)
+
+
+add_test(830_6cyl-cmp
+    ${CMAKE_COMMAND} -E compare_files
+    830_6cyl.out
+    ${CMAKE_CURRENT_SOURCE_DIR}/830_6cyl.expected)
+
 add_test(NAME 930_6cyl-run
     COMMAND parseedmlog -o 930_6cyl.out
     ${CMAKE_CURRENT_SOURCE_DIR}/930_6cyl.jpi)
@@ -17,10 +27,17 @@ add_test(tool_build
 
 set_tests_properties(tool_build
     PROPERTIES FIXTURES_SETUP tool_fixture)
+
 set_tests_properties(930_6cyl-run
     PROPERTIES FIXTURES_REQUIRED tool_fixture)
-
 set_tests_properties(930_6cyl-run
     PROPERTIES FIXTURES_SETUP 930_6cyl_fixture)
 set_tests_properties(930_6cyl-cmp
     PROPERTIES FIXTURES_REQUIRED 930_6cyl_fixture)
+
+set_tests_properties(830_6cyl-run
+    PROPERTIES FIXTURES_REQUIRED tool_fixture)
+set_tests_properties(830_6cyl-run
+    PROPERTIES FIXTURES_SETUP 930_6cyl_fixture)
+set_tests_properties(830_6cyl-cmp
+    PROPERTIES FIXTURES_REQUIRED 830_6cyl_fixture)

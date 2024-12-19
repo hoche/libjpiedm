@@ -101,7 +101,10 @@ The following are notes from the old jpihack.c code about what the bits represen
     *** d and b may be swapped (but seem to exist in tandem)
     *** m, p and i may be swapped among themselves.
 
-#### $P - Unknown
+#### $P - Version?
+
+This may be a protocol version. Old-format files do not seem to have this;
+new ones always have it set to the value "2".
 
 *Changing this value (and recalculating its checksum) results in EZTrends
 reporting the file as corrupt.*
@@ -180,8 +183,6 @@ data records, extra byte, and so on.
 
 The first flight header follows immediately after the $L record.
 
-#### New format
-
      7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |         flight number         |
@@ -190,48 +191,33 @@ The first flight header follows immediately after the $L record.
     |                               |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |          unknown[0]           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          unknown[1]           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          unknown[2]           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          unknown[3]           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          unknown[4]           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          unknown[5]           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          unknown[7]           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          unknown[7]           |
+    +      (variable length, up     +
+    |         to unknown[7])        |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |           interval            |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |      year   |  mo   |  day    |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |   hr    |   min     |  sec/2  |
-    +-------------------------------/
+    +-------------------------------+
+    |  checksum   |
+    +-------------/
 
-#### Old format
+In the original format, there was only 1 field in the
+"unknown" array. In later formats there can be up to 8.
 
-     7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |         flight number         |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |            flags              |
-    |                               |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          unknown[0]           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |           interval            |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |      year   |  mo   |  day    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |   hr    |   min     |  sec/2  |
-    +-------------------------------/
-
+- There is always at least one element in the "unknown" array.
+- If it's a 900+, it has at least two extra elements (making 3).
+- If it's a 900+ with a build greater than 880, it has one more (making 4).
+- At some point after that, it went to 7. Unfortunately, I don't know
+when.
 
 The interval field is in seconds.
+
+The checksum is the same checksum used in the data records:
+
+- in very old EDMs, this is an XOR of all the bytes in the record
+- in most EDMs, this is the sum of every byte in the record. The sum is then negated.
 
 ### Data records
 
@@ -248,125 +234,173 @@ The bits in the bitmap represent the following measurements:
 
 *'?' means unknown, but it was set*
 
-    byte 0
-    [0]   EGT1 (left engine) low byte
-    [1]   EGT2 (left engine) low byte
-    [2]   EGT3 (left engine) low byte
-    [3]   EGT4 (left engine) low byte
-    [4]   EGT5 (left engine) low byte
-    [5]   EGT6 (left engine) low byte
-    [6]   T1?
-    [7]   T2?
+*Elements with '1' after the text part of the descriptor are either the single engine or the left engine in twins*
+*Elements with '2' after the text part are the right engine in twins*
+
+*Elements ending in 'l' are the low byte of a multibyte value (usually EGTs or TITs)*
+*Elements ending in 'h' are the low byte of a multibyte value*
+
+    byte 0 (high values are in byte 6)
+    [0]   EGT1.1.l (left engine, low byte)
+    [1]   EGT1.2.l
+    [2]   EGT1.3.l
+    [3]   EGT1.4.l
+    [4]   EGT1.5.l
+    [5]   EGT1.6.l
+    [6]   TIT1.1.l
+    [7]   TIT1.2.l
 
     byte 1
-    [8]   CHT1 (left engine)
-    [9]   CHT2 (left engine)
-    [10]  CHT3 (left engine)
-    [11]  CHT4 (left engine)
-    [12]  CHT5 (left engine)
-    [13]  CHT6 (left engine)
-    [14]  CLD
-    [15]  OILT
+    [8]   CHT1.1
+    [9]   CHT1.2
+    [10]  CHT1.3
+    [11]  CHT1.4
+    [12]  CHT1.5
+    [13]  CHT1.6
+    [14]  CLD1 
+    [15]  OILT1
 
     byte 2 
     [16]  MARK (see below)
-    [17]  Oil Pressure
-    [18]  CRB
-    [19]  IAT  *maybe (intake air temp?)*
-    [20]  Volts
+    [17]  OILP1 (oil pressure)
+    [18]  CRB1  (carb temp or maybe compressor dischange temp)
+    [19]  IAT1/MP2  (induction air temp) (right manifold Pressure, 760 only)
+    [20]  VOLTS1
     [21]  OAT
-    [22]  USD
-    [23]  FF
+    [22]  FUSED1 (fuel used)
+    [23]  FF1 (fuel flow)
 
-    byte 3 
-    [24]  EGTR1 (right engine) low byte
-    [25]  EGTR2 (right engine) low byte
-    [26]  EGTR3 (right engine) low byte
-    [27]  EGTR4 (right engine) low byte
-    [28]  EGTR5 (right engine) low byte
-    [29]  EGTR6 (right engine) low byte
-    [30]  HP and/or RT1?
-    [31]  maybe RT2?
+    byte 3  (high values are in byte 7)
+    [24]  EGT2.1.l (right engine, low byte)
+    [25]  EGT2.2.l
+    [26]  EGT2.3.l
+    [27]  EGT2.4.l
+    [28]  EGT2.5.l
+    [29]  EGT2.6.l
+    [30]  HP (single engine), TIT2.1.l (twin)
+    [31]  TIT2.2.l
 
     byte 4 
-    [32] - CHTR1 (right engine) 
-    [33] - CHTR2 (right engine)
-    [34] - CHTR3 (right engine)
-    [35] - CHTR4 (right engine)
-    [36] - CHTR5 (right engine)
-    [37] - CHTR6 (right engine)
-    [38] - RCLD (right engine)
-    [39] - ROILT (right engine)
+    [32] - CHT2.1
+    [33] - CHT2.2
+    [34] - CHT2.3
+    [35] - CHT2.4
+    [36] - CHT2.5
+    [37] - CHT2.6
+    [38] - CLD2
+    [39] - OILT2
 
     byte 5
-    [40]  MAP
-    [41]  RPM low byte (left engine)
-    [42]  RPM high byte (left engine)
-    [43]  RIAT (right engine)
-    [44]  - *maybe RPM low byte for right engine?*
-    [45]  - *maybe RPM high byte for right engine?*
-    [46]  RUSD
-    [47]  RFF
+    [40]  MAP1
+    [41]  RPM1.l
+    [42]  RPM1.h
+    [43]  RPM2.l
+    [44]  RPM2.h, HYDP12
+    [45]  HYDP11
+    [46]  FUSED1.2
+    [47]  FF2.1
 
     ---------- end of 48-bit (old version) bitmap ---------
 
-    byte 6
-    [48]  EGT1 high byte
-    [49]  EGT2 high byte
-    [50]  EGT3 high byte
-    [51]  EGT4 high byte
-    [52]  EGT5 high byte
-    [53]  EGT6 high byte
-    [54]  -
-    [55]  -
+    byte 6 (low values are in byte 0)
+    [48]   EGT11.h (left engine) high byte
+    [49]   EGT12.h (left engine) high byte
+    [50]   EGT13.h (left engine) high byte
+    [51]   EGT14.h (left engine) high byte
+    [52]   EGT15.h (left engine) high byte
+    [53]   EGT16.h (left engine) high byte
+    [54]   TIT11.h (left engine) high byte
+    [55]   TIT12.h (left engine) high byte
 
-    byte 7
-    [56-63] -
+    byte 7 (low values are in byte 3)
+    [56]  EGT21.h (right engine, high byte)
+    [57]  EGT22.h
+    [58]  EGT23.h
+    [59]  EGT24.h
+    [60]  EGT25.h
+    [61]  EGT26.h
+    [62]  HP (single engine), TIT21.l (twin)
+    [63]  TIT22.l
 
     byte 8
-    [64] ?
-    [65] -
-    [66] -
-    [67] ?
-    [68] ?
-    [69] ?
-    [70] -
-    [71] ?
+    [64] AMPS1
+    [65] VOLTS2
+    [66] AMPS2
+    [67] FLVL11
+    [68] FLVL12
+    [69] FP1
+    [70] HP1
+    [71] FLVL13
 
     byte 9
     [72] -
     [73] -
     [74] -
-    [74] -
+    [74] TORQUE1
     [76] -
     [77] -
-    [78] hours low byte
-    [79] hours high byte
+    [78] HOURS1.l
+    [79] HOURS1.h
 
     byte 10 
     [80] -
     [81] -
     [82] -
     [83] ?
-    [84] ?
-    [85] Ground Speed
+    [84] FLVL14?
+    [85] Ground Speed?
     [86] ?
     [87] ?
 
     byte 11
-    [88-95] -
+    [88] MP2
+    [89] HP2
+    [90] IAT2
+    [91] FLVL21
+    [92] FLVL21
+    [93] FP2
+    [94] OILP2
+    [94] FLVL23
 
     byte 12 
-    [96-103] -
+    [96] UNK1.l
+    [97] UNK2.l
+    [98] TORQUE2
+    [99] TIT2
+    [100] UNK1.h
+    [101] UNK2.h
+    [102] HOURS2.l
+    [103] HOURS2.h
 
     byte 13 
-    [104-111] -
+    [104] EGT17.l
+    [105] EGT18.l
+    [106] EGT19.l
+    [107] FF22
+    [108] EGT17.h
+    [109] EGT18.h
+    [110] EGT19.h
+    [111] HYDP11
 
     byte 14 
-    [112-119] -
+    [112] EGT27.l
+    [113] EGT28.l
+    [114] EGT29.l
+    [115] FF23
+    [116] EGT27.h
+    [117] EGT28.h
+    [118] EGT29.h
+    [119] HYDP21
 
     byte 15 
-    [120-127] -
+    [120] CHT17
+    [121] CHT18
+    [122] CHT19
+    [123] HYDP12
+    [124] CHT27
+    [125] CHT28
+    [126] CHT29
+    [127] HYDP22
 
 
 The MARK value (bit 16) seems to indicate times of which the EDM wants to make a
