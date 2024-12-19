@@ -119,8 +119,8 @@ void printFlightData(std::istream& stream, int flightId, std::ostream& outStream
     jpi_edm::EDMFlightHeader hdr;
     time_t recordTime;
 
-    ff.setFileHeaderCompletionCb([&outStream](jpi_edm::EDMFileHeaderSet hs) {
-        hs.dump(outStream);
+    ff.setMetaDataCompletionCb([&outStream](jpi_edm::EDMMetaData md) {
+        md.dump(outStream);
     });
 
     ff.setFlightHeaderCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::EDMFlightHeader fh) {

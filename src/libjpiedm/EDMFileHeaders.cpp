@@ -22,8 +22,8 @@
  * EDMEDMFuelLimits
  *      Fueltank sizes and fuel flow scaling rates (K-factors)
  *
- * EDMPHeader
- *      Unknown header
+ * EDMProtoHeader
+ *      Protocol version
  *
  * EDMEDMTimeStamp
  *      The date and time the file was created for downloading from the EDM.
@@ -136,7 +136,6 @@ const uint32_t F_MARK = 0x00000001; // 1 bit always seems to exist
 void EDMConfigInfo::dump(std::ostream& outStream)
 {
     outStream << "EDMConfigInfo:" 
-              << "\n    old_file_format: " << (old_file_format ? "Yes" : "No")
               << "\n    edm_model: " << edm_model
               << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
               << "\n    unk1: " << unk1 << " 0x" << std::hex << unk1 << std::dec << " b" << std::bitset<32>(unk1)
@@ -148,8 +147,6 @@ void EDMConfigInfo::dump(std::ostream& outStream)
     outStream << "Temperatures for CHT, EGT, and TIT are in " << (flags & F_TEMP_IN_F ? "F" : "C")
               << "\n";
 }
-
-bool EDMConfigInfo::tempInC() { return ((flags & F_TEMP_IN_F) == 0); }
 
 /**
  * EDMFuelLimits
@@ -176,9 +173,9 @@ void EDMFuelLimits::dump(std::ostream& outStream)
 }
 
 /**
- * EDMPHeader
+ * EDMProtoHeader
  */
-void EDMPHeader::apply(std::vector<unsigned long> values)
+void EDMProtoHeader::apply(std::vector<unsigned long> values)
 {
     if (values.size() < 1) {
         throw std::invalid_argument{"Incorrect number of arguments in $P line"};
@@ -186,8 +183,8 @@ void EDMPHeader::apply(std::vector<unsigned long> values)
     value = values[0];
 }
 
-void EDMPHeader::dump(std::ostream& outStream) {
-    outStream << "EDM P Header:" << "\n    value: " << value << "\n";
+void EDMProtoHeader::dump(std::ostream& outStream) {
+    outStream << "EDM ProtoHeader:" << "\n    value: " << value << "\n";
 }
 
 /**
@@ -214,13 +211,51 @@ void EDMTimeStamp::dump(std::ostream& outStream)
               << "\n    flight_num: " << flight_num << "\n";
 }
 
-void EDMFileHeaderSet::dump(std::ostream& outStream)
+bool EDMMetaData::isTwin() {
+    return (m_configInfo.edm_model==760 || m_configInfo.edm_model==960);
+}
+
+int EDMMetaData::protoVersion()
+{
+    // peel out twins first
+    if (m_configInfo.edm_model == 760) {
+        return PROTO_2;
+    }
+    if (m_configInfo.edm_model == 960) {
+        return PROTO_5;
+    }
+
+    if (m_configInfo.edm_model < 900) {
+        if (m_protoHeader.value < 2) {
+            return PROTO_1; // old 700 or 800
+        }
+        return PROTO_4; // updated 700 or 800, has proto header
+    }
+
+    // 900+. check firmware version
+    if (m_configInfo.firmware_version <= 108) {
+        return PROTO_1;
+    }
+
+    return PROTO_4;
+}
+
+bool EDMMetaData::isOldRecFormat() {
+    return (protoVersion() == PROTO_1 || protoVersion() == PROTO_2);
+}
+
+bool EDMMetaData::tempInC() {
+    return ((m_configInfo.flags & F_TEMP_IN_F) == 0);
+}
+
+void EDMMetaData::dump(std::ostream& outStream)
 {
     outStream << "Tailnumber: " << m_tailNum << "\n";
+    outStream << "Old Rec Format: " << (isOldRecFormat() ? "yes" : "no") << "\n";
     m_configLimits.dump(outStream);
     m_configInfo.dump(outStream);
     m_fuelLimits.dump(outStream);
-    m_PHeader.dump(outStream);
+    m_protoHeader.dump(outStream);
     m_timeStamp.dump(outStream);
 }
 

@@ -24,7 +24,7 @@ class EDMFlightFile
     EDMFlightFile(){};
     virtual ~EDMFlightFile(){};
 
-    virtual void setFileHeaderCompletionCb(std::function<void(EDMFileHeaderSet&)> cb);
+    virtual void setMetaDataCompletionCb(std::function<void(EDMMetaData&)> cb);
     virtual void setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader&)> cb);
     virtual void setFlightRecordCompletionCb(std::function<void(EDMFlightRecord&)> cb);
     virtual void setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb);
@@ -53,17 +53,16 @@ class EDMFlightFile
     virtual void parseFileHeaders(std::istream &stream);
     virtual void parseFlightHeader(std::istream &stream, int flightId);
     virtual void parseFlightDataRec(std::istream &stream, int recordId, bool& isFast);
-    virtual void parseOldFlightDataRec(std::istream &stream, int recordId, bool& isFast);
     virtual void parseFileFooters(std::istream &stream);
 
   private:
-    EDMFileHeaderSet m_fileHeaderSet;
+    EDMMetaData m_metaData;
     std::vector<std::pair<int, long>> m_flightDataCounts;
     std::vector<int> m_values; // storage for the previous values so we can diff them
     int m_stdRecs;
     int m_fastRecs;
 
-    std::function<void(EDMFileHeaderSet&)> m_fileHeaderCompletionCb;
+    std::function<void(EDMMetaData&)> m_metaDataCompletionCb;
     std::function<void(EDMFlightHeader&)> m_flightHeaderCompletionCb;
     std::function<void(EDMFlightRecord&)> m_flightRecCompletionCb;
     std::function<void(unsigned long, unsigned long)> m_flightCompletionCb;

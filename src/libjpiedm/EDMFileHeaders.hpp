@@ -116,10 +116,8 @@ class EDMConfigInfo : public EDMFileHeader
     virtual ~EDMConfigInfo(){};
     virtual void apply(std::vector<unsigned long> values);
     virtual void dump(std::ostream& outStream);
-    virtual bool tempInC();
 
   public:
-    bool old_file_format{false}; // not sure how to figure this out
     unsigned long edm_model{0};
     uint32_t flags{0};
     unsigned long unk1{0};
@@ -167,11 +165,11 @@ class EDMFuelLimits : public EDMFileHeader
  * Example:
  * $P, 2*6E
  */
-class EDMPHeader : public EDMFileHeader
+class EDMProtoHeader : public EDMFileHeader
 {
   public:
-    EDMPHeader(){};
-    virtual ~EDMPHeader(){};
+    EDMProtoHeader(){};
+    virtual ~EDMProtoHeader(){};
     virtual void apply(std::vector<unsigned long> values);
     virtual void dump(std::ostream& outStream);
 
@@ -209,20 +207,31 @@ class EDMTimeStamp : public EDMFileHeader
  * @brief Collection of all the flight headers that can be in an EDM file.
  *
  */
-class EDMFileHeaderSet
+class EDMMetaData
 {
   public:
-    EDMFileHeaderSet(){};
-    virtual ~EDMFileHeaderSet(){};
+    EDMMetaData(){};
+    virtual ~EDMMetaData(){};
 
     virtual void dump(std::ostream& outStream);
+
+    static const int PROTO_1 = 0x01; // <900
+    static const int PROTO_2 = 0x02; // 760
+    static const int PROTO_3 = 0x04; // 900/930, pre-version 108
+    static const int PROTO_4 = 0x08; // 900/930, later firmware, or has protocol header
+    static const int PROTO_5 = 0x10; // 960
+
+    bool isTwin();
+    bool tempInC();
+    int protoVersion();
+    bool isOldRecFormat();
 
   public:
     std::string m_tailNum{""};
     EDMConfigLimits m_configLimits;
     EDMConfigInfo m_configInfo;
     EDMFuelLimits m_fuelLimits;
-    EDMPHeader m_PHeader;
+    EDMProtoHeader m_protoHeader;
     EDMTimeStamp m_timeStamp;
 };
 
