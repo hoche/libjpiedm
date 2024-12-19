@@ -49,7 +49,7 @@ class EDMFlightFile
     void validateHeaderChecksum(int lineno, const char *line);
     bool validateBinaryChecksum(std::istream& stream, std::iostream::off_type startOff, std::iostream::off_type endOff,
             unsigned char checksum);
-    long detectFlightHeaderSize(std::istream &stream);
+    std::streamoff detectFlightHeaderSize(std::istream &stream);
 
     bool parse(std::istream &stream);
 

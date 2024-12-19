@@ -291,7 +291,7 @@ bool EDMFlightFile::validateBinaryChecksum(std::istream& stream, std::iostream::
     return true;
 }
 
-long EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
+std::streamoff EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
 {
     auto startOff{stream.tellg()};
 
