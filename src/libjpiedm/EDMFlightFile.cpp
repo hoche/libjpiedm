@@ -296,7 +296,7 @@ long EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
     auto startOff{stream.tellg()};
 
     bool found = false;
-    long offset;
+    std::streamoff offset;
     unsigned char checksum;
     for (offset = 28; offset >= 14; offset-=2) {
         stream.seekg(startOff + offset, std::ios_base::beg);
@@ -338,7 +338,7 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, long h
     flightHeader.flags = htons(flags[0]) | (htons(flags[1]) << 16);
 
     // skip unknowns
-    long offset = startOff + headerSize - 6L;
+    std::streamoff offset = startOff + headerSize - 6L;
     stream.seekg(offset, std::ios_base::beg);
 
     stream.read(reinterpret_cast<char*>(&flightHeader.interval), 2);
