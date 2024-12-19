@@ -215,16 +215,22 @@ class EDMMetaData
 
     virtual void dump(std::ostream& outStream);
 
-    static const int PROTO_1 = 0x01; // <900
-    static const int PROTO_2 = 0x02; // 760
-    static const int PROTO_3 = 0x04; // 900/930, pre-version 108
-    static const int PROTO_4 = 0x08; // 900/930, later firmware, or has protocol header
-    static const int PROTO_5 = 0x10; // 960
+    static const int PROTO_V1 = 0x01; // <900
+    static const int PROTO_V2 = 0x02; // 760
+    static const int PROTO_V3 = 0x04; // 900/930, pre-version 108
+    static const int PROTO_V4 = 0x08; // 900/930, later firmware, or has protocol header
+    static const int PROTO_V5 = 0x10; // 960
+
+    static const int HEADER_V1 = 0x01; // 1 word unknown[] array
+    static const int HEADER_V2 = 0x02; // 3 word unknown[] array
+    static const int HEADER_V3 = 0x04; // 4 word unknown[] array
+    static const int HEADER_V4 = 0x08; // 8 word unknown[] array
 
     bool isTwin();
     bool tempInC();
     int protoVersion();
     bool isOldRecFormat();
+    int guessFlightHeaderVersion();
 
   public:
     std::string m_tailNum{""};

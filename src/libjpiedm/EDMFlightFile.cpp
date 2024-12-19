@@ -291,10 +291,29 @@ bool EDMFlightFile::validateBinaryChecksum(std::istream& stream, std::iostream::
     return true;
 }
 
-void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
+long EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
 {
-    const bool oldVersion = m_metaData.isOldRecFormat();
+    auto startOff{stream.tellg()};
 
+    bool found = false;
+    long offset;
+    unsigned char checksum;
+    for (offset = 28; offset >= 14; offset-=2) {
+        stream.seekg(startOff + offset, std::ios_base::beg);
+        stream.read(reinterpret_cast<char*>(&checksum), 1);
+        if (validateBinaryChecksum(stream, startOff, startOff+offset, checksum)) {
+            found = true;
+            break;
+        }
+    }
+
+    // reset the stream
+    stream.seekg(startOff, std::ios_base::beg);
+    return (found ? offset : 0);
+}
+
+void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, long headerSize)
+{
     auto startOff{stream.tellg()};
 #ifdef DEBUG_FLIGHT_HEADERS
     std::cout << "Flight Header start offset: 0x" << std::hex << startOff << std::dec << std::endl;
@@ -319,9 +338,8 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
     flightHeader.flags = htons(flags[0]) | (htons(flags[1]) << 16);
 
     // skip unknowns
-    // XXX fixme: this varies depending on the type of unit and firmware
-    int offset = oldVersion ? 2 : 16;
-    stream.seekg(offset, std::ios_base::cur);
+    long offset = startOff + headerSize - 6L;
+    stream.seekg(offset, std::ios_base::beg);
 
     stream.read(reinterpret_cast<char*>(&flightHeader.interval), 2);
     flightHeader.interval = ntohs(flightHeader.interval);
@@ -559,13 +577,20 @@ bool EDMFlightFile::parse(std::istream &stream)
 {
     stream.seekg(0);
     parseFileHeaders(stream);
+
+    int headerSize = detectFlightHeaderSize(stream);
+
+#ifdef DEBUG_FLIGHT_HEADERS
+    std::cout << "Detect flight header size: " << headerSize << std::endl;
+#endif
+
     for (auto &&flightDataCount : m_flightDataCounts) {
         auto startOff{stream.tellg()};
 #ifdef DEBUG_PARSE
         std::cout << "======== startOff: " << std::hex << startOff << std::dec << "\n";
 #endif
 
-        parseFlightHeader(stream, flightDataCount.first);
+        parseFlightHeader(stream, flightDataCount.first, headerSize);
 
         std::vector<int> values{128};
         unsigned long recordSeq{0};

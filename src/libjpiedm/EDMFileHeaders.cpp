@@ -210,29 +210,42 @@ int EDMMetaData::protoVersion()
 {
     // peel out twins first
     if (m_configInfo.edm_model == 760) {
-        return PROTO_2;
+        return PROTO_V2;
     }
     if (m_configInfo.edm_model == 960) {
-        return PROTO_5;
+        return PROTO_V5;
     }
 
     if (m_configInfo.edm_model < 900) {
         if (m_protoHeader.value < 2) {
-            return PROTO_1; // old 700 or 800
+            return PROTO_V1; // old 700 or 800
         }
-        return PROTO_4; // updated 700 or 800, has proto header
+        return PROTO_V4; // updated 700 or 800, has proto header
     }
 
     // 900+. check firmware version
     if (m_configInfo.firmware_version <= 108) {
-        return PROTO_1;
+        return PROTO_V1;
     }
 
-    return PROTO_4;
+    return PROTO_V4;
 }
 
 bool EDMMetaData::isOldRecFormat() {
-    return (protoVersion() == PROTO_1 || protoVersion() == PROTO_2);
+    return (protoVersion() == PROTO_V1 || protoVersion() == PROTO_V2);
+}
+
+int EDMMetaData::guessFlightHeaderVersion() {
+    if (m_protoHeader.value > 1 || m_configInfo.edm_model >= 900) {
+        if (m_configInfo.build_maj > 2010) {
+            return HEADER_V4;
+        }
+        if (m_configInfo.build_maj > 880) {
+            return HEADER_V3;
+        }
+        return HEADER_V2;
+    }
+    return HEADER_V1;
 }
 
 bool EDMMetaData::tempInC() {
