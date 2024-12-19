@@ -121,7 +121,7 @@ std::vector<unsigned long> EDMFlightFile::split_header_line(int lineno, std::str
     return values;
 }
 
-void EDMFlightFile::validate_header_checksum(int lineno, const char *line)
+void EDMFlightFile::validateHeaderChecksum(int lineno, const char *line)
 {
     if (!line) {
         std::stringstream msg;
@@ -182,8 +182,7 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
         auto newEnd = std::strrchr(line, '\r');
         *newEnd = '\0';
 
-        // validate the checksum
-        validate_header_checksum(lineno, line);
+        validateHeaderChecksum(lineno, line);
 
         // check to see if the line starts with '$'
         if (line[0] != '$') {
@@ -253,12 +252,52 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
     }
 }
 
+bool EDMFlightFile::validateBinaryChecksum(std::istream& stream, std::iostream::off_type startOff, std::iostream::off_type endOff,
+        unsigned char checksum)
+{
+    auto curLoc{stream.tellg()};
+
+    // checksum - go back to the start of the record and add or xor everything
+    // up to the end
+    unsigned char checksum_sum{0};
+    unsigned char checksum_xor{0};
+
+    stream.seekg(startOff);
+    auto len = endOff - startOff;
+    char* buffer = new char[len];
+    try {
+    	stream.read(buffer, len);
+    } catch ([[maybe_unused]] const std::exception& e) {
+    	delete[] buffer;
+	throw;
+    }
+    for (int i = 0; i < len; ++i) {
+        checksum_sum += buffer[i];
+        checksum_xor ^= buffer[i];
+    }
+    delete[] buffer;
+    checksum_sum = -checksum_sum;
+
+#ifdef DEBUG_FLIGHTS
+        std::cout << "checksum_sum: " << hex(checksum_sum) << "\n";
+        std::cout << "checksum_xor: " << hex(checksum_xor) << "\n";
+        std::cout << "stream checksum: " << hex(checksum) << "\n";
+#endif
+
+    stream.seekg(curLoc, std::ios_base::beg);
+    if (checksum != checksum_sum && checksum != checksum_xor) {
+        return false;
+    }
+    return true;
+}
+
 void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
 {
     const bool oldVersion = m_metaData.isOldRecFormat();
 
+    auto startOff{stream.tellg()};
 #ifdef DEBUG_FLIGHT_HEADERS
-    std::cout << "Flight Header start: 0x" << std::hex << stream.tellg() << std::dec << std::endl;
+    std::cout << "Flight Header start offset: 0x" << std::hex << startOff << std::dec << std::endl;
 #endif
 
     EDMFlightHeader flightHeader;
@@ -317,14 +356,24 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
                   << "\n";
 #endif
 
+    auto endOff{stream.tellg()};
+
 #ifdef DEBUG_FLIGHT_HEADERS
-    std::cout << "Flight Header end: 0x" << std::hex << stream.tellg() << std::dec << std::endl;
+    std::cout << "\n";
+    std::cout << "Flight Header end offset: " << std::hex << endOff << std::dec << "\n";
+    std::cout << std::flush;
 #endif
 
-
-    // XXX temporary fix - skip the trailing byte. Is it a checksum?
     unsigned char checksum;
     stream.read(reinterpret_cast<char*>(&checksum), 1);
+    if (!validateBinaryChecksum(stream, startOff, endOff, checksum)) {
+        std::stringstream msg;
+        msg << "checksum failure in flight header ";
+#ifdef DEBUG_FLIGHTS
+        std::cout << msg.str() << std::endl;
+#endif
+        throw std::runtime_error{msg.str()};
+    }
 
     if (m_flightHeaderCompletionCb) {
         m_flightHeaderCompletionCb(flightHeader);
@@ -337,7 +386,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
 
     int maskSize = oldFormat ? 1 : 2;
 
-    auto startOff = stream.tellg();
+    auto startOff{stream.tellg()};
 #ifdef DEBUG_FLIGHTS
     std::cout << "-----------------------------------\n";
     std::cout << "recordSeq: " << recordSeq << "\n";
@@ -462,7 +511,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
         }
     }
 
-    auto endOff = stream.tellg();
+    auto endOff{stream.tellg()};
 
 #ifdef DEBUG_FLIGHTS
     std::cout << "\n";
@@ -470,44 +519,16 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
     std::cout << std::flush;
 #endif
 
-    // checksum - go back to the start of the record and add or xor everything
-    // up to the end
-    unsigned char checksum_sum{0};
-    unsigned char checksum_xor{0};
-
-    stream.seekg(startOff);
-    auto len = endOff - startOff;
-    char* buffer = new char[len];
-    try {
-    	stream.read(buffer, len);
-    } catch ([[maybe_unused]] const std::exception& e) {
-    	delete[] buffer;
-	throw;
-    }
-    for (int i = 0; i < len; ++i) {
-        checksum_sum += buffer[i];
-        checksum_xor ^= buffer[i];
-    }
-    delete[] buffer;
-    checksum_sum = -checksum_sum;
-
     unsigned char checksum;
     stream.read(reinterpret_cast<char*>(&checksum), 1);
-    if (checksum != checksum_sum && checksum != checksum_xor) {
+    if (!validateBinaryChecksum(stream, startOff, endOff, checksum)) {
         std::stringstream msg;
-        msg << "checksum failure in record " << std::dec << recordSeq
-            << " file: " << hex(checksum) << " sum: " << checksum_sum << " xor: " << checksum_xor;
+        msg << "checksum failure in record " << std::dec << recordSeq;
 #ifdef DEBUG_FLIGHTS
         std::cout << msg.str() << std::endl;
 #endif
         throw std::runtime_error{msg.str()};
     }
-
-#ifdef DEBUG_FLIGHTS
-        std::cout << "checksum_sum: " << hex(checksum_sum) << "\n";
-        std::cout << "checksum_xor: " << hex(checksum_xor) << "\n";
-        std::cout << "stream checksum: " << hex(checksum) << "\n";
-#endif
 
     // special test for the MARK value.
     switch (m_values[EDMFlightRecord::MARK_IDX]) {

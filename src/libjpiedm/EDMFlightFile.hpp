@@ -46,7 +46,9 @@ class EDMFlightFile
      * Throws an exception if the header line was invalid or if the checksum
      * didn't match.
      */
-    virtual void validate_header_checksum(int lineno, const char *line);
+    virtual void validateHeaderChecksum(int lineno, const char *line);
+    virtual bool validateBinaryChecksum(std::istream& stream, std::iostream::off_type startOff, std::iostream::off_type endOff,
+            unsigned char checksum);
 
     virtual bool parse(std::istream &stream);
 
