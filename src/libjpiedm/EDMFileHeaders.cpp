@@ -79,24 +79,18 @@ void EDMConfigInfo::apply(std::vector<unsigned long> values)
     if (values.size() < 5) {
         throw std::invalid_argument{"Incorrect number of arguments in $C line"};
     }
-    if (values.size() < 9) {
-        short_header = true;
-    }
 
     edm_model = values[0];
     flags = (values[2] << 16) | (values[1] & 0x0000FFFF);
     unk1 = values[3];
 
-    if (short_header) {
-        firmware_version = values[4];
-        return;
+    // iterate backwards from end
+    auto rit = values.rbegin();
+    if (values.size() > 8) {
+        build_min = *rit++;
+        build_maj = *rit++;
     }
-
-    unk2 = values[4];
-    unk3 = values[5];
-    firmware_version = values[6];
-    build_maj = values[7];
-    build_min = values[8];
+    firmware_version = *rit++;
 }
 
 const uint32_t F_BAT = 0x00000001;
