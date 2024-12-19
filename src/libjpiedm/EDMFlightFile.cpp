@@ -338,7 +338,7 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
     flightHeader.flags = htons(flags[0]) | (htons(flags[1]) << 16);
 
     // skip unknowns
-    std::streamoff offset = startOff + headerSize - 6L;
+    std::streamoff offset = startOff + headerSize - std::streamoff(6L);
     stream.seekg(offset, std::ios_base::beg);
 
     stream.read(reinterpret_cast<char*>(&flightHeader.interval), 2);
