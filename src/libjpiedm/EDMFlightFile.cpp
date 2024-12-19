@@ -258,20 +258,14 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
     const bool oldVersion = m_metaData.isOldRecFormat();
 
 #ifdef DEBUG_FLIGHT_HEADERS
-    std::cout << "Flight Header start: " << std::hex << stream.tellg() << std::dec << std::endl;
-#endif
-
-    int readlen = oldVersion ? 7: 14;
-    std::vector<std::uint16_t> v(readlen);
-    stream.read(reinterpret_cast<char *>(v.data()), readlen * sizeof(uint16_t));
-
-#ifdef DEBUG_FLIGHT_HEADERS
-    std::cout << "Flight Header end: " << std::hex << stream.tellg() << std::dec << std::endl;
+    std::cout << "Flight Header start: 0x" << std::hex << stream.tellg() << std::dec << std::endl;
 #endif
 
     EDMFlightHeader flightHeader;
 
-    flightHeader.flight_num = ntohs(v[0]);
+    stream.read(reinterpret_cast<char*>(&flightHeader.flight_num), 2);
+    flightHeader.flight_num = ntohs(flightHeader.flight_num);
+
     if (flightHeader.flight_num != flightId) {
         std::stringstream msg;
         msg << "Flight IDs don't match. Offset: " << std::hex << (stream.tellg() - static_cast<std::streamoff>(4L));
@@ -281,17 +275,28 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
         throw std::runtime_error{msg.str()};
     }
 
-    flightHeader.flags = htons(v[1]) | (htons(v[2]) << 16);
+    uint16_t flags[2];
+    stream.read(reinterpret_cast<char*>(&flags), 4);
+    flightHeader.flags = htons(flags[0]) | (htons(flags[1]) << 16);
 
-    int offset = oldVersion ? 7 : 11;
-    flightHeader.interval = ntohs(v[offset++]);
-    uint16_t dt = ntohs(v[offset++]);
+    // skip unknowns
+    // XXX fixme: this varies depending on the type of unit and firmware
+    int offset = oldVersion ? 2 : 16;
+    stream.seekg(offset, std::ios_base::cur);
 
+    stream.read(reinterpret_cast<char*>(&flightHeader.interval), 2);
+    flightHeader.interval = ntohs(flightHeader.interval);
+
+    uint16_t dt;
+    stream.read(reinterpret_cast<char*>(&dt), 2);
+    dt = ntohs(dt);
     flightHeader.startDate.tm_mday = (dt & 0x1f);
     flightHeader.startDate.tm_mon = ((dt & 0x01ff) >> 5) - 1;
     flightHeader.startDate.tm_year = (dt >> 9) + 100;
 
-    uint16_t tm = ntohs(v[offset++]);
+    uint16_t tm;
+    stream.read(reinterpret_cast<char*>(&tm), 2);
+    tm = ntohs(tm);
     flightHeader.startDate.tm_sec = (tm & 0x1f) * 2;
     flightHeader.startDate.tm_min = (tm & 0x07ff) >> 5;
     flightHeader.startDate.tm_hour = (tm >> 11);
@@ -311,6 +316,11 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId)
                   << "  tm_isdst: " << flightHeader.startDate.tm_isdst
                   << "\n";
 #endif
+
+#ifdef DEBUG_FLIGHT_HEADERS
+    std::cout << "Flight Header end: 0x" << std::hex << stream.tellg() << std::dec << std::endl;
+#endif
+
 
     // XXX temporary fix - skip the trailing byte. Is it a checksum?
     unsigned char checksum;

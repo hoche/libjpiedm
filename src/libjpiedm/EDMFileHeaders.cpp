@@ -132,9 +132,6 @@ void EDMConfigInfo::dump(std::ostream& outStream)
     outStream << "EDMConfigInfo:" 
               << "\n    edm_model: " << edm_model
               << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
-              << "\n    unk1: " << unk1 << " 0x" << std::hex << unk1 << std::dec << " b" << std::bitset<32>(unk1)
-              << "\n    unk2: " << unk2 << " 0x" << std::hex << unk2 << std::dec << " b" << std::bitset<32>(unk2) 
-              << "\n    unk3: " << unk3 << " 0x" << std::hex << unk3 << std::dec << " b" << std::bitset<32>(unk3)
               << "\n    firmware_version: " << firmware_version
               << "\n    build: " << build_maj << "." << build_min
               << "\n";
