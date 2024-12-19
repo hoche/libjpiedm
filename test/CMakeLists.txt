@@ -1,12 +1,12 @@
-add_test(NAME NewSixCyl-run
-    COMMAND parseedmlog -o NewSixCylSample1.out
-    ${CMAKE_CURRENT_SOURCE_DIR}/930_six_cylinder_multiple_flights.jpi)
+add_test(NAME 930_6cyl-run
+    COMMAND parseedmlog -o 930_6cyl.out
+    ${CMAKE_CURRENT_SOURCE_DIR}/930_6cyl.jpi)
 
 
-add_test(NewSixCyl-cmp
+add_test(930_6cyl-cmp
     ${CMAKE_COMMAND} -E compare_files
-    NewSixCylSample1.out
-    ${CMAKE_CURRENT_SOURCE_DIR}/930_six_cylinder_multiple_flights.expected)
+    930_6cyl.out
+    ${CMAKE_CURRENT_SOURCE_DIR}/930_6cyl.expected)
 
 
 add_test(tool_build
@@ -17,10 +17,10 @@ add_test(tool_build
 
 set_tests_properties(tool_build
     PROPERTIES FIXTURES_SETUP tool_fixture)
-set_tests_properties(NewSixCyl-run
+set_tests_properties(930_6cyl-run
     PROPERTIES FIXTURES_REQUIRED tool_fixture)
 
-set_tests_properties(NewSixCyl-run
-    PROPERTIES FIXTURES_SETUP NewSixCyl_fixture)
-set_tests_properties(NewSixCyl-cmp
-    PROPERTIES FIXTURES_REQUIRED NewSixCyl_fixture)
+set_tests_properties(930_6cyl-run
+    PROPERTIES FIXTURES_SETUP 930_6cyl_fixture)
+set_tests_properties(930_6cyl-cmp
+    PROPERTIES FIXTURES_REQUIRED 930_6cyl_fixture)

@@ -1,4 +1,5 @@
 Tailnumber:  N12345
+Old Rec Format: no
 EDMConfigLimits:
     volts_hi: 150
     volts_lo: 120
@@ -9,7 +10,6 @@ EDMConfigLimits:
     oil_temp_hi: 245
     oil_temp_lo: 65535
 EDMConfigInfo:
-    old_file_format: No
     edm_model: 930
     flags: 4262590719 0xfe11f8ff b11111110000100011111100011111111
     unk1: 1560 0x618 b00000000000000000000011000011000
@@ -24,7 +24,7 @@ EDMFuelLimits:
     aux_tank_size: 34
     k_factor_2: 2921
     k_factor_1: 2921
-EDM P Header:
+EDM ProtoHeader:
     value: 2
 EDMTimeStamp:
     mon: 8
