@@ -312,7 +312,7 @@ std::streamoff EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
     return (found ? offset : 0);
 }
 
-void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, long headerSize)
+void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize)
 {
     auto startOff{stream.tellg()};
 #ifdef DEBUG_FLIGHT_HEADERS
@@ -578,7 +578,7 @@ bool EDMFlightFile::parse(std::istream &stream)
     stream.seekg(0);
     parseFileHeaders(stream);
 
-    int headerSize = detectFlightHeaderSize(stream);
+    std::streamoff headerSize = detectFlightHeaderSize(stream);
 
 #ifdef DEBUG_FLIGHT_HEADERS
     std::cout << "Detect flight header size: " << headerSize << std::endl;

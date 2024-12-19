@@ -54,7 +54,7 @@ class EDMFlightFile
     bool parse(std::istream &stream);
 
     void parseFileHeaders(std::istream &stream);
-    void parseFlightHeader(std::istream &stream, int flightId, long headerSize);
+    void parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
     void parseFlightDataRec(std::istream &stream, int recordId, bool& isFast);
     void parseFileFooters(std::istream &stream);
 
@@ -64,7 +64,6 @@ class EDMFlightFile
     std::vector<int> m_values; // storage for the previous values so we can diff them
     int m_stdRecs{0};
     int m_fastRecs{0};
-    int m_flightHeaderUnknownWordCount{1};
 
     std::function<void(EDMMetaData&)> m_metaDataCompletionCb;
     std::function<void(EDMFlightHeader&)> m_flightHeaderCompletionCb;
