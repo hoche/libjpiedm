@@ -74,18 +74,20 @@ void EDMConfigLimits::dump(std::ostream& outStream)
 
 void EDMConfigInfo::apply(std::vector<unsigned long> values)
 {
+    bool short_header{false};
+
     if (values.size() < 5) {
         throw std::invalid_argument{"Incorrect number of arguments in $C line"};
     }
     if (values.size() < 9) {
-        old_file_format = true;
+        short_header = true;
     }
 
     edm_model = values[0];
     flags = (values[2] << 16) | (values[1] & 0x0000FFFF);
     unk1 = values[3];
 
-    if (old_file_format) {
+    if (short_header) {
         firmware_version = values[4];
         return;
     }

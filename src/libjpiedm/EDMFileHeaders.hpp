@@ -119,7 +119,7 @@ class EDMConfigInfo : public EDMFileHeader
     virtual bool tempInC();
 
   public:
-    bool old_file_format{false};
+    bool old_file_format{false}; // not sure how to figure this out
     unsigned long edm_model{0};
     uint32_t flags{0};
     unsigned long unk1{0};
