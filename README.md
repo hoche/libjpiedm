@@ -5,10 +5,6 @@ libjpiedm is a C++ library for parsing data files from JPI EDM Engine Monitors.
 It is released under the Creative Commons "CC BY" license (except where otherwise
 noted).
 
-Some information, particularly about the headers and the old file data
-packing scheme are derived from the uncredited and unlicenced code found
-at http://www.geocities.ws/jpihack/jpihackcpp.txt
-
 ## Building
 
 To build (on every platform):
@@ -81,4 +77,10 @@ change is submitted. These are currently set up to run on Linux, Windows, and OS
 
 * It doesn't parse the old-style file formats.
 * The multiengine values are just guesses.
+
+## Credits
+
+Some information, particularly about the headers and the old file data
+packing scheme are derived from the uncredited and unlicenced code found
+at http://www.geocities.ws/jpihack/jpihackcpp.txt
 
