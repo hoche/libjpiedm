@@ -380,7 +380,7 @@ The bits in the bitmap represent the following measurements:
     [108] EGT7.h (Exhaust Gas Temperature, single/left engine, cylinder 7, high byte)
     [109] EGT8.h (Exhaust Gas Temperature, single/left engine, cylinder 8, high byte)
     [110] EGT9.h (Exhaust Gas Temperature, single/left engine, cylinder 9, high byte)
-    [111] HYDP1 (hydraulic pressure #1, single/left engine)
+    [111] HYD1 (hydraulic pressure #1, single/left engine)
 
     byte 14 
     [112] EGTR7.l (Exhaust Gas Temperature, right engine, cylinder 7, low byte)
@@ -390,17 +390,17 @@ The bits in the bitmap represent the following measurements:
     [116] EGTR7.h (Exhaust Gas Temperature, right engine, cylinder 7, high byte)
     [117] EGTR8.h (Exhaust Gas Temperature, right engine, cylinder 8, high byte)
     [118] EGTR9.h (Exhaust Gas Temperature, right engine, cylinder 9, high byte)
-    [119] HYDPR1 (hydraulic pressure #1, right engine)
+    [119] HYDR1 (hydraulic pressure #1, right engine)
 
     byte 15 
     [120] CHT7 (Cylinder Head Temperature, single/left engine, cylinder 7)
     [121] CHT8 (Cylinder Head Temperature, single/left engine, cylinder 8)
     [122] CHT9 (Cylinder Head Temperature, single/left engine, cylinder 9)
-    [123] HYDP2 (hydraulic pressure #2, single/left engine)
+    [123] HYD2 (hydraulic pressure #2, single/left engine)
     [124] CHTR7 (Cylinder Head Temperature, right engine, cylinder 7)
     [125] CHTR8 (Cylinder Head Temperature, right engine, cylinder 8)
     [126] CHTR9 (Cylinder Head Temperature, right engine, cylinder 9)
-    [127] HYDPR2 (hydraulic pressure #2, right engine)
+    [127] HYDR2 (hydraulic pressure #2, right engine)
 
 
 The MARK value (bit 16) seems to indicate times of which the EDM wants to make a
