@@ -247,8 +247,8 @@ The bits in the bitmap represent the following measurements:
     [3]   EGT4.l (Exhaust Gas Temperature, single/left engine, cylinder 4, low byte)
     [4]   EGT5.l (Exhaust Gas Temperature, single/left engine, cylinder 5, low byte)
     [5]   EGT6.l (Exhaust Gas Temperature, single/left engine, cylinder 6, low byte)
-    [6]   TIT1.l (Turbo Inlet Temperature, single/left engine, low byte)
-    [7]   TIT2.l (Turbo Inlet Temperature, single/left engine, low byte)
+    [6]   TIT1.l (Turbo Inlet Temperature #1, single/left engine, low byte)
+    [7]   TIT2.l (Turbo Inlet Temperature #2, single/left engine, low byte)
 
     byte 1
     [8]   CHT1 (Cylinder Head Temperature, single/left engine, cylinder 1)
@@ -277,8 +277,8 @@ The bits in the bitmap represent the following measurements:
     [27]  EGTR4.l (Exhaust Gas Temperature, right engine, cylinder 4, low byte)
     [28]  EGTR5.l (Exhaust Gas Temperature, right engine, cylinder 5, low byte)
     [29]  EGTR6.l (Exhaust Gas Temperature, right engine, cylinder 6, low byte)
-    [30]  HP (single engine), TIT1.l (Turbo Inlet Temperature, low byte)
-    [31]  TIT2.l (Turbo Inlet Temperature, low byte)
+    [30]  HP (single engine), TIT1.l (Turbo Inlet Temperature #1, right engine, low byte)
+    [31]  TIT2.l (Turbo Inlet Temperature #2, right engine, low byte))
 
     byte 4 
     [32] - CHTR1 (Cylinder Head Temperature, right engine, cylinder 1)
@@ -309,8 +309,8 @@ The bits in the bitmap represent the following measurements:
     [51]  EGT4.h (Exhaust Gas Temperature, single/left engine, cylinder 4, high byte)
     [52]  EGT5.h (Exhaust Gas Temperature, single/left engine, cylinder 5, high byte)
     [53]  EGT6.h (Exhaust Gas Temperature, single/left engine, cylinder 6, high byte)
-    [54]  TITR.l  (Turbo Inlet Temperature, right engine, low byte)
-    [55]  TITR2.l  (Turbo Inlet Temperature, right engine, low byte)
+    [54]  TIT1.h  (Turbo Inlet Temperature #1, single/left engine, low byte)
+    [55]  TIT2.h  (Turbo Inlet Temperature #2, single/left engine, low byte)
 
     byte 7 (low values are in byte 3)
     [56]  EGTR1.h (Exhaust Gas Temperature, right engine, cylinder 1, high byte)
@@ -319,8 +319,8 @@ The bits in the bitmap represent the following measurements:
     [59]  EGTR4.h (Exhaust Gas Temperature, right engine, cylinder 4, high byte)
     [60]  EGTR5.h (Exhaust Gas Temperature, right engine, cylinder 5, high byte)
     [61]  EGTR6.h (Exhaust Gas Temperature, right engine, cylinder 6, high byte)
-    [62]  HP (single engine), TITR.h (Turbo Inlet Temperature, right engine, low byte)
-    [63]  TITR.h (Turbo Inlet Temperature, right engine, high byte)
+    [62]  HP (single engine), TITR1.h (Turbo Inlet Temperature #1, right engine, high byte)
+    [63]  TITR2.h (Turbo Inlet Temperature #2, right engine, high byte)
 
     byte 8
     [64] AMPS1
