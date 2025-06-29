@@ -277,8 +277,8 @@ The bits in the bitmap represent the following measurements:
     [27]  EGTR4.l (Exhaust Gas Temperature, right engine, cylinder 4, low byte)
     [28]  EGTR5.l (Exhaust Gas Temperature, right engine, cylinder 5, low byte)
     [29]  EGTR6.l (Exhaust Gas Temperature, right engine, cylinder 6, low byte)
-    [30]  HP (single engine), TIT1.l (Turbo Inlet Temperature #1, right engine, low byte)
-    [31]  TIT2.l (Turbo Inlet Temperature #2, right engine, low byte))
+    [30]  HP (single engine), TITR1.l (Turbo Inlet Temperature #1, right engine, low byte)
+    [31]  TITR2.l (Turbo Inlet Temperature #2, right engine, low byte))
 
     byte 4 
     [32] - CHTR1 (Cylinder Head Temperature, right engine, cylinder 1)
@@ -287,8 +287,8 @@ The bits in the bitmap represent the following measurements:
     [35] - CHTR4 (Cylinder Head Temperature, right engine, cylinder 4)
     [36] - CHTR5 (Cylinder Head Temperature, right engine, cylinder 5)
     [37] - CHTR6 (Cylinder Head Temperature, right engine, cylinder 6)
-    [38] - CLD2   (Engine cooling rate in degrees/min, right engine)
-    [39] - OILT2  (Oil Temperature, right engine)
+    [38] - CLDR   (Engine cooling rate in degrees/min, right engine)
+    [39] - OILTR  (Oil Temperature, right engine)
 
     byte 5
     [40]  MAPR (Manifold pressure, single/left engine)
@@ -309,8 +309,8 @@ The bits in the bitmap represent the following measurements:
     [51]  EGT4.h (Exhaust Gas Temperature, single/left engine, cylinder 4, high byte)
     [52]  EGT5.h (Exhaust Gas Temperature, single/left engine, cylinder 5, high byte)
     [53]  EGT6.h (Exhaust Gas Temperature, single/left engine, cylinder 6, high byte)
-    [54]  TIT1.h  (Turbo Inlet Temperature #1, single/left engine, low byte)
-    [55]  TIT2.h  (Turbo Inlet Temperature #2, single/left engine, low byte)
+    [54]  TIT1.h  (Turbo Inlet Temperature #1, single/left engine, high byte)
+    [55]  TIT2.h  (Turbo Inlet Temperature #2, single/left engine, high byte)
 
     byte 7 (low values are in byte 3)
     [56]  EGTR1.h (Exhaust Gas Temperature, right engine, cylinder 1, high byte)
@@ -339,8 +339,8 @@ The bits in the bitmap represent the following measurements:
     [74] TORQUE1
     [76] -
     [77] -
-    [78] HOURS1.l
-    [79] HOURS1.h
+    [78] HOURS.l (single/left engine hours, low byte)
+    [79] HOURS.h (single/left engine hours, high byte)
 
     byte 10 
     [80] -
@@ -366,11 +366,11 @@ The bits in the bitmap represent the following measurements:
     [96] UNK1.l
     [97] UNK2.l
     [98] TORQUE2
-    [99] TIT2
+    [99] UNK
     [100] UNK1.h
     [101] UNK2.h
-    [102] HOURS2.l
-    [103] HOURS2.h
+    [102] HOURSR.l (right engine hours, low byte)
+    [103] HOURSR.h (right engine hours, high byte)
 
     byte 13 
     [104] EGT7.l (Exhaust Gas Temperature, single/left engine, cylinder 7, low byte)
@@ -380,7 +380,7 @@ The bits in the bitmap represent the following measurements:
     [108] EGT7.h (Exhaust Gas Temperature, single/left engine, cylinder 7, high byte)
     [109] EGT8.h (Exhaust Gas Temperature, single/left engine, cylinder 8, high byte)
     [110] EGT9.h (Exhaust Gas Temperature, single/left engine, cylinder 9, high byte)
-    [111] HYDP11 (hydraulic pressure of something?)
+    [111] HYDP1 (hydraulic pressure #1, single/left engine)
 
     byte 14 
     [112] EGTR7.l (Exhaust Gas Temperature, right engine, cylinder 7, low byte)
@@ -390,17 +390,17 @@ The bits in the bitmap represent the following measurements:
     [116] EGTR7.h (Exhaust Gas Temperature, right engine, cylinder 7, high byte)
     [117] EGTR8.h (Exhaust Gas Temperature, right engine, cylinder 8, high byte)
     [118] EGTR9.h (Exhaust Gas Temperature, right engine, cylinder 9, high byte)
-    [119] HYDP21 (hydraulic pressure of something?)
+    [119] HYDPR1 (hydraulic pressure #1, right engine)
 
     byte 15 
     [120] CHT7 (Cylinder Head Temperature, single/left engine, cylinder 7)
     [121] CHT8 (Cylinder Head Temperature, single/left engine, cylinder 8)
     [122] CHT9 (Cylinder Head Temperature, single/left engine, cylinder 9)
-    [123] HYDP12 (hydraulic pressure of something?)
+    [123] HYDP2 (hydraulic pressure #2, single/left engine)
     [124] CHTR7 (Cylinder Head Temperature, right engine, cylinder 7)
     [125] CHTR8 (Cylinder Head Temperature, right engine, cylinder 8)
     [126] CHTR9 (Cylinder Head Temperature, right engine, cylinder 9)
-    [127] HYDP22 (hydraulic pressure of something?)
+    [127] HYDPR2 (hydraulic pressure #2, right engine)
 
 
 The MARK value (bit 16) seems to indicate times of which the EDM wants to make a
