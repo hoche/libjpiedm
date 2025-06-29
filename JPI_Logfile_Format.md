@@ -234,93 +234,93 @@ The bits in the bitmap represent the following measurements:
 
 *'?' means unknown, but it was set*
 
-*Elements with '1' after the text part of the descriptor are either the single engine or the left engine in twins*
-*Elements with '2' after the text part are the right engine in twins*
+*Elements with '1' after the text part of the descriptor are either the single engine or the left engine in s*
+*Elements with '2' after the text part are the right engine in s*
 
 *Elements ending in 'l' are the low byte of a multibyte value (usually EGTs or TITs)*
 *Elements ending in 'h' are the low byte of a multibyte value*
 
     byte 0 (high values are in byte 6)
-    [0]   EGT1.1.l (left engine, low byte)
-    [1]   EGT1.2.l
-    [2]   EGT1.3.l
-    [3]   EGT1.4.l
-    [4]   EGT1.5.l
-    [5]   EGT1.6.l
-    [6]   TIT1.1.l
-    [7]   TIT1.2.l
+    [0]   EGT1.1.l (Exhaust Gas Temperature, single/left engine, cylinder 1, low byte)
+    [1]   EGT1.2.l (Exhaust Gas Temperature, single/left engine, cylinder 2, low byte)
+    [2]   EGT1.3.l (Exhaust Gas Temperature, single/left engine, cylinder 3, low byte)
+    [3]   EGT1.4.l (Exhaust Gas Temperature, single/left engine, cylinder 4, low byte)
+    [4]   EGT1.5.l (Exhaust Gas Temperature, single/left engine, cylinder 5, low byte)
+    [5]   EGT1.6.l (Exhaust Gas Temperature, single/left engine, cylinder 6, low byte)
+    [6]   TIT1.1.l (Turbo Inlet Temperature, single/left engine, low byte)
+    [7]   TIT1.2.l (Turbo Inlet Temperature, single/left engine, low byte)
 
     byte 1
-    [8]   CHT1.1
-    [9]   CHT1.2
-    [10]  CHT1.3
-    [11]  CHT1.4
-    [12]  CHT1.5
-    [13]  CHT1.6
-    [14]  CLD1 
-    [15]  OILT1
+    [8]   CHT1.1 (Cylinder Head Temperature, single/left engine, cylinder 1)
+    [9]   CHT1.2 (Cylinder Head Temperature, single/left engine, cylinder 2)
+    [10]  CHT1.3 (Cylinder Head Temperature, single/left engine, cylinder 3)
+    [11]  CHT1.4 (Cylinder Head Temperature, single/left engine, cylinder 4)
+    [12]  CHT1.5 (Cylinder Head Temperature, single/left engine, cylinder 5)
+    [13]  CHT1.6 (Cylinder Head Temperature, single/left engine, cylinder 6)
+    [14]  CLD1   (Engine cooling rate in degrees/min, single/left engine ) 
+    [15]  OILT1  (Oil temperature, single/left engine )
 
     byte 2 
     [16]  MARK (see below)
-    [17]  OILP1 (oil pressure)
+    [17]  OILP1 (oil pressure, single/left engine)
     [18]  CRB1  (carb temp or maybe compressor dischange temp)
     [19]  IAT1/MP2  (induction air temp) (right manifold Pressure, 760 only)
-    [20]  VOLTS1
-    [21]  OAT
-    [22]  FUSED1 (fuel used)
-    [23]  FF1 (fuel flow)
+    [20]  VOLTS1 (voltage, single/left engine)
+    [21]  OAT (outside air temperature)
+    [22]  FUSED1 (fuel used, tank 1?)
+    [23]  FF1  (Fuel flow, single/left engine)
 
     byte 3  (high values are in byte 7)
-    [24]  EGT2.1.l (right engine, low byte)
-    [25]  EGT2.2.l
-    [26]  EGT2.3.l
-    [27]  EGT2.4.l
-    [28]  EGT2.5.l
-    [29]  EGT2.6.l
-    [30]  HP (single engine), TIT2.1.l (twin)
-    [31]  TIT2.2.l
+    [24]  EGT2.1.l (Exhaust Gas Temperature, right engine, cylinder 1, low byte)
+    [25]  EGT2.2.l (Exhaust Gas Temperature, right engine, cylinder 2, low byte)
+    [26]  EGT2.3.l (Exhaust Gas Temperature, right engine, cylinder 3, low byte)
+    [27]  EGT2.4.l (Exhaust Gas Temperature, right engine, cylinder 4, low byte)
+    [28]  EGT2.5.l (Exhaust Gas Temperature, right engine, cylinder 5, low byte)
+    [29]  EGT2.6.l (Exhaust Gas Temperature, right engine, cylinder 6, low byte)
+    [30]  HP (single engine), TIT2.1.l (Turbo Inlet Temperature, Right engine, low byte)
+    [31]  TIT2.2.l (Turbo Inlet Temperature, Right engine, high byte)
 
     byte 4 
-    [32] - CHT2.1
-    [33] - CHT2.2
-    [34] - CHT2.3
-    [35] - CHT2.4
-    [36] - CHT2.5
-    [37] - CHT2.6
-    [38] - CLD2
-    [39] - OILT2
+    [32] - CHT2.1 (Cylinder Head Temperature, right engine, cylinder 1)
+    [33] - CHT2.2 (Cylinder Head Temperature, right engine, cylinder 2)
+    [34] - CHT2.3 (Cylinder Head Temperature, right engine, cylinder 3)
+    [35] - CHT2.4 (Cylinder Head Temperature, right engine, cylinder 4)
+    [36] - CHT2.5 (Cylinder Head Temperature, right engine, cylinder 5)
+    [37] - CHT2.6 (Cylinder Head Temperature, right engine, cylinder 6)
+    [38] - CLD2   (Engine cooling rate in degrees/min, right engine)
+    [39] - OILT2  (Oil Temperature, right engine)
 
     byte 5
-    [40]  MAP1
-    [41]  RPM1.l
-    [42]  RPM1.h
-    [43]  RPM2.l
-    [44]  RPM2.h, HYDP12
-    [45]  HYDP11
-    [46]  FUSED1.2
-    [47]  FF2.1
+    [40]  MAP1 (Manifold pressure, single/left engine)
+    [41]  RPM1.l (RPM, single/left engine, low byte)
+    [42]  RPM1.h (RPM, single/left engine, high byte)
+    [43]  RPM2.l (RPM, right engine, low byte)
+    [44]  RPM2.h, HYDP1.2 (RPM, right engine, high byte, or hydraulic pressure of something? maybe gear?)
+    [45]  HYDP1.1 (hydraulic pressure of something? maybe gear?)
+    [46]  FUSED1.2 (fuel used, not sure which tank)
+    [47]  FF2 (Fuel flow, not sure what)
 
     ---------- end of 48-bit (old version) bitmap ---------
 
     byte 6 (low values are in byte 0)
-    [48]   EGT11.h (left engine) high byte
-    [49]   EGT12.h (left engine) high byte
-    [50]   EGT13.h (left engine) high byte
-    [51]   EGT14.h (left engine) high byte
-    [52]   EGT15.h (left engine) high byte
-    [53]   EGT16.h (left engine) high byte
-    [54]   TIT11.h (left engine) high byte
-    [55]   TIT12.h (left engine) high byte
+    [48]  EGT1.1.h (Exhaust Gas Temperature, single/left engine, cylinder 1, high byte)
+    [49]  EGT1.2.h (Exhaust Gas Temperature, single/left engine, cylinder 2, high byte)
+    [50]  EGT1.3.h (Exhaust Gas Temperature, single/left engine, cylinder 3, high byte)
+    [51]  EGT1.4.h (Exhaust Gas Temperature, single/left engine, cylinder 4, high byte)
+    [52]  EGT1.5.h (Exhaust Gas Temperature, single/left engine, cylinder 5, high byte)
+    [53]  EGT1.6.h (Exhaust Gas Temperature, single/left engine, cylinder 6, high byte)
+    [54]  TIT1.1.h (left engine) high byte
+    [55]  TIT1.2.h (left engine) high byte
 
     byte 7 (low values are in byte 3)
-    [56]  EGT21.h (right engine, high byte)
-    [57]  EGT22.h
-    [58]  EGT23.h
-    [59]  EGT24.h
-    [60]  EGT25.h
-    [61]  EGT26.h
-    [62]  HP (single engine), TIT21.l (twin)
-    [63]  TIT22.l
+    [56]  EGT2.1.h (Exhaust Gas Temperature, right engine, cylinder 1, high byte)
+    [57]  EGT2.2.h (Exhaust Gas Temperature, right engine, cylinder 2, high byte)
+    [58]  EGT2.3.h (Exhaust Gas Temperature, right engine, cylinder 3, high byte)
+    [59]  EGT2.4.h (Exhaust Gas Temperature, right engine, cylinder 4, high byte)
+    [60]  EGT2.5.h (Exhaust Gas Temperature, right engine, cylinder 5, high byte)
+    [61]  EGT2.6.h (Exhaust Gas Temperature, right engine, cylinder 6, high byte)
+    [62]  HP (single engine), TIT2.1.l (Turbo Inlet Temperature, right engine, low byte)
+    [63]  TIT2.2.h (Turbo Inlet Temperature, right engine, high byte)
 
     byte 8
     [64] AMPS1
@@ -373,34 +373,34 @@ The bits in the bitmap represent the following measurements:
     [103] HOURS2.h
 
     byte 13 
-    [104] EGT17.l
-    [105] EGT18.l
-    [106] EGT19.l
-    [107] FF22
-    [108] EGT17.h
-    [109] EGT18.h
-    [110] EGT19.h
-    [111] HYDP11
+    [104] EGT1.7.l (Exhaust Gas Temperature, single/left engine, cylinder 7, low byte)
+    [105] EGT1.8.l (Exhaust Gas Temperature, single/left engine, cylinder 8, low byte)
+    [106] EGT1.9.l (Exhaust Gas Temperature, single/left engine, cylinder 9, low byte)
+    [107] FF3     (Fuel flow, not sure what)
+    [108] EGT1.7.h (Exhaust Gas Temperature, single/left engine, cylinder 7, high byte)
+    [109] EGT1.8.h (Exhaust Gas Temperature, single/left engine, cylinder 8, high byte)
+    [110] EGT1.9.h (Exhaust Gas Temperature, single/left engine, cylinder 9, high byte)
+    [111] HYDP11 (hydraulic pressure of something?)
 
     byte 14 
-    [112] EGT27.l
-    [113] EGT28.l
-    [114] EGT29.l
-    [115] FF23
-    [116] EGT27.h
-    [117] EGT28.h
-    [118] EGT29.h
-    [119] HYDP21
+    [112] EGT2.7.l (Exhaust Gas Temperature, right engine, cylinder 7, low byte)
+    [113] EGT2.8.l (Exhaust Gas Temperature, right engine, cylinder 8, low byte)
+    [114] EGT2.9.l (Exhaust Gas Temperature, right engine, cylinder 9, low byte)
+    [115] FF4      (Fuel flow, not sure what)
+    [116] EGT2.7.h (Exhaust Gas Temperature, right engine, cylinder 7, high byte)
+    [117] EGT2.8.h (Exhaust Gas Temperature, right engine, cylinder 8, high byte)
+    [118] EGT2.9.h (Exhaust Gas Temperature, right engine, cylinder 9, high byte)
+    [119] HYDP21 (hydraulic pressure of something?)
 
     byte 15 
-    [120] CHT17
-    [121] CHT18
-    [122] CHT19
-    [123] HYDP12
-    [124] CHT27
-    [125] CHT28
-    [126] CHT29
-    [127] HYDP22
+    [120] CHT1.7 (Cylinder Head Temperature, single/left engine, cylinder 7)
+    [121] CHT1.8 (Cylinder Head Temperature, single/left engine, cylinder 8)
+    [122] CHT1.9 (Cylinder Head Temperature, single/left engine, cylinder 9)
+    [123] HYDP12 (hydraulic pressure of something?)
+    [124] CHT2.7 (Cylinder Head Temperature, right engine, cylinder 7)
+    [125] CHT2.8 (Cylinder Head Temperature, right engine, cylinder 8)
+    [126] CHT2.9 (Cylinder Head Temperature, right engine, cylinder 9)
+    [127] HYDP22 (hydraulic pressure of something?)
 
 
 The MARK value (bit 16) seems to indicate times of which the EDM wants to make a
