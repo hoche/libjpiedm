@@ -130,6 +130,7 @@ class EDMFlightRecord
         OILTR,
         FP,
         HP,
+        HPR,
         MAP,
         RPM,
         RPMR,
@@ -138,10 +139,10 @@ class EDMFlightRecord
 	TORQ,
 	TORQR,
         DIF,
-        LFL,  // left main tank fuel level
-        RFL,  // right main tank fuel level
-        LAUX, // left aux tank fuel level
-        RAUX, // right aux tank fuel level
+        LFL0,  // left main tank fuel level
+        RFL0,  // right main tank fuel level
+        LFL1, // left aux tank fuel level
+        RFL1, // right aux tank fuel level
 	HYD1,
 	HYD2,
 	HYDR1,
@@ -236,22 +237,24 @@ class EDMFlightRecord
 
 	    // ----- byte 8
 	    {AMPS,  {64}},
-	    {LFL,   {67}},
-	    {RFL,   {68}},
+	    {RFL0,   {67}},
+	    {LFL0,   {68}},
 	    {FP,    {69}},
+	    {HP,    {70}},
 	    
 	    // ----- byte 9
-	    {LAUX,  {71}},
+	    {LFL1,  {71}},
 	    {TORQ,  {74}},
 
 	    // ----- byte 10
 	    {HRS,   {78, 79}},
-	    {RAUX,  {84}},
+	    {RFL1,  {84}},
 
 	    // ----- byte 11
-	    {TORQR,  {98}},
+	    {HPR,    {89}},
 
 	    // ----- byte 12
+	    {TORQR,  {98}},
 	    {HRSR,  {102, 103}},
 
 	    // ----- byte 13

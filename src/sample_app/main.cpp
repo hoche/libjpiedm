@@ -89,13 +89,13 @@ void printFlightDataRecord(const jpi_edm::EDMFlightRecord &rec, std::ostream &ou
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::OILT) << ",";
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::FUSD) << ",";
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::FUSD2) << ",";
-    outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::LFL)) / 10
+    outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::LFL0)) / 10
               << ",";
-    outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::RFL)) / 10
+    outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::RFL0)) / 10
               << ",";
-    outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::LAUX)) / 10
+    outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::LFL1)) / 10
               << ",";
-    outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::RAUX)) / 10
+    outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::RFL1)) / 10
               << ",";
 
     outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::HRS)) / 10
