@@ -40,7 +40,7 @@ void EDMFlightRecord::apply(std::vector<int> &values)
 
     // TODO where are these
     m_dataMap[FF2] = 0;
-    m_dataMap[USD2] = -1;
+    m_dataMap[FUSD2] = -1;
     m_dataMap[SPD] = -1;
     m_dataMap[ALT] = -1;
     m_dataMap[LAT] = -1;

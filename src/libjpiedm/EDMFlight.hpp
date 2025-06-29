@@ -77,48 +77,75 @@ class EDMFlightRecord
         EGT4,
         EGT5,
         EGT6,
+        EGT7,
+        EGT8,
+        EGT9,
+	TIT1,
+	TIT2,
         CHT1,
         CHT2,
         CHT3,
         CHT4,
         CHT5,
         CHT6,
+        CHT7,
+        CHT8,
+        CHT9,
         CLD,
         OILT,
         MARK,
         OILP,
-        CARB,
-        VOLTS,
+        CRB,
+	IAT,
+        VLT,
         AMPS,
         OAT,
-        USD,
-        USD2,
+        FUSD,
+        FUSD2,
         FF,
         FF2,
+        FF3,
+        FF4,
         EGTR1,
         EGTR2,
         EGTR3,
         EGTR4,
         EGTR5,
         EGTR6,
+        EGTR7,
+        EGTR8,
+        EGTR9,
+	TITR1,
+	TITR2,
         CHTR1,
         CHTR2,
         CHTR3,
         CHTR4,
         CHTR5,
         CHTR6,
-        RCLD,
-        ROILT,
+        CHTR7,
+        CHTR8,
+        CHTR9,
+        CLDR,
+        OILTR,
         FP,
         HP,
         MAP,
         RPM,
+        RPMR,
         HRS,
+        HRSR,
+	TORQ,
+	TORQR,
         DIF,
-        RFL,
-        LFL,
-        RAUX,
-        LAUX,
+        LFL,  // left main tank fuel level
+        RFL,  // right main tank fuel level
+        LAUX, // left aux tank fuel level
+        RAUX, // right aux tank fuel level
+	HYD1,
+	HYD2,
+	HYDR1,
+	HYDR2,
         SPD,
         ALT,
         LAT,
@@ -129,16 +156,129 @@ class EDMFlightRecord
 
     // ordered map
     // TODO: add more of these as they're figured out
+    // clang-format off
     const std::map<Measurement, std::vector<int>> offsets = {
-        {EGT1, {0, 48}}, {EGT2, {1, 49}}, {EGT3, {2, 50}}, {EGT4, {3, 51}}, {EGT5, {4, 52}},
-        {EGT6, {5, 53}}, {CHT1, {8}},     {CHT2, {9}},     {CHT3, {10}},    {CHT4, {11}},
-        {CHT5, {12}},    {CHT6, {13}},    {CLD, {14}},     {OILT, {15}},    {MARK, {MARK_IDX}},
-        {OILP, {17}},    {CARB, {18}},    {VOLTS, {20}},   {OAT, {21}},     {USD, {22}},
-        {FF, {23}},      {EGTR1, {24}},   {EGTR2, {25}},   {EGTR3, {26}},   {EGTR4, {27}},
-        {EGTR5, {28}},   {EGTR6, {29}},   {HP, {30}},      {CHTR1, {32}},   {CHTR2, {33}},
-        {CHTR3, {34}},   {CHTR4, {35}},   {CHTR5, {36}},   {CHTR6, {37}},   {RCLD, {38}},
-        {ROILT, {39}},   {MAP, {40}},     {RPM, {41, 42}}, {AMPS, {64}},    {RFL, {67}},
-        {LFL, {68}},     {FP, {69}},      {RAUX, {71}},    {LAUX, {84}},    {HRS, {78, 79}}};
+	    // ----- byte 0
+	    {EGT1, {0, 48}},
+	    {EGT2, {1, 49}},
+	    {EGT3, {2, 50}},
+	    {EGT4, {3, 51}},
+	    {EGT5, {4, 52}},
+	    {EGT6, {5, 53}},
+	    {TIT1, {6, 54}},
+	    {TIT2, {7, 55}},
+
+	    // ----- byte 1
+	    {CHT1, {8}},
+	    {CHT2, {9}},
+	    {CHT3, {10}},
+	    {CHT4, {11}},
+	    {CHT5, {12}},
+	    {CHT6, {13}},
+	    {CLD,  {14}},
+	    {OILT, {15}},
+	    {MARK, {MARK_IDX}},
+
+	    // ----- byte 2
+	    {OILP, {17}},
+	    {CRB,  {18}},
+	    {IAT,  {19}},
+	    {VLT,  {20}},
+	    {OAT,  {21}},
+	    {FUSD, {22}},
+	    {FF,   {23}},
+
+	    // ----- byte 3
+	    {EGTR1, {24, 56}},
+	    {EGTR2, {25, 57}},
+	    {EGTR3, {26, 58}},
+	    {EGTR4, {27, 59}},
+	    {EGTR5, {28, 60}},
+	    {EGTR6, {29, 61}},
+	    {HP,    {30}},
+	    {TITR1,  {30, 62}},
+	    {TITR2,  {31, 63}},
+
+	    // ----- byte 4
+	    {CHTR1, {32}},
+	    {CHTR2, {33}},
+	    {CHTR3, {34}},
+	    {CHTR4, {35}},
+	    {CHTR5, {36}},
+	    {CHTR6, {37}},
+	    {CLDR,  {38}},
+
+	    // ----- byte 5
+	    {OILTR, {39}},
+	    {MAP,   {40}},
+	    {RPM,   {41, 42}},
+	    {RPMR,  {43, 44}},
+
+	    // ----- byte 6
+	    // EGT1 48
+	    // EGT2 49
+	    // EGT3 50
+	    // EGT4 51
+	    // EGT5 52
+	    // EGT6 53
+	    // TIT1 54
+	    // TIT2 55
+
+	    // ----- byte 7
+	    // EGTR1 56
+	    // EGTR2 57
+	    // EGTR3 58
+	    // EGTR4 59
+	    // EGTR5 60
+	    // EGTR6 61 
+	    // TITR1 62
+	    // TITR2 63
+
+	    // ----- byte 8
+	    {AMPS,  {64}},
+	    {LFL,   {67}},
+	    {RFL,   {68}},
+	    {FP,    {69}},
+	    
+	    // ----- byte 9
+	    {LAUX,  {71}},
+	    {TORQ,  {74}},
+
+	    // ----- byte 10
+	    {HRS,   {78, 79}},
+	    {RAUX,  {84}},
+
+	    // ----- byte 11
+	    {TORQR,  {98}},
+
+	    // ----- byte 12
+	    {HRSR,  {102, 103}},
+
+	    // ----- byte 13
+	    {EGT7,  {104, 108}},
+	    {EGT8,  {105, 109}},
+	    {EGT9,  {106, 110}},
+	    {FF3,   {107}},
+	    {HYD1,  {111}},
+
+	    // ----- byte 14
+	    {EGTR7, {112, 116}},
+	    {EGTR8, {113, 117}},
+	    {EGTR9, {114, 118}},
+	    {FF4,   {115}},
+	    {HYDR1, {119}},
+
+	    // ----- byte 15
+	    {CHT7,  {120}},
+	    {CHT8,  {121}},
+	    {CHT9,  {122}},
+	    {HYD2,  {123}},
+	    {CHTR7, {124}},
+	    {CHTR8, {125}},
+	    {CHTR9, {126}},
+	    {HYDR2, {127}},
+    };
+    // clang-format on
 
     virtual void apply(std::vector<int> &values);
 

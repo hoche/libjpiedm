@@ -9,9 +9,9 @@ clean:
 	@if [ -d build ]; then rm -rf $(TOP)/build; fi
 .PHONY: clean
 
-#test:
-#	cd test && ./test.sh
-#.PHONY: test
+test:
+	cd build && ctest
+.PHONY: test
 
 format:
 	clang-format -i src/libjpiedm/*.cpp \
