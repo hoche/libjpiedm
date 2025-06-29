@@ -14,6 +14,7 @@ clean:
 #.PHONY: test
 
 format:
-	clang-format -i src/model/*.cpp \
-			src/model/*.hpp
+	clang-format -i src/libjpiedm/*.cpp \
+			src/libjpiedm/*.hpp \
+			src/sample_app/*.cpp
 .PHONY: format

@@ -31,10 +31,10 @@
 #pragma once
 
 #include <cstdint>
+#include <iostream>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <iostream>
 
 namespace jpi_edm {
 
@@ -48,7 +48,7 @@ class EDMFileHeader
      * are in the vector.
      */
     virtual void apply(std::vector<unsigned long> values) = 0;
-    virtual void dump(std::ostream& outStream) = 0;
+    virtual void dump(std::ostream &outStream) = 0;
 };
 
 /**
@@ -66,7 +66,7 @@ class EDMConfigLimits : public EDMFileHeader
     EDMConfigLimits(){};
     virtual ~EDMConfigLimits(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream& outStream);
+    virtual void dump(std::ostream &outStream);
 
   public:
     unsigned long volts_hi{0};
@@ -115,7 +115,7 @@ class EDMConfigInfo : public EDMFileHeader
     EDMConfigInfo(){};
     virtual ~EDMConfigInfo(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream& outStream);
+    virtual void dump(std::ostream &outStream);
 
   public:
     unsigned long edm_model{0};
@@ -146,7 +146,7 @@ class EDMFuelLimits : public EDMFileHeader
     EDMFuelLimits(){};
     virtual ~EDMFuelLimits(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream& outStream);
+    virtual void dump(std::ostream &outStream);
 
   public:
     unsigned long empty{0};
@@ -171,7 +171,7 @@ class EDMProtoHeader : public EDMFileHeader
     EDMProtoHeader(){};
     virtual ~EDMProtoHeader(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream& outStream);
+    virtual void dump(std::ostream &outStream);
 
   public:
     unsigned long value{0};
@@ -192,7 +192,7 @@ class EDMTimeStamp : public EDMFileHeader
     EDMTimeStamp(){};
     virtual ~EDMTimeStamp(){};
     virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream& outStream);
+    virtual void dump(std::ostream &outStream);
 
   public:
     unsigned long mon{0};
@@ -213,7 +213,7 @@ class EDMMetaData
     EDMMetaData(){};
     virtual ~EDMMetaData(){};
 
-    virtual void dump(std::ostream& outStream);
+    virtual void dump(std::ostream &outStream);
 
     static const int PROTO_V1 = 0x01; // <900
     static const int PROTO_V2 = 0x02; // 760

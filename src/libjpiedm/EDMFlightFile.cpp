@@ -9,10 +9,10 @@
 #include <algorithm>
 #include <bitset>
 #include <cstring>
-#include <sstream>
 #include <iomanip>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -26,16 +26,15 @@
 #include <limits.h>
 #include <stdio.h>
 
-
 #include "EDMFileHeaders.hpp"
 #include "EDMFlight.hpp"
 #include "EDMFlightFile.hpp"
 
 namespace jpi_edm {
 
-//#define DEBUG_FLIGHTS
-//#define DEBUG_FLIGHT_HEADERS
-//#define DEBUG_PARSE
+// #define DEBUG_FLIGHTS
+// #define DEBUG_FLIGHT_HEADERS
+// #define DEBUG_PARSE
 
 #if defined(DEBUG_FLIGHTS) && !defined(DEBUG_FLIGHT_HEADERS)
 #define DEBUG_FLIGHT_HEADERS
@@ -56,17 +55,17 @@ inline std::ostream &operator<<(std::ostream &o, const HexCharStruct &hs)
 
 inline HexCharStruct hex(unsigned char _c) { return HexCharStruct(_c); }
 
-void EDMFlightFile::setMetaDataCompletionCb(std::function<void(EDMMetaData&)> cb)
+void EDMFlightFile::setMetaDataCompletionCb(std::function<void(EDMMetaData &)> cb)
 {
     m_metaDataCompletionCb = cb;
 }
 
-void EDMFlightFile::setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader&)> cb)
+void EDMFlightFile::setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader &)> cb)
 {
     m_flightHeaderCompletionCb = cb;
 }
 
-void EDMFlightFile::setFlightRecordCompletionCb(std::function<void(EDMFlightRecord&)> cb)
+void EDMFlightFile::setFlightRecordCompletionCb(std::function<void(EDMFlightRecord &)> cb)
 {
     m_flightRecCompletionCb = cb;
 }
@@ -252,8 +251,8 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
     }
 }
 
-bool EDMFlightFile::validateBinaryChecksum(std::istream& stream, std::iostream::off_type startOff, std::iostream::off_type endOff,
-        unsigned char checksum)
+bool EDMFlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff,
+                                           std::iostream::off_type endOff, unsigned char checksum)
 {
     auto curLoc{stream.tellg()};
 
@@ -264,12 +263,12 @@ bool EDMFlightFile::validateBinaryChecksum(std::istream& stream, std::iostream::
 
     stream.seekg(startOff);
     auto len = endOff - startOff;
-    char* buffer = new char[len];
+    char *buffer = new char[len];
     try {
-    	stream.read(buffer, len);
-    } catch ([[maybe_unused]] const std::exception& e) {
-    	delete[] buffer;
-	throw;
+        stream.read(buffer, len);
+    } catch ([[maybe_unused]] const std::exception &e) {
+        delete[] buffer;
+        throw;
     }
     for (int i = 0; i < len; ++i) {
         checksum_sum += buffer[i];
@@ -279,9 +278,9 @@ bool EDMFlightFile::validateBinaryChecksum(std::istream& stream, std::iostream::
     checksum_sum = -checksum_sum;
 
 #ifdef DEBUG_FLIGHTS
-        std::cout << "checksum_sum: " << hex(checksum_sum) << "\n";
-        std::cout << "checksum_xor: " << hex(checksum_xor) << "\n";
-        std::cout << "stream checksum: " << hex(checksum) << "\n";
+    std::cout << "checksum_sum: " << hex(checksum_sum) << "\n";
+    std::cout << "checksum_xor: " << hex(checksum_xor) << "\n";
+    std::cout << "stream checksum: " << hex(checksum) << "\n";
 #endif
 
     stream.seekg(curLoc, std::ios_base::beg);
@@ -298,10 +297,10 @@ std::streamoff EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
     bool found = false;
     std::streamoff offset;
     unsigned char checksum;
-    for (offset = 28; offset >= 14; offset-=2) {
+    for (offset = 28; offset >= 14; offset -= 2) {
         stream.seekg(startOff + offset, std::ios_base::beg);
-        stream.read(reinterpret_cast<char*>(&checksum), 1);
-        if (validateBinaryChecksum(stream, startOff, startOff+offset, checksum)) {
+        stream.read(reinterpret_cast<char *>(&checksum), 1);
+        if (validateBinaryChecksum(stream, startOff, startOff + offset, checksum)) {
             found = true;
             break;
         }
@@ -321,12 +320,13 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
 
     EDMFlightHeader flightHeader;
 
-    stream.read(reinterpret_cast<char*>(&flightHeader.flight_num), 2);
+    stream.read(reinterpret_cast<char *>(&flightHeader.flight_num), 2);
     flightHeader.flight_num = ntohs(flightHeader.flight_num);
 
     if (flightHeader.flight_num != flightId) {
         std::stringstream msg;
-        msg << "Flight IDs don't match. Offset: " << std::hex << (stream.tellg() - static_cast<std::streamoff>(4L));
+        msg << "Flight IDs don't match. Offset: " << std::hex
+            << (stream.tellg() - static_cast<std::streamoff>(4L));
 #ifdef DEBUG_FLIGHT_HEADERS
         std::cout << msg.str() << std::endl;
 #endif
@@ -334,25 +334,25 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
     }
 
     uint16_t flags[2];
-    stream.read(reinterpret_cast<char*>(&flags), 4);
+    stream.read(reinterpret_cast<char *>(&flags), 4);
     flightHeader.flags = htons(flags[0]) | (htons(flags[1]) << 16);
 
     // skip unknowns
     std::streamoff offset = startOff + headerSize - std::streamoff(6L);
     stream.seekg(offset, std::ios_base::beg);
 
-    stream.read(reinterpret_cast<char*>(&flightHeader.interval), 2);
+    stream.read(reinterpret_cast<char *>(&flightHeader.interval), 2);
     flightHeader.interval = ntohs(flightHeader.interval);
 
     uint16_t dt;
-    stream.read(reinterpret_cast<char*>(&dt), 2);
+    stream.read(reinterpret_cast<char *>(&dt), 2);
     dt = ntohs(dt);
     flightHeader.startDate.tm_mday = (dt & 0x1f);
     flightHeader.startDate.tm_mon = ((dt & 0x01ff) >> 5) - 1;
     flightHeader.startDate.tm_year = (dt >> 9) + 100;
 
     uint16_t tm;
-    stream.read(reinterpret_cast<char*>(&tm), 2);
+    stream.read(reinterpret_cast<char *>(&tm), 2);
     tm = ntohs(tm);
     flightHeader.startDate.tm_sec = (tm & 0x1f) * 2;
     flightHeader.startDate.tm_min = (tm & 0x07ff) >> 5;
@@ -362,16 +362,15 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
     std::cout << std::hex << dt << std::dec << "\n";
     std::cout << std::hex << tm << std::dec << "\n";
     std::cout << "Start date:\n"
-                  << "  tm_sec: " << flightHeader.startDate.tm_sec
-                  << "  tm_min: " << flightHeader.startDate.tm_min
-                  << "  tm_hour: " << flightHeader.startDate.tm_hour
-                  << "  tm_mday: " << flightHeader.startDate.tm_mday
-                  << "  tm_mon: " << flightHeader.startDate.tm_mon
-                  << "  tm_year: " << flightHeader.startDate.tm_year
-                  << "  tm_wday: " << flightHeader.startDate.tm_wday
-                  << "  tm_yday: " << flightHeader.startDate.tm_yday
-                  << "  tm_isdst: " << flightHeader.startDate.tm_isdst
-                  << "\n";
+              << "  tm_sec: " << flightHeader.startDate.tm_sec
+              << "  tm_min: " << flightHeader.startDate.tm_min
+              << "  tm_hour: " << flightHeader.startDate.tm_hour
+              << "  tm_mday: " << flightHeader.startDate.tm_mday
+              << "  tm_mon: " << flightHeader.startDate.tm_mon
+              << "  tm_year: " << flightHeader.startDate.tm_year
+              << "  tm_wday: " << flightHeader.startDate.tm_wday
+              << "  tm_yday: " << flightHeader.startDate.tm_yday
+              << "  tm_isdst: " << flightHeader.startDate.tm_isdst << "\n";
 #endif
 
     auto endOff{stream.tellg()};
@@ -383,7 +382,7 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
 #endif
 
     unsigned char checksum;
-    stream.read(reinterpret_cast<char*>(&checksum), 1);
+    stream.read(reinterpret_cast<char *>(&checksum), 1);
     if (!validateBinaryChecksum(stream, startOff, endOff, checksum)) {
         std::stringstream msg;
         msg << "checksum failure in flight header ";
@@ -398,7 +397,7 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
     }
 }
 
-void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool& isFast)
+void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool &isFast)
 {
     int oldFormat = false; // NOT ACTIVE YET
 
@@ -416,7 +415,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
 
     // A pair of bitmaps, which should be identical
     // They indicate which bytes of the data bitmap are populated
-    std::vector<std::uint16_t> bmPopMap{0,0};
+    std::vector<std::uint16_t> bmPopMap{0, 0};
     stream.read(reinterpret_cast<char *>(&bmPopMap[0]), maskSize);
     stream.read(reinterpret_cast<char *>(&bmPopMap[1]), maskSize);
 
@@ -474,20 +473,26 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
 #ifdef DEBUG_FLIGHTS
     std::cout << "repeatCount: " << hex(repeatCount) << "\n";
     {
-        //std::cout << "fieldMap: b" << fieldMap << "\n";
-        for (int count = 0, i = fieldMap.size()/8-1; i>=0; i--) {
+        // std::cout << "fieldMap: b" << fieldMap << "\n";
+        for (int count = 0, i = fieldMap.size() / 8 - 1; i >= 0; i--) {
             std::cout << " Byte " << hex(i) << "  ";
         }
         std::cout << "\n";
-        for(int count = 0, i = fieldMap.size()-1; i>=0; i--) {
+        for (int count = 0, i = fieldMap.size() - 1; i >= 0; i--) {
             std::cout << fieldMap[i];
-            if (++count == 8) {std::cout << " "; count = 0;}
+            if (++count == 8) {
+                std::cout << " ";
+                count = 0;
+            }
         }
         std::cout << "\n";
-        //std::cout << "signMap: b" << signMap << "\n";
-        for(int count = 0, i = signMap.size()-1; i>=0; i--) {
+        // std::cout << "signMap: b" << signMap << "\n";
+        for (int count = 0, i = signMap.size() - 1; i >= 0; i--) {
             std::cout << signMap[i];
-            if (++count == 8) {std::cout << " "; count = 0;}
+            if (++count == 8) {
+                std::cout << " ";
+                count = 0;
+            }
         }
         std::cout << "\n";
     }
@@ -519,7 +524,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
             stream.read(reinterpret_cast<char *>(&diff), 1);
 #ifdef DEBUG_FLIGHTS
             std::cout << "[" << k << ":0x" << hex(diff) << "]";
-            if (++printCount%16 == 0) {
+            if (++printCount % 16 == 0) {
                 std::cout << "\n";
             }
 #endif
@@ -538,7 +543,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
 #endif
 
     unsigned char checksum;
-    stream.read(reinterpret_cast<char*>(&checksum), 1);
+    stream.read(reinterpret_cast<char *>(&checksum), 1);
     if (!validateBinaryChecksum(stream, startOff, endOff, checksum)) {
         std::stringstream msg;
         msg << "checksum failure in record " << std::dec << recordSeq;
@@ -550,14 +555,13 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
 
     // special test for the MARK value.
     switch (m_values[EDMFlightRecord::MARK_IDX]) {
-        case 0x02:
-            isFast = true;
-            break;
-        case 0x03:
-            isFast = false;
-            break;
+    case 0x02:
+        isFast = true;
+        break;
+    case 0x03:
+        isFast = false;
+        break;
     }
-
 
     if (m_flightRecCompletionCb) {
         EDMFlightRecord fr(recordSeq, isFast);
@@ -598,14 +602,13 @@ bool EDMFlightFile::parse(std::istream &stream)
         unsigned long fastRecCount{0};
         bool isFast{false};
 
-        for (; (stream.tellg() - startOff) < ((flightDataCount.second-1L) * 2); ++recordSeq) {
+        for (; (stream.tellg() - startOff) < ((flightDataCount.second - 1L) * 2); ++recordSeq) {
             parseFlightDataRec(stream, recordSeq, isFast);
 #ifdef DEBUG_PARSE
             auto bytesRead = stream.tellg() - startOff;
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex
-                      << stream.tellg() << std::dec
-                      << "    ((flightDataCount.second-1)*2): " << ((flightDataCount.second-1L) * 2)
-                      << "\n"
+                      << stream.tellg() << std::dec << "    ((flightDataCount.second-1)*2): "
+                      << ((flightDataCount.second - 1L) * 2) << "\n"
                       << std::flush;
 #endif
             if (isFast) {
@@ -613,7 +616,6 @@ bool EDMFlightFile::parse(std::istream &stream)
             } else {
                 ++stdRecCount;
             }
-
         }
         if (m_flightCompletionCb) {
             m_flightCompletionCb(stdRecCount, fastRecCount);
@@ -624,10 +626,6 @@ bool EDMFlightFile::parse(std::istream &stream)
     return true;
 }
 
-bool EDMFlightFile::processFile(std::istream &stream)
-{
-    return parse(stream);
-}
-
+bool EDMFlightFile::processFile(std::istream &stream) { return parse(stream); }
 
 } // namespace jpi_edm

@@ -33,7 +33,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include "EDMFileHeaders.hpp"
 
@@ -61,7 +60,7 @@ void EDMConfigLimits::apply(std::vector<unsigned long> values)
     oil_temp_lo = values[7];
 }
 
-void EDMConfigLimits::dump(std::ostream& outStream)
+void EDMConfigLimits::dump(std::ostream &outStream)
 {
     outStream << "EDMConfigLimits:" << "\n    volts_hi: " << volts_hi
               << "\n    volts_lo: " << volts_lo << "\n    egt_diff: " << egt_diff
@@ -127,14 +126,12 @@ const uint32_t F_DIF = F_E1 | F_E2; // DIF exists if there's more than one EGT
 const uint32_t F_HP = F_RPM | F_MAP | F_FF;
 const uint32_t F_MARK = 0x00000001; // 1 bit always seems to exist
 
-void EDMConfigInfo::dump(std::ostream& outStream)
+void EDMConfigInfo::dump(std::ostream &outStream)
 {
-    outStream << "EDMConfigInfo:" 
-              << "\n    edm_model: " << edm_model
-              << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
-              << "\n    firmware_version: " << firmware_version
-              << "\n    build: " << build_maj << "." << build_min
-              << "\n";
+    outStream << "EDMConfigInfo:" << "\n    edm_model: " << edm_model << "\n    flags: " << flags
+              << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
+              << "\n    firmware_version: " << firmware_version << "\n    build: " << build_maj
+              << "." << build_min << "\n";
     outStream << "Temperatures for CHT, EGT, and TIT are in " << (flags & F_TEMP_IN_F ? "F" : "C")
               << "\n";
 }
@@ -155,7 +152,7 @@ void EDMFuelLimits::apply(std::vector<unsigned long> values)
     k_factor_2 = values[4];
 }
 
-void EDMFuelLimits::dump(std::ostream& outStream)
+void EDMFuelLimits::dump(std::ostream &outStream)
 {
     outStream << "EDMFuelLimits:" << "\n    empty: " << empty
               << "\n    main_tank_size: " << main_tank_size
@@ -174,7 +171,8 @@ void EDMProtoHeader::apply(std::vector<unsigned long> values)
     value = values[0];
 }
 
-void EDMProtoHeader::dump(std::ostream& outStream) {
+void EDMProtoHeader::dump(std::ostream &outStream)
+{
     outStream << "EDM ProtoHeader:" << "\n    value: " << value << "\n";
 }
 
@@ -195,15 +193,16 @@ void EDMTimeStamp::apply(std::vector<unsigned long> values)
     flight_num = values[5];
 }
 
-void EDMTimeStamp::dump(std::ostream& outStream)
+void EDMTimeStamp::dump(std::ostream &outStream)
 {
     outStream << "EDMTimeStamp:" << "\n    mon: " << mon << "\n    day: " << day
               << "\n    yr: " << yr << "\n    hh: " << hh << "\n    mm: " << mm
               << "\n    flight_num: " << flight_num << "\n";
 }
 
-bool EDMMetaData::isTwin() {
-    return (m_configInfo.edm_model==760 || m_configInfo.edm_model==960);
+bool EDMMetaData::isTwin()
+{
+    return (m_configInfo.edm_model == 760 || m_configInfo.edm_model == 960);
 }
 
 int EDMMetaData::protoVersion()
@@ -231,11 +230,13 @@ int EDMMetaData::protoVersion()
     return PROTO_V4;
 }
 
-bool EDMMetaData::isOldRecFormat() {
+bool EDMMetaData::isOldRecFormat()
+{
     return (protoVersion() == PROTO_V1 || protoVersion() == PROTO_V2);
 }
 
-int EDMMetaData::guessFlightHeaderVersion() {
+int EDMMetaData::guessFlightHeaderVersion()
+{
     if (m_protoHeader.value > 1 || m_configInfo.edm_model >= 900) {
         if (m_configInfo.build_maj > 2010) {
             return HEADER_V4;
@@ -248,11 +249,9 @@ int EDMMetaData::guessFlightHeaderVersion() {
     return HEADER_V1;
 }
 
-bool EDMMetaData::tempInC() {
-    return ((m_configInfo.flags & F_TEMP_IN_F) == 0);
-}
+bool EDMMetaData::tempInC() { return ((m_configInfo.flags & F_TEMP_IN_F) == 0); }
 
-void EDMMetaData::dump(std::ostream& outStream)
+void EDMMetaData::dump(std::ostream &outStream)
 {
     outStream << "Tailnumber: " << m_tailNum << "\n";
     outStream << "Old Rec Format: " << (isOldRecFormat() ? "yes" : "no") << "\n";

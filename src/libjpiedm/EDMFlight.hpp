@@ -11,10 +11,10 @@
 
 #include <bitset>
 #include <cstdint>
+#include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <map>
-#include <ctime>
 
 namespace jpi_edm {
 
@@ -24,35 +24,34 @@ class EDMFlightHeader
     EDMFlightHeader(){};
     virtual ~EDMFlightHeader(){};
 
-    virtual void dump(std::ostream& outStream)
+    virtual void dump(std::ostream &outStream)
     {
         std::tm local;
 
 #ifdef _WIN32
         time_t recordTime = _mkgmtime(&startDate);
-	    gmtime_s(&local, &recordTime);
+        gmtime_s(&local, &recordTime);
 #else
         time_t recordTime = timegm(&startDate);
-	    local = *gmtime(&recordTime);
+        local = *gmtime(&recordTime);
 #endif
-        outStream << "Flight Header:"
-                  << "\n    flight_num: " << flight_num
-                  << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
-                  << "\n    interval: " << interval
+        outStream << "Flight Header:" << "\n    flight_num: " << flight_num
+                  << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b"
+                  << std::bitset<32>(flags) << "\n    interval: " << interval
                   << "\n    date: " << std::put_time(&local, "%m/%d/%Y")
-                  << "\n    time: " << std::put_time(&local,   "%T")
-                  << "\n";
-
+                  << "\n    time: " << std::put_time(&local, "%T") << "\n";
     }
 
   public:
     unsigned int flight_num; // matches what's in the $D record
-    uint32_t flags;      // matches the flags in the $C record
-    uint16_t unknown[8]; // unknown[0] exists even in the old variant. The other
-                         // 7 elements are new.
+    uint32_t flags;          // matches the flags in the $C record
+    uint16_t unknown[8];     // unknown[0] exists even in the old variant. The other
+                             // 7 elements are new.
     unsigned int interval;   // Record interval in seconds. Default is 6. Savvy runs
-                         // should be 1.
-    struct tm startDate{0};
+                             // should be 1.
+    struct tm startDate {
+        0
+    };
 };
 
 /**
@@ -68,7 +67,7 @@ class EDMFlightRecord
 {
   public:
     EDMFlightRecord() = delete;
-    EDMFlightRecord(int recordSeq, bool isFast) : m_recordSeq(recordSeq), m_isFast(isFast) {};
+    EDMFlightRecord(int recordSeq, bool isFast) : m_recordSeq(recordSeq), m_isFast(isFast){};
     virtual ~EDMFlightRecord(){};
 
     enum Measurement {
@@ -131,52 +130,15 @@ class EDMFlightRecord
     // ordered map
     // TODO: add more of these as they're figured out
     const std::map<Measurement, std::vector<int>> offsets = {
-        {EGT1, {0, 48}},
-        {EGT2, {1, 49}},
-        {EGT3, {2, 50}},
-        {EGT4, {3, 51}},
-        {EGT5, {4, 52}},
-        {EGT6, {5, 53}},
-        {CHT1, {8}},
-        {CHT2, {9}},
-        {CHT3, {10}},
-        {CHT4, {11}},
-        {CHT5, {12}},
-        {CHT6, {13}},
-        {CLD,  {14}},
-        {OILT, {15}},
-        {MARK, {MARK_IDX}},
-        {OILP, {17}},
-        {CARB, {18}},
-        {VOLTS, {20}},
-        {OAT,  {21}},
-        {USD,  {22}},
-        {FF,   {23}},
-        {EGTR1, {24}},
-        {EGTR2, {25}},
-        {EGTR3, {26}},
-        {EGTR4, {27}},
-        {EGTR5, {28}},
-        {EGTR6, {29}},
-        {HP,   {30}},
-        {CHTR1, {32}},
-        {CHTR2, {33}},
-        {CHTR3, {34}},
-        {CHTR4, {35}},
-        {CHTR5, {36}},
-        {CHTR6, {37}},
-        {RCLD,  {38}},
-        {ROILT, {39}},
-        {MAP,  {40}},
-        {RPM,  {41, 42}},
-        {AMPS, {64}},
-        {RFL,  {67}},
-        {LFL,  {68}},
-        {FP,   {69}},
-        {RAUX, {71}},
-        {LAUX, {84}},
-        {HRS,  {78, 79}}
-    };
+        {EGT1, {0, 48}}, {EGT2, {1, 49}}, {EGT3, {2, 50}}, {EGT4, {3, 51}}, {EGT5, {4, 52}},
+        {EGT6, {5, 53}}, {CHT1, {8}},     {CHT2, {9}},     {CHT3, {10}},    {CHT4, {11}},
+        {CHT5, {12}},    {CHT6, {13}},    {CLD, {14}},     {OILT, {15}},    {MARK, {MARK_IDX}},
+        {OILP, {17}},    {CARB, {18}},    {VOLTS, {20}},   {OAT, {21}},     {USD, {22}},
+        {FF, {23}},      {EGTR1, {24}},   {EGTR2, {25}},   {EGTR3, {26}},   {EGTR4, {27}},
+        {EGTR5, {28}},   {EGTR6, {29}},   {HP, {30}},      {CHTR1, {32}},   {CHTR2, {33}},
+        {CHTR3, {34}},   {CHTR4, {35}},   {CHTR5, {36}},   {CHTR6, {37}},   {RCLD, {38}},
+        {ROILT, {39}},   {MAP, {40}},     {RPM, {41, 42}}, {AMPS, {64}},    {RFL, {67}},
+        {LFL, {68}},     {FP, {69}},      {RAUX, {71}},    {LAUX, {84}},    {HRS, {78, 79}}};
 
     virtual void apply(std::vector<int> &values);
 
