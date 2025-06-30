@@ -324,19 +324,18 @@ The bits in the bitmap represent the following measurements:
 
     byte 8
     [64] AMPS1
-    [65] VOLTS2
-    [66] AMPS2
-    [67] FLVL11
-    [68] FLVL12
-    [69] FP1
-    [70] HP1
-    [71] FLVL13
+    [65] VLT2
+    [66] AMP2
+    [67] RFL (Right main fuel level)
+    [68] LFL (Left main fuel level)
+    [69] FP (fuel pressure, single/left engine)
+    [70] HP (horsepower, single/left engine)
+    [71] LAUX (left aux tank fuel level)
 
     byte 9
     [72] -
     [73] -
-    [74] -
-    [74] TORQUE1
+    [74] TORQ (single/left engine torque)
     [76] -
     [77] -
     [78] HOURS.l (single/left engine hours, low byte)
@@ -347,17 +346,17 @@ The bits in the bitmap represent the following measurements:
     [81] -
     [82] -
     [83] ?
-    [84] FLVL14?
-    [85] Ground Speed?
-    [86] ?
-    [87] ?
+    [84] RAUX (right aux tank fuel level)
+    [85] Ground Speed in knots
+    [86] longitude?
+    [87] latitude?
 
     byte 11
     [88] MP2
     [89] HP2
     [90] IAT2
     [91] FLVL21
-    [92] FLVL21
+    [92] FLVL22
     [93] FP2
     [94] OILP2
     [94] FLVL23

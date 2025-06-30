@@ -139,10 +139,10 @@ class EDMFlightRecord
 	TORQ,
 	TORQR,
         DIF,
-        LFL0,  // left main tank fuel level
-        RFL0,  // right main tank fuel level
-        LFL1, // left aux tank fuel level
-        RFL1, // right aux tank fuel level
+        LFL,  // left main tank fuel level
+        RFL,  // right main tank fuel level
+        LAUX, // left aux tank fuel level
+        RAUX, // right aux tank fuel level
 	HYD1,
 	HYD2,
 	HYDR1,
@@ -155,8 +155,6 @@ class EDMFlightRecord
 
     static const int MARK_IDX = 16;
 
-    // ordered map
-    // TODO: add more of these as they're figured out
     // clang-format off
     const std::map<Measurement, std::vector<int>> offsets = {
 	    // ----- byte 0
@@ -214,6 +212,9 @@ class EDMFlightRecord
 	    {MAP,   {40}},
 	    {RPM,   {41, 42}},
 	    {RPMR,  {43, 44}},
+	    // HYDP1  45
+	    // FUSED2 46
+	    // FF2    47
 
 	    // ----- byte 6
 	    // EGT1 48
@@ -237,24 +238,38 @@ class EDMFlightRecord
 
 	    // ----- byte 8
 	    {AMPS,  {64}},
-	    {RFL0,   {67}},
-	    {LFL0,   {68}},
+	    // VLT2 65
+	    // AMP2 66
+	    {RFL,  {67}},
+	    {LFL,  {68}},
 	    {FP,    {69}},
 	    {HP,    {70}},
+	    {LAUX,  {71}},     // left aux tank
 	    
 	    // ----- byte 9
-	    {LFL1,  {71}},
+	    // unknown 72
+	    // unknown 73
 	    {TORQ,  {74}},
+	    // unknown 75
+	    // unknown 76
+	    // unknown 77
+	    {HRS,   {78, 79}},
 
 	    // ----- byte 10
-	    {HRS,   {78, 79}},
-	    {RFL1,  {84}},
+	    // unknown 80
+	    // unknown 81
+	    // unknown 82
+	    {ALT,   {83}},     // altitude, in feet
+	    {RAUX,  {84}},     // right aux tank
+	    {SPD,   {85}},     // airspeed, in knots
+	    // longitude? 86
+	    // latitude?  87
 
 	    // ----- byte 11
-	    {HPR,    {89}},
+	    {HPR,   {89}},
 
 	    // ----- byte 12
-	    {TORQR,  {98}},
+	    {TORQR, {98}},
 	    {HRSR,  {102, 103}},
 
 	    // ----- byte 13

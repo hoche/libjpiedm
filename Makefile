@@ -5,6 +5,11 @@ build:
 	cmake -S . -B build && cmake --build build -j
 .PHONY: build
 
+build-debug:
+	@if [ ! -d build ]; then mkdir build; fi
+	cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j
+.PHONY: build
+
 clean:
 	@if [ -d build ]; then rm -rf $(TOP)/build; fi
 .PHONY: clean

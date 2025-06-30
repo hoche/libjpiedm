@@ -8,11 +8,6 @@ set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS YES CACHE BOOL "Export all symbols")
 
-message("cmake module path: ${CMAKE_MODULE_PATH}")
-message("current cmakelist directory: ${CMAKE_CURRENT_LIST_DIR}")
-message("project source directory: ${PROJECT_SOURCE_DIR}")
-message("project binary directory: ${PROJECT_BINARY_DIR}")
-
 # Set compilation flags
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

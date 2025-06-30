@@ -32,8 +32,8 @@
 
 namespace jpi_edm {
 
-// #define DEBUG_FLIGHTS
-// #define DEBUG_FLIGHT_HEADERS
+//#define DEBUG_FLIGHTS
+//#define DEBUG_FLIGHT_HEADERS
 // #define DEBUG_PARSE
 
 #if defined(DEBUG_FLIGHTS) && !defined(DEBUG_FLIGHT_HEADERS)
@@ -337,9 +337,27 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
     stream.read(reinterpret_cast<char *>(&flags), 4);
     flightHeader.flags = htons(flags[0]) | (htons(flags[1]) << 16);
 
-    // skip unknowns
-    std::streamoff offset = startOff + headerSize - std::streamoff(6L);
-    stream.seekg(offset, std::ios_base::beg);
+#ifdef DEBUG_FLIGHT_HEADERS
+    std::cout << "flags: 0x" << std::hex << flightHeader.flags << std::dec << "\n";
+#endif
+
+    // figure out where the interval offset is so we know how far
+    // to go to skip the unknowns
+    std::streamoff intervalOffset = startOff + headerSize - std::streamoff(6L);
+
+#ifdef DEBUG_FLIGHT_HEADERS
+    for (int i = 0; stream.tellg() < intervalOffset; ++i) {
+        uint16_t unknown;
+        stream.read(reinterpret_cast<char *>(&unknown), 2);
+        unknown = ntohs(unknown);
+	std::cout << "unknown[" << i << "]: 0x" << std::hex << unknown << std::dec << "\n";
+        unknown = htons(unknown);
+	std::cout << "unknown[" << i << "]: 0x" << std::hex << unknown << std::dec << "\n";
+    }
+#else
+    // just skip 'em
+    stream.seekg(intervalOffset, std::ios_base::beg);
+#endif
 
     stream.read(reinterpret_cast<char *>(&flightHeader.interval), 2);
     flightHeader.interval = ntohs(flightHeader.interval);
@@ -359,8 +377,8 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
     flightHeader.startDate.tm_hour = (tm >> 11);
 
 #ifdef DEBUG_FLIGHT_HEADERS
-    std::cout << std::hex << dt << std::dec << "\n";
-    std::cout << std::hex << tm << std::dec << "\n";
+    std::cout << "date: 0x" << std::hex << dt << std::dec << "\n";
+    std::cout << "time: 0x" << std::hex << tm << std::dec << "\n";
     std::cout << "Start date:\n"
               << "  tm_sec: " << flightHeader.startDate.tm_sec
               << "  tm_min: " << flightHeader.startDate.tm_min
@@ -473,11 +491,12 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
 #ifdef DEBUG_FLIGHTS
     std::cout << "repeatCount: " << hex(repeatCount) << "\n";
     {
-        // std::cout << "fieldMap: b" << fieldMap << "\n";
+        std::cout << "          ";
         for (int count = 0, i = fieldMap.size() / 8 - 1; i >= 0; i--) {
             std::cout << " Byte " << hex(i) << "  ";
         }
         std::cout << "\n";
+        std::cout << "fieldMap: ";
         for (int count = 0, i = fieldMap.size() - 1; i >= 0; i--) {
             std::cout << fieldMap[i];
             if (++count == 8) {
@@ -486,7 +505,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
             }
         }
         std::cout << "\n";
-        // std::cout << "signMap: b" << signMap << "\n";
+        std::cout << " signMap: ";
         for (int count = 0, i = signMap.size() - 1; i >= 0; i--) {
             std::cout << signMap[i];
             if (++count == 8) {
@@ -504,7 +523,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
         m_stdRecs = 0;
         m_fastRecs = 0;
         std::vector<int> default_values(128, 0xF0);
-        std::vector<int> specialdefaults{30, 42, 48, 49, 50, 51, 52, 53, 79};
+        std::vector<int> specialdefaults{30, 42, 48, 49, 50, 51, 52, 53, 79, 85, 86, 87};
         for (auto i : specialdefaults)
             default_values[i] = 0; // special cases with defaults of 0x00 instead of 0xF0
 
@@ -514,6 +533,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
 #ifdef DEBUG_FLIGHTS
     std::cout << "values start offset: " << std::hex << stream.tellg() << std::dec << "\n";
     int printCount = 0;
+    std::cout << "raw values:\n";
 #endif
 
     // FUTURE OPTIMIZATION: older files, we can stop iterating at 48 bits instead of doing
@@ -523,7 +543,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
             unsigned char diff;
             stream.read(reinterpret_cast<char *>(&diff), 1);
 #ifdef DEBUG_FLIGHTS
-            std::cout << "[" << k << ":0x" << hex(diff) << "]";
+            std::cout << "[" << k << "]\t0x" << hex(diff) << "\t(" << int(diff) << ")\t" << (signMap[k]?"-":"+") << "\n";
             if (++printCount % 16 == 0) {
                 std::cout << "\n";
             }

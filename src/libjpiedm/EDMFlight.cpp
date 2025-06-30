@@ -17,13 +17,17 @@
 
 namespace jpi_edm {
 
+//#define DEBUG_FLIGHT_RECORD
+
 void EDMFlightRecord::apply(std::vector<int> &values)
 {
-    /*
+#ifdef DEBUG_FLIGHT_RECORD
     for (int i = 0; i < values.size(); ++i) {
-        std::cout << "[" << i << "] " << std::hex << values[i] << std::dec << "\n";
+	if (i == 83) continue; // already known (ALT)
+	printf("[%d] %8x\t(%d)\t(%u)\n", i, values[i], (int)values[i], (unsigned)values[i]);
+        //std::cout << "[" << i << "] " << std::hex << values[i] << std::dec << "\n";
     };
-    */
+#endif
 
     for (auto &[key, indices] : offsets) {
         if (indices.size() > 1) {
