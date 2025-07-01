@@ -351,8 +351,6 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
         stream.read(reinterpret_cast<char *>(&unknown), 2);
         unknown = ntohs(unknown);
 	std::cout << "unknown[" << i << "]: 0x" << std::hex << unknown << std::dec << "\n";
-        unknown = htons(unknown);
-	std::cout << "unknown[" << i << "]: 0x" << std::hex << unknown << std::dec << "\n";
     }
 #else
     // just skip 'em
@@ -523,7 +521,8 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
         m_stdRecs = 0;
         m_fastRecs = 0;
         std::vector<int> default_values(128, 0xF0);
-        std::vector<int> specialdefaults{30, 42, 48, 49, 50, 51, 52, 53, 79, 85, 86, 87};
+	// TODO: I think every element that's a high byte is initialized to 0, not 0xF0
+        std::vector<int> specialdefaults{30, 42, 44, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 76, 77, 79, 86, 87, 100, 101, 103, 108, 109, 110, 116, 117, 118};
         for (auto i : specialdefaults)
             default_values[i] = 0; // special cases with defaults of 0x00 instead of 0xF0
 

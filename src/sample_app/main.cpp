@@ -70,6 +70,9 @@ void printFlightDataRecord(const jpi_edm::EDMFlightRecord &rec, std::ostream &ou
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT5) << ",";
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT6) << ",";
 
+    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::TIT1) << ",";
+    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::TIT2) << ",";
+
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::OAT) << ",";
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::DIF) << ",";
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CLD) << ",";
@@ -151,7 +154,7 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
                       << std::put_time(&local, "%T") << "\n";
 
             outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
-                      << ",OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
+                      << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
                       << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
         });
 
@@ -163,7 +166,7 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
 
             std::tm local = *std::gmtime(&recordTime);
 
-            outStream << (rec.m_recordSeq+1) << "," << std::put_time(&local, "%m/%d/%Y") << ","
+            outStream << rec.m_recordSeq << "," << std::put_time(&local, "%m/%d/%Y") << ","
                       << std::put_time(&local, "%T") << ",";
             printFlightDataRecord(rec, outStream);
 

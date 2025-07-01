@@ -38,8 +38,6 @@
 
 namespace jpi_edm {
 
-#define DEBUG_HEADERS 1
-
 const int maxheaderlen = 128;
 
 /**

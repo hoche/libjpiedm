@@ -42,13 +42,22 @@ void EDMFlightRecord::apply(std::vector<int> &values)
                                m_dataMap[EGT5], m_dataMap[EGT6]});
     m_dataMap[DIF] = bounds.second - bounds.first;
 
-    // TODO where are these
-    m_dataMap[FF2] = 0;
-    m_dataMap[FUSD2] = -1;
-    m_dataMap[SPD] = -1;
-    m_dataMap[ALT] = -1;
-    m_dataMap[LAT] = -1;
-    m_dataMap[LNG] = -1;
+    if (m_dataMap.find(FF2) == m_dataMap.end()) { m_dataMap[FF2] = 0; }
+    if (m_dataMap.find(FUSD2) == m_dataMap.end()) { m_dataMap[FUSD2] = -1; }
+    if (auto it = m_dataMap.find(SPD); it != m_dataMap.end()) {
+        if (it->second == 0xF0)
+            m_dataMap[SPD] = -1;
+	} else {
+        m_dataMap[SPD] = -1;
+	}
+    if (auto it = m_dataMap.find(ALT); it != m_dataMap.end()) {
+        if (it->second == 0xF0)
+            m_dataMap[ALT] = -1;
+	} else {
+        m_dataMap[ALT] = -1;
+	}
+    if (m_dataMap.find(LAT) == m_dataMap.end()) { m_dataMap[LAT] = -1; }
+    if (m_dataMap.find(LNG) == m_dataMap.end()) { m_dataMap[LNG] = -1; }
 }
 
 } // namespace jpi_edm
