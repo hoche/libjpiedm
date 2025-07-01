@@ -50,4 +50,10 @@
     - cpython
     - java
     - rust?
-
+- add a config file that specifies which fields to dump
+- add verbose options so that debug levels aren't compiled in, they are
+  triggered by an option.
+- Package binary
+    - For OSX, codesign
+    - For Windows - need cert
+    - For linux - yay
