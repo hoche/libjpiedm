@@ -23,7 +23,7 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [windows-latest, windows-2019]
+        os: [windows-latest, windows-2022]
         build_type: [Release]
         c_compiler: [cl,gcc]
         include:
