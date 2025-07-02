@@ -14,10 +14,46 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-# add the binary directory to the search path for include files
-include_directories("${PROJECT_BINARY_DIR}")
+# libjpiedm library
+add_library(jpiedm
+    src/libjpiedm/EDMFlightFile.cpp
+    src/libjpiedm/EDMFileHeaders.cpp
+    src/libjpiedm/EDMFlight.cpp
+)
 
-add_subdirectory(src)
+if(DEBUG_VERBOSE)
+  target_compile_definitions(jpiedm PUBLIC DEBUG_FLIGHTS=1 DEBUG_FLIGHT_HEADERS=1 DEBUG_FLIGHT_RECORD=1)
+endif()
 
+
+target_include_directories(jpiedm
+    PUBLIC src/libjpiedm
+)
+
+
+# parseedmlog executable
+add_executable(parseedmlog
+    src/parseedmlog/main.cpp
+)
+
+target_include_directories(parseedmlog
+    PUBLIC src/libjpiedm src/parseedmlog
+)
+
+if(WIN32)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	target_sources(parseedmlog
+        PRIVATE getopt.cpp
+	)
+	target_link_libraries(parseedmlog
+		PUBLIC Ws2_32.lib PRIVATE jpiedm
+	)
+else()
+	target_link_libraries(parseedmlog
+		PRIVATE jpiedm
+	)
+endif()
+
+# testing
 enable_testing()
 add_subdirectory(test)
