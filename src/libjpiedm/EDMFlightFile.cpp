@@ -32,9 +32,9 @@
 
 namespace jpi_edm {
 
-//#define DEBUG_FLIGHTS
-//#define DEBUG_FLIGHT_HEADERS
-// #define DEBUG_PARSE
+// #define DEBUG_FLIGHTS
+// #define DEBUG_FLIGHT_HEADERS
+//  #define DEBUG_PARSE
 
 #if defined(DEBUG_FLIGHTS) && !defined(DEBUG_FLIGHT_HEADERS)
 #define DEBUG_FLIGHT_HEADERS
@@ -55,10 +55,7 @@ inline std::ostream &operator<<(std::ostream &o, const HexCharStruct &hs)
 
 inline HexCharStruct hex(unsigned char _c) { return HexCharStruct(_c); }
 
-void EDMFlightFile::setMetaDataCompletionCb(std::function<void(EDMMetaData &)> cb)
-{
-    m_metaDataCompletionCb = cb;
-}
+void EDMFlightFile::setMetaDataCompletionCb(std::function<void(EDMMetaData &)> cb) { m_metaDataCompletionCb = cb; }
 
 void EDMFlightFile::setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader &)> cb)
 {
@@ -75,10 +72,7 @@ void EDMFlightFile::setFlightCompletionCb(std::function<void(unsigned long, unsi
     m_flightCompletionCb = cb;
 }
 
-void EDMFlightFile::setFileFooterCompletionCb(std::function<void(void)> cb)
-{
-    m_fileFooterCompletionCb = cb;
-}
+void EDMFlightFile::setFileFooterCompletionCb(std::function<void(void)> cb) { m_fileFooterCompletionCb = cb; }
 
 /**
  * @brief split_header_line
@@ -202,8 +196,7 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
         {
             auto flightDataCount = split_header_line(lineno, line);
             if (flightDataCount.size() > 1) {
-                m_flightDataCounts.push_back(
-                    std::pair<int, long>{flightDataCount[0], flightDataCount[1]});
+                m_flightDataCounts.push_back(std::pair<int, long>{flightDataCount[0], flightDataCount[1]});
             }
         } break;
         case 'F': // fuel limits?
@@ -325,8 +318,7 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
 
     if (flightHeader.flight_num != flightId) {
         std::stringstream msg;
-        msg << "Flight IDs don't match. Offset: " << std::hex
-            << (stream.tellg() - static_cast<std::streamoff>(4L));
+        msg << "Flight IDs don't match. Offset: " << std::hex << (stream.tellg() - static_cast<std::streamoff>(4L));
 #ifdef DEBUG_FLIGHT_HEADERS
         std::cout << msg.str() << std::endl;
 #endif
@@ -350,7 +342,7 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
         uint16_t unknown;
         stream.read(reinterpret_cast<char *>(&unknown), 2);
         unknown = ntohs(unknown);
-	std::cout << "unknown[" << i << "]: 0x" << std::hex << unknown << std::dec << "\n";
+        std::cout << "unknown[" << i << "]: 0x" << std::hex << unknown << std::dec << "\n";
     }
 #else
     // just skip 'em
@@ -378,14 +370,10 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
     std::cout << "date: 0x" << std::hex << dt << std::dec << "\n";
     std::cout << "time: 0x" << std::hex << tm << std::dec << "\n";
     std::cout << "Start date:\n"
-              << "  tm_sec: " << flightHeader.startDate.tm_sec
-              << "  tm_min: " << flightHeader.startDate.tm_min
-              << "  tm_hour: " << flightHeader.startDate.tm_hour
-              << "  tm_mday: " << flightHeader.startDate.tm_mday
-              << "  tm_mon: " << flightHeader.startDate.tm_mon
-              << "  tm_year: " << flightHeader.startDate.tm_year
-              << "  tm_wday: " << flightHeader.startDate.tm_wday
-              << "  tm_yday: " << flightHeader.startDate.tm_yday
+              << "  tm_sec: " << flightHeader.startDate.tm_sec << "  tm_min: " << flightHeader.startDate.tm_min
+              << "  tm_hour: " << flightHeader.startDate.tm_hour << "  tm_mday: " << flightHeader.startDate.tm_mday
+              << "  tm_mon: " << flightHeader.startDate.tm_mon << "  tm_year: " << flightHeader.startDate.tm_year
+              << "  tm_wday: " << flightHeader.startDate.tm_wday << "  tm_yday: " << flightHeader.startDate.tm_yday
               << "  tm_isdst: " << flightHeader.startDate.tm_isdst << "\n";
 #endif
 
@@ -436,8 +424,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
     stream.read(reinterpret_cast<char *>(&bmPopMap[1]), maskSize);
 
 #ifdef DEBUG_FLIGHTS
-    std::cout << "bmPopMap[0]: " << std::hex << bmPopMap[0] << "   bmPopMap[1]: " << bmPopMap[1]
-              << std::dec << "\n";
+    std::cout << "bmPopMap[0]: " << std::hex << bmPopMap[0] << "   bmPopMap[1]: " << bmPopMap[1] << std::dec << "\n";
     std::cout << std::flush;
 #endif
 
@@ -521,8 +508,9 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
         m_stdRecs = 0;
         m_fastRecs = 0;
         std::vector<int> default_values(128, 0xF0);
-	// TODO: I think every element that's a high byte is initialized to 0, not 0xF0
-        std::vector<int> specialdefaults{30, 42, 44, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 76, 77, 79, 86, 87, 100, 101, 103, 108, 109, 110, 116, 117, 118};
+        // TODO: I think every element that's a high byte is initialized to 0, not 0xF0
+        std::vector<int> specialdefaults{30, 42, 44, 48, 49, 50, 51, 52,  53,  54,  55,  56,  57,  58,  59,  60, 61,
+                                         62, 63, 76, 77, 79, 86, 87, 100, 101, 103, 108, 109, 110, 116, 117, 118};
         for (auto i : specialdefaults)
             default_values[i] = 0; // special cases with defaults of 0x00 instead of 0xF0
 
@@ -542,7 +530,8 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
             unsigned char diff;
             stream.read(reinterpret_cast<char *>(&diff), 1);
 #ifdef DEBUG_FLIGHTS
-            std::cout << "[" << k << "]\t0x" << hex(diff) << "\t(" << int(diff) << ")\t" << (signMap[k]?"-":"+") << "\n";
+            std::cout << "[" << k << "]\t0x" << hex(diff) << "\t(" << int(diff) << ")\t" << (signMap[k] ? "-" : "+")
+                      << "\n";
             if (++printCount % 16 == 0) {
                 std::cout << "\n";
             }
@@ -625,9 +614,9 @@ bool EDMFlightFile::parse(std::istream &stream)
             parseFlightDataRec(stream, recordSeq, isFast);
 #ifdef DEBUG_PARSE
             auto bytesRead = stream.tellg() - startOff;
-            std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex
-                      << stream.tellg() << std::dec << "    ((flightDataCount.second-1)*2): "
-                      << ((flightDataCount.second - 1L) * 2) << "\n"
+            std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex << stream.tellg()
+                      << std::dec << "    ((flightDataCount.second-1)*2): " << ((flightDataCount.second - 1L) * 2)
+                      << "\n"
                       << std::flush;
 #endif
             if (isFast) {

@@ -60,13 +60,11 @@ void EDMConfigLimits::apply(std::vector<unsigned long> values)
 
 void EDMConfigLimits::dump(std::ostream &outStream)
 {
-    outStream << "EDMConfigLimits:" << "\n    volts_hi: " << volts_hi
-              << "\n    volts_lo: " << volts_lo << "\n    egt_diff: " << egt_diff
-              << "\n    cht_temp_hi: " << cht_temp_hi
+    outStream << "EDMConfigLimits:" << "\n    volts_hi: " << volts_hi << "\n    volts_lo: " << volts_lo
+              << "\n    egt_diff: " << egt_diff << "\n    cht_temp_hi: " << cht_temp_hi
               << "\n    shock_cooling_cld: " << shock_cooling_cld
-              << "\n    turbo_inlet_temp_hi: " << turbo_inlet_temp_hi
-              << "\n    oil_temp_hi: " << oil_temp_hi << "\n    oil_temp_lo: " << oil_temp_lo
-              << "\n";
+              << "\n    turbo_inlet_temp_hi: " << turbo_inlet_temp_hi << "\n    oil_temp_hi: " << oil_temp_hi
+              << "\n    oil_temp_lo: " << oil_temp_lo << "\n";
 }
 
 void EDMConfigInfo::apply(std::vector<unsigned long> values)
@@ -126,12 +124,10 @@ const uint32_t F_MARK = 0x00000001; // 1 bit always seems to exist
 
 void EDMConfigInfo::dump(std::ostream &outStream)
 {
-    outStream << "EDMConfigInfo:" << "\n    edm_model: " << edm_model << "\n    flags: " << flags
-              << " 0x" << std::hex << flags << std::dec << " b" << std::bitset<32>(flags)
-              << "\n    firmware_version: " << firmware_version << "\n    build: " << build_maj
-              << "." << build_min << "\n";
-    outStream << "Temperatures for CHT, EGT, and TIT are in " << (flags & F_TEMP_IN_F ? "F" : "C")
-              << "\n";
+    outStream << "EDMConfigInfo:" << "\n    edm_model: " << edm_model << "\n    flags: " << flags << " 0x" << std::hex
+              << flags << std::dec << " b" << std::bitset<32>(flags) << "\n    firmware_version: " << firmware_version
+              << "\n    build: " << build_maj << "." << build_min << "\n";
+    outStream << "Temperatures for CHT, EGT, and TIT are in " << (flags & F_TEMP_IN_F ? "F" : "C") << "\n";
 }
 
 /**
@@ -152,8 +148,7 @@ void EDMFuelLimits::apply(std::vector<unsigned long> values)
 
 void EDMFuelLimits::dump(std::ostream &outStream)
 {
-    outStream << "EDMFuelLimits:" << "\n    empty: " << empty
-              << "\n    main_tank_size: " << main_tank_size
+    outStream << "EDMFuelLimits:" << "\n    empty: " << empty << "\n    main_tank_size: " << main_tank_size
               << "\n    aux_tank_size: " << aux_tank_size << "\n    k_factor_2: " << k_factor_1
               << "\n    k_factor_1: " << k_factor_2 << "\n";
 }
@@ -193,15 +188,11 @@ void EDMTimeStamp::apply(std::vector<unsigned long> values)
 
 void EDMTimeStamp::dump(std::ostream &outStream)
 {
-    outStream << "EDMTimeStamp:" << "\n    mon: " << mon << "\n    day: " << day
-              << "\n    yr: " << yr << "\n    hh: " << hh << "\n    mm: " << mm
-              << "\n    flight_num: " << flight_num << "\n";
+    outStream << "EDMTimeStamp:" << "\n    mon: " << mon << "\n    day: " << day << "\n    yr: " << yr
+              << "\n    hh: " << hh << "\n    mm: " << mm << "\n    flight_num: " << flight_num << "\n";
 }
 
-bool EDMMetaData::isTwin()
-{
-    return (m_configInfo.edm_model == 760 || m_configInfo.edm_model == 960);
-}
+bool EDMMetaData::isTwin() { return (m_configInfo.edm_model == 760 || m_configInfo.edm_model == 960); }
 
 int EDMMetaData::protoVersion()
 {
@@ -228,10 +219,7 @@ int EDMMetaData::protoVersion()
     return PROTO_V4;
 }
 
-bool EDMMetaData::isOldRecFormat()
-{
-    return (protoVersion() == PROTO_V1 || protoVersion() == PROTO_V2);
-}
+bool EDMMetaData::isOldRecFormat() { return (protoVersion() == PROTO_V1 || protoVersion() == PROTO_V2); }
 
 int EDMMetaData::guessFlightHeaderVersion()
 {

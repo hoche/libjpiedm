@@ -35,9 +35,8 @@ class EDMFlightHeader
         time_t recordTime = timegm(&startDate);
         local = *gmtime(&recordTime);
 #endif
-        outStream << "Flight Header:" << "\n    flight_num: " << flight_num
-                  << "\n    flags: " << flags << " 0x" << std::hex << flags << std::dec << " b"
-                  << std::bitset<32>(flags) << "\n    interval: " << interval
+        outStream << "Flight Header:" << "\n    flight_num: " << flight_num << "\n    flags: " << flags << " 0x"
+                  << std::hex << flags << std::dec << " b" << std::bitset<32>(flags) << "\n    interval: " << interval
                   << "\n    date: " << std::put_time(&local, "%m/%d/%Y")
                   << "\n    time: " << std::put_time(&local, "%T") << "\n";
     }
@@ -80,8 +79,8 @@ class EDMFlightRecord
         EGT7,
         EGT8,
         EGT9,
-	TIT1,
-	TIT2,
+        TIT1,
+        TIT2,
         CHT1,
         CHT2,
         CHT3,
@@ -96,7 +95,7 @@ class EDMFlightRecord
         MARK,
         OILP,
         CRB,
-	IAT,
+        IAT,
         VLT,
         AMPS,
         OAT,
@@ -115,8 +114,8 @@ class EDMFlightRecord
         EGTR7,
         EGTR8,
         EGTR9,
-	TITR1,
-	TITR2,
+        TITR1,
+        TITR2,
         CHTR1,
         CHTR2,
         CHTR3,
@@ -136,17 +135,17 @@ class EDMFlightRecord
         RPMR,
         HRS,
         HRSR,
-	TORQ,
-	TORQR,
+        TORQ,
+        TORQR,
         DIF,
         LFL,  // left main tank fuel level
         RFL,  // right main tank fuel level
         LAUX, // left aux tank fuel level
         RAUX, // right aux tank fuel level
-	HYD1,
-	HYD2,
-	HYDR1,
-	HYDR2,
+        HYD1,
+        HYD2,
+        HYDR1,
+        HYDR2,
         SPD,
         ALT,
         LAT,

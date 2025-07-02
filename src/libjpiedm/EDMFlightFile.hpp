@@ -47,8 +47,8 @@ class EDMFlightFile
      * didn't match.
      */
     void validateHeaderChecksum(int lineno, const char *line);
-    bool validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff,
-                                std::iostream::off_type endOff, unsigned char checksum);
+    bool validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff, std::iostream::off_type endOff,
+                                unsigned char checksum);
     std::streamoff detectFlightHeaderSize(std::istream &stream);
 
     bool parse(std::istream &stream);
