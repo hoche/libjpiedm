@@ -203,6 +203,9 @@ The first flight header follows immediately after the $L record.
     |  checksum   |
     +-------------/
 
+
+The interval field is in seconds.
+
 In the original format, there was only 1 field in the
 "unknown" array. In later formats there can be up to 8.
 
@@ -210,9 +213,42 @@ In the original format, there was only 1 field in the
 - If it's a 900+, it has at least two extra elements (making 3).
 - If it's a 900+ with a build greater than 880, it has one more (making 4).
 - At some point after that, it went to 7. Unfortunately, I don't know
-when.
+when. However, when it has 7, four of the fields are used for initial GPS coordinates:
 
-The interval field is in seconds.
+     7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |         flight number         |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |            flags              |
+    |                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |          unknown[0]           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |          unknown[1]           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |          unknown[2]           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |       latitude high bits      |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |       latitude low bits       |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |       longitude high bits     |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |       longitude low bits      |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |          unknown[7])          |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |           interval            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |      year   |  mo   |  day    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |   hr    |   min     |  sec/2  |
+    +-------------------------------+
+    |  checksum   |
+    +-------------/
+
+If an airplane is not equipped with a GPS (or it's not hooked up to the JPI), the GPS fields
+may be filled with junk data. I'm not sure on that.
 
 The checksum is the same checksum used in the data records:
 
@@ -348,8 +384,8 @@ The bits in the bitmap represent the following measurements:
     [83] ?
     [84] RAUX (right aux tank fuel level)
     [85] Ground Speed in knots
-    [86] longitude?
-    [87] latitude?
+    [86] longitude? (See note below)
+    [87] latitude?  (See note below)
 
     byte 11
     [88] MP2
@@ -411,6 +447,21 @@ special note. I have seen the following values:
           EZTrends exports this as the ascii char ']'.
     0x04 - I'm not sure what this means. It might be the point that the EDM has
           determined to be LOP or ROP. EZTrends exports this as the ascii char '<'.
+
+The GPS values appear to be differences from the initial value recorded in the flight
+header data fields (fields 3 & 4 for latitude, fields 5 & 6 for longitude). If the
+plane has no GPS, or it is not communicating, the JPI will still indicate that there
+is GPS data for elements 86 and 87 in the population map, but the elements will always
+be 0.
+
+At some point, when it detects that there is a GPS, it will indicate this by setting
+elements 86 and 87 to the value 100 (0x64). Element 86 will not have a sign bit set.
+Element 87 will.
+
+Once that happens, it can be assumed that the plane's current GPS position is the one
+listed in the flight header data. That is used as the initial data point, and all
+further measurements are differences from the previous measurement, as usual.
+
 
 #### Data record header
 
