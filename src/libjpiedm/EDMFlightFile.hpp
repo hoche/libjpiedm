@@ -54,8 +54,8 @@ class EDMFlightFile
     bool parse(std::istream &stream);
 
     void parseFileHeaders(std::istream &stream);
-    void parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
-    void parseFlightDataRec(std::istream &stream, int recordId, bool &isFast);
+    std::shared_ptr<EDMFlightHeader> parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
+    void parseFlightDataRec(std::istream &stream, int recordId, std::shared_ptr<EDMFlightHeader> &header, bool &isFast);
     void parseFileFooters(std::istream &stream);
 
   private:

@@ -44,8 +44,10 @@ class EDMFlightHeader
   public:
     unsigned int flight_num; // matches what's in the $D record
     uint32_t flags;          // matches the flags in the $C record
-    uint16_t unknown[8];     // unknown[0] exists even in the old variant. The other
-                             // 7 elements are new.
+    uint16_t unknown[3];     // unknown[0] exists even in the old variant.
+    int32_t startLat;        // from fields 3 & 4 in the data block
+    int32_t startLng;        // from fields 5 & 6 in the data block
+    uint16_t unknown7;       // field 7 in the data block
     unsigned int interval;   // Record interval in seconds. Default is 6. Savvy runs
                              // should be 1.
     struct tm startDate {
@@ -59,7 +61,7 @@ class EDMFlightHeader
  * Multi-element measurements are combined into one final measurement, but
  * otherwise minimal data transformation is done. For instance, if the EDM is
  * configured to report in F, the temperatures will be in F. This gives the
- * application * more control over how to display.
+ * application more control over how to display.
  *
  */
 class EDMFlightRecord
@@ -261,8 +263,8 @@ class EDMFlightRecord
 	    {ALT,   {83}},     // altitude, in feet
 	    {RAUX,  {84}},     // right aux tank
 	    {SPD,   {85}},     // airspeed, in knots
-	    // longitude? 86
-	    // latitude?  87
+	    {LAT,   {86}},     // latitude
+	    {LNG,   {87}},     // longitude
 
 	    // ----- byte 11
 	    {HPR,   {89}},

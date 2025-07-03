@@ -53,6 +53,13 @@ void printFlightInfo(jpi_edm::EDMFlightHeader &hdr, unsigned long stdReqs, unsig
     outStream << std::endl;
 }
 
+void printLatLng(int measurement, std::ostream &outStream)
+{
+    int hrs = measurement / 6000;
+    float min = float(abs(measurement) % 6000) / 100;
+    outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(3) << min << ",";
+}
+
 // Ugh. these should all be a macro or an inline that range checks.
 void printFlightDataRecord(const jpi_edm::EDMFlightRecord &rec, std::ostream &outStream)
 {
@@ -98,8 +105,11 @@ void printFlightDataRecord(const jpi_edm::EDMFlightRecord &rec, std::ostream &ou
     outStream << static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::HRS)) / 10 << ",";
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::SPD) << ",";
     outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::ALT) << ",";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::LAT) << ",";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::LNG) << ",";
+    outStream << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::LAT)) / 6000.0) << ",";
+    outStream << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::LNG)) / 6000.0) << ",";
+
+    printLatLng(rec.m_dataMap.at(EDMFlightRecord::Measurement::LAT), outStream);
+    printLatLng(rec.m_dataMap.at(EDMFlightRecord::Measurement::LNG), outStream);
 
     switch (rec.m_dataMap.at(EDMFlightRecord::Measurement::MARK)) {
     case 0x02:
