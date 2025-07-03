@@ -23,6 +23,7 @@
 - Skip function - had a hard time with this, but should be able to
   figure it out by jumping to flightWordsx2 or flightWordsx2 + 1 and then
   looking for the flight number.
+- fix callbacks - should use std::shared_ptr, not just send the value
 - refactor
     - File header parser can be separate from FileStream object
     - Flight parser, which is composed of:
@@ -40,9 +41,9 @@
         be done here.
 - sanity check results
     - graph in excel just to look
+- Finish figuring out GPS coords
 - Find misc pieces of data:
     - ~~what causes the sample rate change~~
-    - GPS
     - LOP find start/end
     - ROP find start/end
 - other language bindings

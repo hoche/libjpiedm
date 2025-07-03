@@ -283,6 +283,7 @@ bool EDMFlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::
     return true;
 }
 
+// This scans the stream, adding bytes to it until a checksum matches
 std::streamoff EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
 {
     auto startOff{stream.tellg()};
@@ -304,19 +305,20 @@ std::streamoff EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
     return (found ? offset : 0);
 }
 
-void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize)
+std::shared_ptr<EDMFlightHeader> EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId,
+                                                                  std::streamoff headerSize)
 {
     auto startOff{stream.tellg()};
 #ifdef DEBUG_FLIGHT_HEADERS
     std::cout << "Flight Header start offset: 0x" << std::hex << startOff << std::dec << std::endl;
 #endif
 
-    EDMFlightHeader flightHeader;
+    auto flightHeader = std::make_shared<EDMFlightHeader>();
 
-    stream.read(reinterpret_cast<char *>(&flightHeader.flight_num), 2);
-    flightHeader.flight_num = ntohs(flightHeader.flight_num);
+    stream.read(reinterpret_cast<char *>(&flightHeader->flight_num), 2);
+    flightHeader->flight_num = ntohs(flightHeader->flight_num);
 
-    if (flightHeader.flight_num != flightId) {
+    if (flightHeader->flight_num != flightId) {
         std::stringstream msg;
         msg << "Flight IDs don't match. Offset: " << std::hex << (stream.tellg() - static_cast<std::streamoff>(4L));
 #ifdef DEBUG_FLIGHT_HEADERS
@@ -327,54 +329,79 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
 
     uint16_t flags[2];
     stream.read(reinterpret_cast<char *>(&flags), 4);
-    flightHeader.flags = htons(flags[0]) | (htons(flags[1]) << 16);
+    flightHeader->flags = htons(flags[0]) | (htons(flags[1]) << 16);
 
 #ifdef DEBUG_FLIGHT_HEADERS
-    std::cout << "flags: 0x" << std::hex << flightHeader.flags << std::dec << "\n";
+    std::cout << "flags: 0x" << std::hex << flightHeader->flags << std::dec << "\n";
 #endif
 
-    // figure out where the interval offset is so we know how far
-    // to go to skip the unknowns
     std::streamoff intervalOffset = startOff + headerSize - std::streamoff(6L);
-
+    if (headerSize >= 28) {
+        // big header, with at least seven data fields before the interval field
+        // This potentially has GPS data in fields 3,4 and 5,6.
+        uint32_t latlng{0};
+        for (int i = 0; stream.tellg() < intervalOffset; ++i) {
+            uint16_t val;
+            stream.read(reinterpret_cast<char *>(&val), 2);
+            val = ntohs(val);
+            switch (i) {
+            case 3:
+                latlng = static_cast<uint32_t>(val << 16);
+                break;
+            case 4:
+                flightHeader->startLat = static_cast<int32_t>(latlng | val);
 #ifdef DEBUG_FLIGHT_HEADERS
-    for (int i = 0; stream.tellg() < intervalOffset; ++i) {
-        uint16_t unknown;
-        stream.read(reinterpret_cast<char *>(&unknown), 2);
-        unknown = ntohs(unknown);
-        std::cout << "unknown[" << i << "]: 0x" << std::hex << unknown << std::dec << "\n";
-    }
-#else
-    // just skip 'em
-    stream.seekg(intervalOffset, std::ios_base::beg);
+                std::cout << "Starting latitude: " << std::setprecision(6)
+                          << (static_cast<float>(flightHeader->startLat) / 6000.0) << "\n";
 #endif
+                break;
+            case 5:
+                latlng = static_cast<uint32_t>(val << 16);
+                break;
+            case 6:
+                flightHeader->startLng = static_cast<int32_t>(latlng | val);
+#ifdef DEBUG_FLIGHT_HEADERS
+                std::cout << "Starting longitude: " << std::setprecision(6)
+                          << (static_cast<float>(flightHeader->startLng) / 6000.0) << "\n";
+#endif
+                break;
+#ifdef DEBUG_FLIGHT_HEADERS
+            default:
+                std::cout << "unknown[" << i << "]: 0x" << std::hex << val << std::dec << "\n";
+#endif
+            }
+        }
+    } else {
+        // small header. just skip the data block
+        stream.seekg(intervalOffset, std::ios_base::beg);
+    }
 
-    stream.read(reinterpret_cast<char *>(&flightHeader.interval), 2);
-    flightHeader.interval = ntohs(flightHeader.interval);
+    stream.read(reinterpret_cast<char *>(&flightHeader->interval), 2);
+    flightHeader->interval = ntohs(flightHeader->interval);
 
     uint16_t dt;
     stream.read(reinterpret_cast<char *>(&dt), 2);
     dt = ntohs(dt);
-    flightHeader.startDate.tm_mday = (dt & 0x1f);
-    flightHeader.startDate.tm_mon = ((dt & 0x01ff) >> 5) - 1;
-    flightHeader.startDate.tm_year = (dt >> 9) + 100;
+    flightHeader->startDate.tm_mday = (dt & 0x1f);
+    flightHeader->startDate.tm_mon = ((dt & 0x01ff) >> 5) - 1;
+    flightHeader->startDate.tm_year = (dt >> 9) + 100;
 
     uint16_t tm;
     stream.read(reinterpret_cast<char *>(&tm), 2);
     tm = ntohs(tm);
-    flightHeader.startDate.tm_sec = (tm & 0x1f) * 2;
-    flightHeader.startDate.tm_min = (tm & 0x07ff) >> 5;
-    flightHeader.startDate.tm_hour = (tm >> 11);
+    flightHeader->startDate.tm_sec = (tm & 0x1f) * 2;
+    flightHeader->startDate.tm_min = (tm & 0x07ff) >> 5;
+    flightHeader->startDate.tm_hour = (tm >> 11);
 
 #ifdef DEBUG_FLIGHT_HEADERS
     std::cout << "date: 0x" << std::hex << dt << std::dec << "\n";
     std::cout << "time: 0x" << std::hex << tm << std::dec << "\n";
     std::cout << "Start date:\n"
-              << "  tm_sec: " << flightHeader.startDate.tm_sec << "  tm_min: " << flightHeader.startDate.tm_min
-              << "  tm_hour: " << flightHeader.startDate.tm_hour << "  tm_mday: " << flightHeader.startDate.tm_mday
-              << "  tm_mon: " << flightHeader.startDate.tm_mon << "  tm_year: " << flightHeader.startDate.tm_year
-              << "  tm_wday: " << flightHeader.startDate.tm_wday << "  tm_yday: " << flightHeader.startDate.tm_yday
-              << "  tm_isdst: " << flightHeader.startDate.tm_isdst << "\n";
+              << "  tm_sec: " << flightHeader->startDate.tm_sec << "  tm_min: " << flightHeader->startDate.tm_min
+              << "  tm_hour: " << flightHeader->startDate.tm_hour << "  tm_mday: " << flightHeader->startDate.tm_mday
+              << "  tm_mon: " << flightHeader->startDate.tm_mon << "  tm_year: " << flightHeader->startDate.tm_year
+              << "  tm_wday: " << flightHeader->startDate.tm_wday << "  tm_yday: " << flightHeader->startDate.tm_yday
+              << "  tm_isdst: " << flightHeader->startDate.tm_isdst << "\n";
 #endif
 
     auto endOff{stream.tellg()};
@@ -397,11 +424,13 @@ void EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId, std::s
     }
 
     if (m_flightHeaderCompletionCb) {
-        m_flightHeaderCompletionCb(flightHeader);
+        m_flightHeaderCompletionCb(*flightHeader);
     }
+    return flightHeader;
 }
 
-void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool &isFast)
+void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
+                                       std::shared_ptr<EDMFlightHeader> &flightHeader, bool &isFast)
 {
     int oldFormat = false; // NOT ACTIVE YET
 
@@ -459,7 +488,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
     }
 
     // The measurements are differences from the previous value. This indicates
-    // whether it should be added to or subtr
+    // whether it should be added to or subtracted from the previous value.
     // Note that we skip bytes 6 & 7 - they are the high bytes of the EGTs and
     // the sign bits aren't used (they use the sign bits from the low bytes).
     std::bitset<128> signMap;
@@ -508,7 +537,8 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
         m_stdRecs = 0;
         m_fastRecs = 0;
         std::vector<int> default_values(128, 0xF0);
-        // TODO: I think every element that's a high byte is initialized to 0, not 0xF0
+        // I think every element that's a high byte is initialized to 0, not 0xF0
+        // Also, some miscellaneous others, like GPS coords
         std::vector<int> specialdefaults{30, 42, 44, 48, 49, 50, 51, 52,  53,  54,  55,  56,  57,  58,  59,  60, 61,
                                          62, 63, 76, 77, 79, 86, 87, 100, 101, 103, 108, 109, 110, 116, 117, 118};
         for (auto i : specialdefaults)
@@ -536,7 +566,14 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, bool
                 std::cout << "\n";
             }
 #endif
-            signMap[k] ? m_values[k] -= diff : m_values[k] += diff;
+            // Special case for GPS values
+            if (k == 86 && diff == 0x64) {
+                m_values[k] = flightHeader->startLat;
+            } else if (k == 87 && diff == 0x64) {
+                m_values[k] = flightHeader->startLng;
+            } else {
+                signMap[k] ? m_values[k] -= diff : m_values[k] += diff;
+            }
         } else if (recordSeq == 0) {
             m_values[k] = 0;
         }
@@ -602,7 +639,7 @@ bool EDMFlightFile::parse(std::istream &stream)
         std::cout << "======== startOff: " << std::hex << startOff << std::dec << "\n";
 #endif
 
-        parseFlightHeader(stream, flightDataCount.first, headerSize);
+        auto flightHeader = parseFlightHeader(stream, flightDataCount.first, headerSize);
 
         std::vector<int> values{128};
         unsigned long recordSeq{0};
@@ -611,7 +648,7 @@ bool EDMFlightFile::parse(std::istream &stream)
         bool isFast{false};
 
         for (; (stream.tellg() - startOff) < ((flightDataCount.second - 1L) * 2); ++recordSeq) {
-            parseFlightDataRec(stream, recordSeq, isFast);
+            parseFlightDataRec(stream, recordSeq, flightHeader, isFast);
 #ifdef DEBUG_PARSE
             auto bytesRead = stream.tellg() - startOff;
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex << stream.tellg()

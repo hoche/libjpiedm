@@ -5,6 +5,11 @@ build:
 	cmake -S . -B build && cmake --build build -j
 .PHONY: build
 
+build-verbose:
+	@if [ ! -d build ]; then mkdir build; fi
+	cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DDEBUG_VERBOSE=1 && cmake --build build -j
+.PHONY: build
+
 build-debug:
 	@if [ ! -d build ]; then mkdir build; fi
 	cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug && cmake --build build -j
@@ -21,5 +26,5 @@ test:
 format:
 	clang-format -i src/libjpiedm/*.cpp \
 			src/libjpiedm/*.hpp \
-			src/sample_app/*.cpp
+			src/parseedmlog/*.cpp
 .PHONY: format
