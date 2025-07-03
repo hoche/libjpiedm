@@ -67,16 +67,22 @@ always correct and I haven't figured out a reliable way to use them to jump.
 
 ## Platforms
 
-Tested and running on Linux (x86 and ARM), OSX (x86 and M1), Windows (x86), as well as a Big-Endian
+Tested and running on Linux (x86 and ARM), OSX (x86_64 and arm_64), Windows (x86), as well as a Big-Endian
 NetBSD system just to make sure I got the byte ordering right.
 
 There is are github "actions" to check the build and do a basic set of tests every time a code
-change is submitted. These are currently set up to run on Linux, Windows, and OSX (x86 and M1).
+change is submitted. These are currently set up to run on Linux, Windows, and OSX (x86_64 and arm_64).
 
 ## Known Issues
 
 * It doesn't parse the old-style file formats.
 * The multiengine values are just guesses.
+
+## Latest Updates
+
+July 2025
+* Figured out a number of the remaining parameters and documented them.
+* Figured out the Lat/Long calculations, at least in part (more work to be done here).
 
 ## Credits
 
