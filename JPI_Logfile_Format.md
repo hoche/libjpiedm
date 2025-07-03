@@ -213,7 +213,11 @@ In the original format, there was only 1 field in the
 - If it's a 900+, it has at least two extra elements (making 3).
 - If it's a 900+ with a build greater than 880, it has one more (making 4).
 - At some point after that, it went to 7. Unfortunately, I don't know
-when. However, when it has 7, four of the fields are used for initial GPS coordinates:
+when. However, when it has 7, four of the fields are used for initial GPS coordinates.
+
+
+If an airplane is not equipped with a GPS (or it's not hooked up to the JPI), the GPS fields
+may be filled with junk data. I'm not sure on that.
 
      7 6 5 4 3 2 1 0|7 6 5 4 3 2 1 0
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -247,8 +251,6 @@ when. However, when it has 7, four of the fields are used for initial GPS coordi
     |  checksum   |
     +-------------/
 
-If an airplane is not equipped with a GPS (or it's not hooked up to the JPI), the GPS fields
-may be filled with junk data. I'm not sure on that.
 
 The checksum is the same checksum used in the data records:
 
