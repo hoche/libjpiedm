@@ -506,12 +506,12 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     std::cout << "repeatCount: " << hex(repeatCount) << "\n";
     {
         std::cout << "          ";
-        for (int count = 0, i = fieldMap.size() / 8 - 1; i >= 0; i--) {
-            std::cout << " Byte " << hex(i) << "  ";
+        for (size_t count = 0, i = fieldMap.size() / 8 - 1; i >= 0; i--) {
+            std::cout << " Byte " << hex(static_cast<unsigned char>(i)) << "  ";
         }
         std::cout << "\n";
         std::cout << "fieldMap: ";
-        for (int count = 0, i = fieldMap.size() - 1; i >= 0; i--) {
+        for (size_t count = 0, i = fieldMap.size() - 1; i >= 0; i--) {
             std::cout << fieldMap[i];
             if (++count == 8) {
                 std::cout << " ";
@@ -520,7 +520,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
         }
         std::cout << "\n";
         std::cout << " signMap: ";
-        for (int count = 0, i = signMap.size() - 1; i >= 0; i--) {
+        for (size_t count = 0, i = signMap.size() - 1; i >= 0; i--) {
             std::cout << signMap[i];
             if (++count == 8) {
                 std::cout << " ";
