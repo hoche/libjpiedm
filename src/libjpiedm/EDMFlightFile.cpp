@@ -506,12 +506,12 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     std::cout << "repeatCount: " << hex(repeatCount) << "\n";
     {
         std::cout << "          ";
-        for (size_t count = 0, i = fieldMap.size() / 8 - 1; i >= 0; i--) {
-            std::cout << " Byte " << hex(static_cast<unsigned char>(i)) << "  ";
+        for (int count = 0, i = fieldMap.size() / 8 - 1; i >= 0; i--) {
+            std::cout << " Byte " << hex(i) << "  ";
         }
         std::cout << "\n";
         std::cout << "fieldMap: ";
-        for (size_t count = 0, i = fieldMap.size() - 1; i >= 0; i--) {
+        for (int count = 0, i = fieldMap.size() - 1; i >= 0; i--) {
             std::cout << fieldMap[i];
             if (++count == 8) {
                 std::cout << " ";
@@ -520,7 +520,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
         }
         std::cout << "\n";
         std::cout << " signMap: ";
-        for (size_t count = 0, i = signMap.size() - 1; i >= 0; i--) {
+        for (int count = 0, i = signMap.size() - 1; i >= 0; i--) {
             std::cout << signMap[i];
             if (++count == 8) {
                 std::cout << " ";
@@ -533,18 +533,24 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     // FUTURE OPTIMIZATION: older files, we can just read all the values at once
 #endif
 
+    std::vector<int> highByteElems{42, 44, 48, 49, 50, 51, 52,  53,  54,  55,  56,  57,  58,  59,  60, 61,
+                                     62, 63, 79, 86, 87, 103, 108, 109, 110, 116, 117, 118};
+
     if (recordSeq == 0) {
         m_stdRecs = 0;
         m_fastRecs = 0;
-        std::vector<int> default_values(128, 0xF0);
-        // I think every element that's a high byte is initialized to 0, not 0xF0
-        // Also, some miscellaneous others, like GPS coords
-        std::vector<int> specialdefaults{30, 42, 44, 48, 49, 50, 51, 52,  53,  54,  55,  56,  57,  58,  59,  60, 61,
-                                         62, 63, 76, 77, 79, 86, 87, 100, 101, 103, 108, 109, 110, 116, 117, 118};
-        for (auto i : specialdefaults)
-            default_values[i] = 0; // special cases with defaults of 0x00 instead of 0xF0
+        std::vector<int> defaultValues(128, 0xF0);
 
-        m_values = default_values;
+        // high byte elements always default to 0x00
+        for (auto i : highByteElems)
+            defaultValues[i] = 0;
+
+        // special cases with defaults of 0x00 instead of 0xF0
+        std::vector<int> specialDefaults{30, 86, 87};
+        for (auto i : specialDefaults)
+            defaultValues[i] = 0;
+
+        m_values = defaultValues;
     }
 
 #ifdef DEBUG_FLIGHTS

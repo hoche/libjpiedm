@@ -24,7 +24,6 @@ void EDMFlightRecord::apply(std::vector<int> &values)
 #ifdef DEBUG_FLIGHT_RECORD
     for (int i = 0; i < values.size(); ++i) {
         printf("[%d] %8x\t(%d)\t(%u)\n", i, values[i], (int)values[i], (unsigned)values[i]);
-        // std::cout << "[" << i << "] " << std::hex << values[i] << std::dec << "\n";
     };
 #endif
 

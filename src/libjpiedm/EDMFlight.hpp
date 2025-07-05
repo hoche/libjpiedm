@@ -196,8 +196,8 @@ class EDMFlightRecord
 	    {EGTR5, {28, 60}},
 	    {EGTR6, {29, 61}},
 	    {HP,    {30}},
-	    {TITR1,  {30, 62}},
-	    {TITR2,  {31, 63}},
+	    {TITR1,  {30, 62}}, // starts at 0x00, not 0xFF
+	    {TITR2,  {31, 63}}, // starts at 0x00, not 0xFF
 
 	    // ----- byte 4
 	    {CHTR1, {32}},
@@ -218,24 +218,24 @@ class EDMFlightRecord
 	    // FF2    47
 
 	    // ----- byte 6
-	    // EGT1 48
-	    // EGT2 49
-	    // EGT3 50
-	    // EGT4 51
-	    // EGT5 52
-	    // EGT6 53
-	    // TIT1 54
-	    // TIT2 55
+	    // EGT1 48 (high byte)
+	    // EGT2 49 (high byte)
+	    // EGT3 50 (high byte)
+	    // EGT4 51 (high byte)
+	    // EGT5 52 (high byte)
+	    // EGT6 53 (high byte)
+	    // TIT1 54 (high byte)
+	    // TIT2 55 (high byte)
 
 	    // ----- byte 7
-	    // EGTR1 56
-	    // EGTR2 57
-	    // EGTR3 58
-	    // EGTR4 59
-	    // EGTR5 60
-	    // EGTR6 61 
-	    // TITR1 62
-	    // TITR2 63
+	    // EGTR1 56 (high byte)
+	    // EGTR2 57 (high byte)
+	    // EGTR3 58 (high byte)
+	    // EGTR4 59 (high byte)
+	    // EGTR5 60 (high byte)
+	    // EGTR6 61 (high byte)
+	    // TITR1 62 (high byte)
+	    // TITR2 63 (high byte)
 
 	    // ----- byte 8
 	    {AMPS,  {64}},
