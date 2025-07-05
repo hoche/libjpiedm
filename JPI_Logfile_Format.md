@@ -272,11 +272,8 @@ The bits in the bitmap represent the following measurements:
 
 *'?' means unknown, but it was set*
 
-*Elements with '1' after the text part of the descriptor are either the single engine or the left engine in s*
-*Elements with '2' after the text part are the right engine in s*
-
 *Elements ending in 'l' are the low byte of a multibyte value (usually EGTs or TITs)*
-*Elements ending in 'h' are the low byte of a multibyte value*
+*Elements ending in 'h' are the high byte of a multibyte value*
 
     byte 0 (high values are in byte 6)
     [0]   EGT1.l (Exhaust Gas Temperature, single/left engine, cylinder 1, low byte)
@@ -555,9 +552,7 @@ scaleFlags will always be 0. (I'm not sure how it works for a 9-cyl radial.)
 #### Initial values
 
 For *most* fields, the initial value is 0xF0.
-
-There are some exceptions, which start with 0xFF. These are elements 30, 42, 48, 49, 50, 51, 53, and 79.
-There may be others.
+All high byte fields have an initial value of 0x00.
 
 #### End-of-Record checksum
 
