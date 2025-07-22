@@ -13,20 +13,21 @@
 #include <string>
 #include <vector>
 
-#include "EDMFileHeaders.hpp"
-#include "EDMFlight.hpp"
+#include "FileHeaders.hpp"
+#include "Metadata.hpp"
+#include "Flight.hpp"
 
 namespace jpi_edm {
 
-class EDMFlightFile
+class FlightFile
 {
   public:
-    EDMFlightFile(){};
-    virtual ~EDMFlightFile(){};
+    FlightFile(){};
+    virtual ~FlightFile(){};
 
-    virtual void setMetaDataCompletionCb(std::function<void(EDMMetaData &)> cb);
-    virtual void setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader &)> cb);
-    virtual void setFlightRecordCompletionCb(std::function<void(EDMFlightRecord &)> cb);
+    virtual void setMetadataCompletionCb(std::function<void(Metadata &)> cb);
+    virtual void setFlightHeaderCompletionCb(std::function<void(FlightHeader &)> cb);
+    virtual void setFlightRecordCompletionCb(std::function<void(FlightRecord &)> cb);
     virtual void setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb);
     virtual void setFileFooterCompletionCb(std::function<void(void)> cb);
 
@@ -54,20 +55,20 @@ class EDMFlightFile
     bool parse(std::istream &stream);
 
     void parseFileHeaders(std::istream &stream);
-    std::shared_ptr<EDMFlightHeader> parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
-    void parseFlightDataRec(std::istream &stream, int recordId, std::shared_ptr<EDMFlightHeader> &header, bool &isFast);
+    std::shared_ptr<FlightHeader> parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
+    void parseFlightDataRec(std::istream &stream, int recordId, std::shared_ptr<FlightHeader> &header, bool &isFast);
     void parseFileFooters(std::istream &stream);
 
   private:
-    EDMMetaData m_metaData;
+    Metadata m_metadata;
     std::vector<std::pair<int, long>> m_flightDataCounts;
     std::vector<int> m_values; // storage for the previous values so we can diff them
     int m_stdRecs{0};
     int m_fastRecs{0};
 
-    std::function<void(EDMMetaData &)> m_metaDataCompletionCb;
-    std::function<void(EDMFlightHeader &)> m_flightHeaderCompletionCb;
-    std::function<void(EDMFlightRecord &)> m_flightRecCompletionCb;
+    std::function<void(Metadata &)> m_metadataCompletionCb;
+    std::function<void(FlightHeader &)> m_flightHeaderCompletionCb;
+    std::function<void(FlightRecord &)> m_flightRecCompletionCb;
     std::function<void(unsigned long, unsigned long)> m_flightCompletionCb;
     std::function<void(void)> m_fileFooterCompletionCb;
 };

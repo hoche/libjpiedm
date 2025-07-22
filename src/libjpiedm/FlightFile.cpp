@@ -26,9 +26,10 @@
 #include <limits.h>
 #include <stdio.h>
 
-#include "EDMFileHeaders.hpp"
-#include "EDMFlight.hpp"
-#include "EDMFlightFile.hpp"
+#include "FileHeaders.hpp"
+#include "Flight.hpp"
+#include "FlightFile.hpp"
+#include "Metadata.hpp"
 
 namespace jpi_edm {
 
@@ -55,24 +56,24 @@ inline std::ostream &operator<<(std::ostream &o, const HexCharStruct &hs)
 
 inline HexCharStruct hex(unsigned char _c) { return HexCharStruct(_c); }
 
-void EDMFlightFile::setMetaDataCompletionCb(std::function<void(EDMMetaData &)> cb) { m_metaDataCompletionCb = cb; }
+void FlightFile::setMetadataCompletionCb(std::function<void(Metadata &)> cb) { m_metadataCompletionCb = cb; }
 
-void EDMFlightFile::setFlightHeaderCompletionCb(std::function<void(EDMFlightHeader &)> cb)
+void FlightFile::setFlightHeaderCompletionCb(std::function<void(FlightHeader &)> cb)
 {
     m_flightHeaderCompletionCb = cb;
 }
 
-void EDMFlightFile::setFlightRecordCompletionCb(std::function<void(EDMFlightRecord &)> cb)
+void FlightFile::setFlightRecordCompletionCb(std::function<void(FlightRecord &)> cb)
 {
     m_flightRecCompletionCb = cb;
 }
 
-void EDMFlightFile::setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb)
+void FlightFile::setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb)
 {
     m_flightCompletionCb = cb;
 }
 
-void EDMFlightFile::setFileFooterCompletionCb(std::function<void(void)> cb) { m_fileFooterCompletionCb = cb; }
+void FlightFile::setFileFooterCompletionCb(std::function<void(void)> cb) { m_fileFooterCompletionCb = cb; }
 
 /**
  * @brief split_header_line
@@ -83,7 +84,7 @@ void EDMFlightFile::setFileFooterCompletionCb(std::function<void(void)> cb) { m_
  * break it into a vector of unsigned integers, not including
  * either the leading '$A' nor anything after the '*'.
  */
-std::vector<unsigned long> EDMFlightFile::split_header_line(int lineno, std::string line)
+std::vector<unsigned long> FlightFile::split_header_line(int lineno, std::string line)
 {
     std::vector<unsigned long> values;
     size_t pos = 0;
@@ -114,7 +115,7 @@ std::vector<unsigned long> EDMFlightFile::split_header_line(int lineno, std::str
     return values;
 }
 
-void EDMFlightFile::validateHeaderChecksum(int lineno, const char *line)
+void FlightFile::validateHeaderChecksum(int lineno, const char *line)
 {
     if (!line) {
         std::stringstream msg;
@@ -149,12 +150,12 @@ void EDMFlightFile::validateHeaderChecksum(int lineno, const char *line)
     }
 }
 
-void EDMFlightFile::parseFileHeaders(std::istream &stream)
+void FlightFile::parseFileHeaders(std::istream &stream)
 {
     int lineno = 0;
     bool end_of_headers = false;
     unsigned long theLHeaderVal = 0;
-    EDMMetaData metaData;
+    Metadata metadata;
 
     // line is terminated with CRLF (\r\n)
     // read to the LF (\n) (getline won't include the LF in the return)
@@ -186,10 +187,10 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
 
         switch (line[1]) {
         case 'A': // config limits
-            metaData.m_configLimits.apply(split_header_line(lineno, line));
+            metadata.m_configLimits.apply(split_header_line(lineno, line));
             break;
         case 'C': // config info
-            metaData.m_configInfo.apply(split_header_line(lineno, line));
+            metadata.m_configInfo.apply(split_header_line(lineno, line));
             break;
         case 'D': // this repeats and gives the ID and bytes for a flight (but
                   // have to multiply bytes by 2)
@@ -200,7 +201,7 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
             }
         } break;
         case 'F': // fuel limits?
-            metaData.m_fuelLimits.apply(split_header_line(lineno, line));
+            metadata.m_fuelLimits.apply(split_header_line(lineno, line));
             break;
         case 'H': // unknown what this means
             break;
@@ -213,17 +214,17 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
             end_of_headers = true;
         } break;
         case 'P': // protocol version
-            metaData.m_protoHeader.apply(split_header_line(lineno, line));
+            metadata.m_protoHeader.apply(split_header_line(lineno, line));
             break;
         case 'T': // timestamp
-            metaData.m_timeStamp.apply(split_header_line(lineno, line));
+            metadata.m_timeStamp.apply(split_header_line(lineno, line));
             break;
         case 'U': // tailnumber
             line = std::strchr(line, ',');
             if (line && *line) {
                 line++;
                 while (*line && *line != '*')
-                    metaData.m_tailNum.push_back(*line++);
+                    metadata.m_tailNum.push_back(*line++);
             }
             break;
         default:
@@ -237,14 +238,14 @@ void EDMFlightFile::parseFileHeaders(std::istream &stream)
         }
     }
 
-    m_metaData = metaData;
+    m_metadata = metadata;
 
-    if (m_metaDataCompletionCb) {
-        m_metaDataCompletionCb(metaData);
+    if (m_metadataCompletionCb) {
+        m_metadataCompletionCb(metadata);
     }
 }
 
-bool EDMFlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff,
+bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff,
                                            std::iostream::off_type endOff, unsigned char checksum)
 {
     auto curLoc{stream.tellg()};
@@ -284,7 +285,7 @@ bool EDMFlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::
 }
 
 // This scans the stream, adding bytes to it until a checksum matches
-std::streamoff EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
+std::streamoff FlightFile::detectFlightHeaderSize(std::istream &stream)
 {
     auto startOff{stream.tellg()};
 
@@ -305,7 +306,7 @@ std::streamoff EDMFlightFile::detectFlightHeaderSize(std::istream &stream)
     return (found ? offset : 0);
 }
 
-std::shared_ptr<EDMFlightHeader> EDMFlightFile::parseFlightHeader(std::istream &stream, int flightId,
+std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream, int flightId,
                                                                   std::streamoff headerSize)
 {
     auto startOff{stream.tellg()};
@@ -313,7 +314,7 @@ std::shared_ptr<EDMFlightHeader> EDMFlightFile::parseFlightHeader(std::istream &
     std::cout << "Flight Header start offset: 0x" << std::hex << startOff << std::dec << std::endl;
 #endif
 
-    auto flightHeader = std::make_shared<EDMFlightHeader>();
+    auto flightHeader = std::make_shared<FlightHeader>();
 
     stream.read(reinterpret_cast<char *>(&flightHeader->flight_num), 2);
     flightHeader->flight_num = ntohs(flightHeader->flight_num);
@@ -429,8 +430,8 @@ std::shared_ptr<EDMFlightHeader> EDMFlightFile::parseFlightHeader(std::istream &
     return flightHeader;
 }
 
-void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
-                                       std::shared_ptr<EDMFlightHeader> &flightHeader, bool &isFast)
+void FlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
+                                       std::shared_ptr<FlightHeader> &flightHeader, bool &isFast)
 {
     int oldFormat = false; // NOT ACTIVE YET
 
@@ -545,7 +546,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
         for (auto i : highByteElems)
             defaultValues[i] = 0;
 
-        // special cases with defaults of 0x00 instead of 0xF0
+        // other special cases with defaults of 0x00 instead of 0xF0
         std::vector<int> specialDefaults{30, 86, 87};
         for (auto i : specialDefaults)
             defaultValues[i] = 0;
@@ -559,8 +560,11 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     std::cout << "raw values:\n";
 #endif
 
-    // FUTURE OPTIMIZATION: older files, we can stop iterating at 48 bits instead of doing
+    // FUTURE OPTIMIZATION:
+    // 1. In older files, we can stop iterating at 48 bits instead of doing
     // the full 128
+    // 2. Read the entire block at once, since we can tell how many bytes
+    // to read by counting the number of set bits in the fieldMap.
     for (int k = 0; k < fieldMap.size(); ++k) {
         if (fieldMap[k]) {
             unsigned char diff;
@@ -578,6 +582,9 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
             } else if (k == 87 && diff == 0x64) {
                 m_values[k] = flightHeader->startLng;
             } else {
+                // BUG: what we want isn't the difference of just the previous value of this byte,
+                // we want the difference of the previous value of the combined h+l bytes (the metric).
+                // This means we need to know the which values are combined this early in the processing.
                 signMap[k] ? m_values[k] -= diff : m_values[k] += diff;
             }
         } else if (recordSeq == 0) {
@@ -605,7 +612,7 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     }
 
     // special test for the MARK value.
-    switch (m_values[EDMFlightRecord::MARK_IDX]) {
+    switch (m_values[FlightRecord::MARK_IDX]) {
     case 0x02:
         isFast = true;
         break;
@@ -615,20 +622,20 @@ void EDMFlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     }
 
     if (m_flightRecCompletionCb) {
-        EDMFlightRecord fr(recordSeq, isFast);
+        FlightRecord fr(recordSeq, isFast);
         fr.apply(m_values);
         m_flightRecCompletionCb(fr);
     }
 }
 
-void EDMFlightFile::parseFileFooters(std::istream &stream)
+void FlightFile::parseFileFooters(std::istream &stream)
 {
     if (m_fileFooterCompletionCb) {
         m_fileFooterCompletionCb();
     }
 }
 
-bool EDMFlightFile::parse(std::istream &stream)
+bool FlightFile::parse(std::istream &stream)
 {
     stream.seekg(0);
     parseFileHeaders(stream);
@@ -677,6 +684,6 @@ bool EDMFlightFile::parse(std::istream &stream)
     return true;
 }
 
-bool EDMFlightFile::processFile(std::istream &stream) { return parse(stream); }
+bool FlightFile::processFile(std::istream &stream) { return parse(stream); }
 
 } // namespace jpi_edm

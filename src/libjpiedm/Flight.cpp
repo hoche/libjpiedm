@@ -13,13 +13,13 @@
 #include <utility>
 #include <vector>
 
-#include "EDMFlight.hpp"
+#include "Flight.hpp"
 
 namespace jpi_edm {
 
 // #define DEBUG_FLIGHT_RECORD
 
-void EDMFlightRecord::apply(std::vector<int> &values)
+void FlightRecord::apply(std::vector<int> &values)
 {
 #ifdef DEBUG_FLIGHT_RECORD
     for (int i = 0; i < values.size(); ++i) {

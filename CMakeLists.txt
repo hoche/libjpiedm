@@ -16,9 +16,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # libjpiedm library
 add_library(jpiedm
-    src/libjpiedm/EDMFlightFile.cpp
-    src/libjpiedm/EDMFileHeaders.cpp
-    src/libjpiedm/EDMFlight.cpp
+    src/libjpiedm/FlightFile.cpp
+    src/libjpiedm/FileHeaders.cpp
+    src/libjpiedm/Flight.cpp
+    src/libjpiedm/Metadata.cpp
+    src/libjpiedm/Metrics.cpp
 )
 
 if(DEBUG_VERBOSE)

@@ -23,15 +23,15 @@
 #include <unistd.h>
 #endif
 
-#include "EDMFileHeaders.hpp"
-#include "EDMFlight.hpp"
-#include "EDMFlightFile.hpp"
+#include "FileHeaders.hpp"
+#include "Flight.hpp"
+#include "FlightFile.hpp"
 
-using jpi_edm::EDMFlightRecord;
+using jpi_edm::FlightRecord;
 
 static bool g_verbose = false;
 
-void printFlightInfo(jpi_edm::EDMFlightHeader &hdr, unsigned long stdReqs, unsigned long fastReqs,
+void printFlightInfo(jpi_edm::FlightHeader &hdr, unsigned long stdReqs, unsigned long fastReqs,
                      std::ostream &outStream)
 {
     std::tm local;
@@ -63,50 +63,50 @@ void printLatLng(int measurement, std::ostream &outStream)
 }
 
 // Ugh. these should all be a macro or an inline that range checks.
-void printFlightDataRecord(const jpi_edm::EDMFlightRecord &rec, std::ostream &outStream)
+void printFlightDataRecord(const jpi_edm::FlightRecord &rec, std::ostream &outStream)
 {
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT1) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT2) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT3) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT4) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT5) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT6) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT1) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT2) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT3) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT4) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT5) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT6) << ", ";
 
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT1) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT2) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT3) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT4) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT5) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT6) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT1) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT2) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT3) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT4) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT5) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT6) << ", ";
 
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::TIT1) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::TIT1) << ", ";
 
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::OAT) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::DIF) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CLD) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::MAP)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::RPM) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::HP) << ",";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::OAT) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::DIF) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CLD) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::MAP)) / 10.0) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::RPM) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::HP) << ",";
 
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::FF)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::FP)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::OILP) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::VLT)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::AMPS) << ", ";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::FF)) / 10.0) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::FP)) / 10.0) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::OILP) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::VLT)) / 10.0) << ", ";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::AMPS) << ", ";
 
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::OILT) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::FUSD)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::RFL)) / 10,0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::LFL)) / 10.0) << ",";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::OILT) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::FUSD)) / 10.0) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::RFL)) / 10,0) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::LFL)) / 10.0) << ",";
 
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::HRS)) / 10.0) << ",";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::SPD) << ",";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::ALT) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::HRS)) / 10.0) << ",";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::SPD) << ",";
+    outStream << rec.m_dataMap.at(FlightRecord::Measurement::ALT) << ",";
 
-    printLatLng(rec.m_dataMap.at(EDMFlightRecord::Measurement::LAT), outStream);
-    printLatLng(rec.m_dataMap.at(EDMFlightRecord::Measurement::LNG), outStream);
+    printLatLng(rec.m_dataMap.at(FlightRecord::Measurement::LAT), outStream);
+    printLatLng(rec.m_dataMap.at(FlightRecord::Measurement::LNG), outStream);
 
-    switch (rec.m_dataMap.at(EDMFlightRecord::Measurement::MARK)) {
+    switch (rec.m_dataMap.at(FlightRecord::Measurement::MARK)) {
     case 0x02:
         outStream << "[";
         break;
@@ -123,15 +123,15 @@ void printFlightDataRecord(const jpi_edm::EDMFlightRecord &rec, std::ostream &ou
 
 void printFlightData(std::istream &stream, int flightId, std::ostream &outStream)
 {
-    jpi_edm::EDMFlightFile ff;
-    jpi_edm::EDMFlightHeader hdr;
+    jpi_edm::FlightFile ff;
+    jpi_edm::FlightHeader hdr;
     time_t recordTime;
 
     if (g_verbose) {
-        ff.setMetaDataCompletionCb([&outStream](jpi_edm::EDMMetaData md) { md.dump(outStream); });
+        ff.setMetadataCompletionCb([&outStream](jpi_edm::Metadata md) { md.dump(outStream); });
     }
 
-    ff.setFlightHeaderCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::EDMFlightHeader fh) {
+    ff.setFlightHeaderCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::FlightHeader fh) {
         hdr = fh;
 
         if (flightId != -1 && hdr.flight_num != flightId) {
@@ -160,7 +160,7 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
     });
     
 
-    ff.setFlightRecordCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::EDMFlightRecord rec) {
+    ff.setFlightRecordCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::FlightRecord rec) {
         if (flightId != -1 && hdr.flight_num != flightId) {
             return;
         }
@@ -189,10 +189,10 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
 
 void printFlightList(std::istream &stream, std::ostream &outStream)
 {
-    jpi_edm::EDMFlightFile ff;
-    jpi_edm::EDMFlightHeader hdr;
+    jpi_edm::FlightFile ff;
+    jpi_edm::FlightHeader hdr;
 
-    ff.setFlightHeaderCompletionCb([&hdr](jpi_edm::EDMFlightHeader fh) { hdr = fh; });
+    ff.setFlightHeaderCompletionCb([&hdr](jpi_edm::FlightHeader fh) { hdr = fh; });
     ff.setFlightCompletionCb([&hdr, &outStream](unsigned long stdReqs, unsigned long fastReqs) {
         printFlightInfo(hdr, stdReqs, fastReqs, outStream);
     });

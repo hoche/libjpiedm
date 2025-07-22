@@ -18,11 +18,11 @@
 
 namespace jpi_edm {
 
-class EDMFlightHeader
+class FlightHeader
 {
   public:
-    EDMFlightHeader(){};
-    virtual ~EDMFlightHeader(){};
+    FlightHeader(){};
+    virtual ~FlightHeader(){};
 
     virtual void dump(std::ostream &outStream)
     {
@@ -64,12 +64,12 @@ class EDMFlightHeader
  * application more control over how to display.
  *
  */
-class EDMFlightRecord
+class FlightRecord
 {
   public:
-    EDMFlightRecord() = delete;
-    EDMFlightRecord(int recordSeq, bool isFast) : m_recordSeq(recordSeq), m_isFast(isFast){};
-    virtual ~EDMFlightRecord(){};
+    FlightRecord() = delete;
+    FlightRecord(int recordSeq, bool isFast) : m_recordSeq(recordSeq), m_isFast(isFast){};
+    virtual ~FlightRecord(){};
 
     enum Measurement {
         EGT1,

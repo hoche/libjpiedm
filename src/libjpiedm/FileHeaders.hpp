@@ -9,22 +9,22 @@
  *
  * Included are:
  *
- * EDMConfigLimits
+ * ConfigLimits
  *      Maximum values recorded.
  *
- * EDMConfigInfo
- *      EDM Model, firmware version, etc. Also contains a flags field which was
+ * ConfigInfo
+ *       Model, firmware version, etc. Also contains a flags field which was
  * used to indicate which kinds of measurement were captured, but may be
  * obsolete with the new format (it only is 32-bits and the new format supports
  * up to 128 different measurements).
  *
- * EDMFuelLimits
+ * FuelLimits
  *      Fueltank sizes and fuel flow scaling rates (K-factors)
  *
- * EDMFuelRate
+ * FuelRate
  *      Maximum rate of fuel flow? Not sure.
  *
- * EDMTimeStamp
+ * TimeStamp
  *      The date and time the file was created for downloading from the EDM.
  */
 
@@ -39,9 +39,9 @@
 namespace jpi_edm {
 
 /**
- * Base class for all the EDMFileHeader classes
+ * Base class for all the FileHeader classes
  */
-class EDMFileHeader
+class FileHeader
 {
   public:
     /* Throws an exception if an insufficient number of arguments
@@ -60,11 +60,11 @@ class EDMFileHeader
  * Example:
  * $A, 305,230,500,415,60,1650,230,90*7F
  */
-class EDMConfigLimits : public EDMFileHeader
+class ConfigLimits : public FileHeader
 {
   public:
-    EDMConfigLimits(){};
-    virtual ~EDMConfigLimits(){};
+    ConfigLimits(){};
+    virtual ~ConfigLimits(){};
     virtual void apply(std::vector<unsigned long> values);
     virtual void dump(std::ostream &outStream);
 
@@ -109,11 +109,11 @@ class EDMConfigLimits : public EDMFileHeader
  * Example:
  * $C,700,63741, 6193, 1552, 292*58
  */
-class EDMConfigInfo : public EDMFileHeader
+class ConfigInfo : public FileHeader
 {
   public:
-    EDMConfigInfo(){};
-    virtual ~EDMConfigInfo(){};
+    ConfigInfo(){};
+    virtual ~ConfigInfo(){};
     virtual void apply(std::vector<unsigned long> values);
     virtual void dump(std::ostream &outStream);
 
@@ -140,11 +140,11 @@ class EDMConfigInfo : public EDMFileHeader
  * Example:
  * $F,0,999,  0,2950,2950*53
  */
-class EDMFuelLimits : public EDMFileHeader
+class FuelLimits : public FileHeader
 {
   public:
-    EDMFuelLimits(){};
-    virtual ~EDMFuelLimits(){};
+    FuelLimits(){};
+    virtual ~FuelLimits(){};
     virtual void apply(std::vector<unsigned long> values);
     virtual void dump(std::ostream &outStream);
 
@@ -165,11 +165,11 @@ class EDMFuelLimits : public EDMFileHeader
  * Example:
  * $P, 2*6E
  */
-class EDMProtoHeader : public EDMFileHeader
+class ProtoHeader : public FileHeader
 {
   public:
-    EDMProtoHeader(){};
-    virtual ~EDMProtoHeader(){};
+    ProtoHeader(){};
+    virtual ~ProtoHeader(){};
     virtual void apply(std::vector<unsigned long> values);
     virtual void dump(std::ostream &outStream);
 
@@ -186,11 +186,11 @@ class EDMProtoHeader : public EDMFileHeader
  * Example:
  *   $T, 5,13, 5,23, 2, 2222*65
  */
-class EDMTimeStamp : public EDMFileHeader
+class TimeStamp : public FileHeader
 {
   public:
-    EDMTimeStamp(){};
-    virtual ~EDMTimeStamp(){};
+    TimeStamp(){};
+    virtual ~TimeStamp(){};
     virtual void apply(std::vector<unsigned long> values);
     virtual void dump(std::ostream &outStream);
 
@@ -203,42 +203,5 @@ class EDMTimeStamp : public EDMFileHeader
     unsigned long flight_num{0};
 };
 
-/**
- * @brief Collection of all the flight headers that can be in an EDM file.
- *
- */
-class EDMMetaData
-{
-  public:
-    EDMMetaData(){};
-    virtual ~EDMMetaData(){};
-
-    virtual void dump(std::ostream &outStream);
-
-    static const int PROTO_V1 = 0x01; // <900
-    static const int PROTO_V2 = 0x02; // 760
-    static const int PROTO_V3 = 0x04; // 900/930, pre-version 108
-    static const int PROTO_V4 = 0x08; // 900/930, later firmware, or has protocol header
-    static const int PROTO_V5 = 0x10; // 960
-
-    static const int HEADER_V1 = 0x01; // 1 word unknown[] array
-    static const int HEADER_V2 = 0x02; // 3 word unknown[] array
-    static const int HEADER_V3 = 0x04; // 4 word unknown[] array
-    static const int HEADER_V4 = 0x08; // 8 word unknown[] array
-
-    bool isTwin();
-    bool tempInC();
-    int protoVersion();
-    bool isOldRecFormat();
-    int guessFlightHeaderVersion();
-
-  public:
-    std::string m_tailNum{""};
-    EDMConfigLimits m_configLimits;
-    EDMConfigInfo m_configInfo;
-    EDMFuelLimits m_fuelLimits;
-    EDMProtoHeader m_protoHeader;
-    EDMTimeStamp m_timeStamp;
-};
 
 } // namespace jpi_edm
