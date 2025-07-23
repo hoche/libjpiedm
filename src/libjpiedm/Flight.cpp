@@ -27,6 +27,7 @@ void FlightRecord::apply(std::vector<int> &values)
     };
 #endif
 
+/*
     for (auto &[key, indices] : offsets) {
         if (indices.size() > 1) {
             m_dataMap[key] = values[indices[0]] + (values[indices[1]] << 8);
@@ -34,42 +35,17 @@ void FlightRecord::apply(std::vector<int> &values)
             m_dataMap[key] = values[indices[0]];
         }
     }
+*/
 
     // calculate DIF
     // TODO: this should see how many cylinders we have. 4? 6? 9?
     // TODO: we also need to handle DIF2 for multi
+    /*
     auto bounds = std::minmax(
         {m_dataMap[EGT1], m_dataMap[EGT2], m_dataMap[EGT3], m_dataMap[EGT4], m_dataMap[EGT5], m_dataMap[EGT6]});
     m_dataMap[DIF] = bounds.second - bounds.first;
+    */
 
-    if (m_dataMap.find(FF2) == m_dataMap.end()) {
-        m_dataMap[FF2] = 0;
-    }
-    if (m_dataMap.find(FUSD2) == m_dataMap.end()) {
-        m_dataMap[FUSD2] = -1;
-    }
-
-    // SPD and ALT
-    if (auto it = m_dataMap.find(SPD); it != m_dataMap.end()) {
-        if (it->second == 0xF0)
-            m_dataMap[SPD] = -1;
-    } else {
-        m_dataMap[SPD] = -1;
-    }
-    if (auto it = m_dataMap.find(ALT); it != m_dataMap.end()) {
-        if (it->second == 0xF0)
-            m_dataMap[ALT] = -1;
-    } else {
-        m_dataMap[ALT] = -1;
-    }
-
-    // LAT and LNG
-    if (m_dataMap.find(LAT) == m_dataMap.end()) {
-        m_dataMap[LAT] = -1;
-    }
-    if (m_dataMap.find(LNG) == m_dataMap.end()) {
-        m_dataMap[LNG] = -1;
-    }
 }
 
 } // namespace jpi_edm
