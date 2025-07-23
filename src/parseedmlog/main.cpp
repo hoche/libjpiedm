@@ -26,13 +26,13 @@
 #include "FileHeaders.hpp"
 #include "Flight.hpp"
 #include "FlightFile.hpp"
+#include "MetricId.hpp"
 
-using jpi_edm::FlightRecord;
+using namespace jpi_edm;
 
 static bool g_verbose = false;
 
-void printFlightInfo(jpi_edm::FlightHeader &hdr, unsigned long stdReqs, unsigned long fastReqs,
-                     std::ostream &outStream)
+void printFlightInfo(jpi_edm::FlightHeader &hdr, unsigned long stdReqs, unsigned long fastReqs, std::ostream &outStream)
 {
     std::tm local;
 #ifdef _WIN32
@@ -65,48 +65,56 @@ void printLatLng(int measurement, std::ostream &outStream)
 // Ugh. these should all be a macro or an inline that range checks.
 void printFlightDataRecord(const jpi_edm::FlightRecord &rec, std::ostream &outStream)
 {
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT1) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT2) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT3) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT4) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT5) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::EGT6) << ", ";
+    outStream << rec.m_dataMap.at(EGT11) << ", ";
+    outStream << rec.m_dataMap.at(EGT12) << ", ";
+    outStream << rec.m_dataMap.at(EGT13) << ", ";
+    outStream << rec.m_dataMap.at(EGT14) << ", ";
+    outStream << rec.m_dataMap.at(EGT15) << ", ";
+    outStream << rec.m_dataMap.at(EGT16) << ", ";
 
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT1) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT2) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT3) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT4) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT5) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CHT6) << ", ";
+    outStream << rec.m_dataMap.at(CHT11) << ", ";
+    outStream << rec.m_dataMap.at(CHT12) << ", ";
+    outStream << rec.m_dataMap.at(CHT13) << ", ";
+    outStream << rec.m_dataMap.at(CHT14) << ", ";
+    outStream << rec.m_dataMap.at(CHT15) << ", ";
+    outStream << rec.m_dataMap.at(CHT16) << ", ";
 
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::TIT1) << ", ";
+    outStream << rec.m_dataMap.at(TIT11) << ", ";
 
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::OAT) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::DIF) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::CLD) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::MAP)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::RPM) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::HP) << ",";
+    outStream << rec.m_dataMap.at(OAT) << ", ";
+    outStream << rec.m_dataMap.at(DIF1) << ", ";
+    outStream << rec.m_dataMap.at(CLD1) << ",";
+    outStream << std::fixed << std::setprecision(1)
+              << (static_cast<float>(rec.m_dataMap.at(MP1)) / 10.0) << ", ";
+    outStream << rec.m_dataMap.at(RPM1) << ", ";
+    outStream << rec.m_dataMap.at(HP1) << ",";
 
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::FF)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::FP)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::OILP) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::VLT)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::AMPS) << ", ";
+    outStream << std::fixed << std::setprecision(1)
+              << (static_cast<float>(rec.m_dataMap.at(FF11)) / 10.0) << ",";
+    outStream << std::fixed << std::setprecision(1)
+              << (static_cast<float>(rec.m_dataMap.at(FP1)) / 10.0) << ", ";
+    outStream << rec.m_dataMap.at(OILP1) << ",";
+    outStream << std::fixed << std::setprecision(1)
+              << (static_cast<float>(rec.m_dataMap.at(VOLT1)) / 10.0) << ", ";
+    outStream << rec.m_dataMap.at(AMP1) << ", ";
 
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::OILT) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::FUSD)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::RFL)) / 10,0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::LFL)) / 10.0) << ",";
+    outStream << rec.m_dataMap.at(OILT1) << ",";
+    outStream << std::fixed << std::setprecision(1)
+              << (static_cast<float>(rec.m_dataMap.at(FUSD11)) / 10.0) << ",";
+    outStream << std::fixed << std::setprecision(1)
+              << (static_cast<float>(rec.m_dataMap.at(FLVL21)) / 10, 0) << ",";
+    outStream << std::fixed << std::setprecision(1)
+              << (static_cast<float>(rec.m_dataMap.at(FLVL11)) / 10.0) << ",";
 
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(FlightRecord::Measurement::HRS)) / 10.0) << ",";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::SPD) << ",";
-    outStream << rec.m_dataMap.at(FlightRecord::Measurement::ALT) << ",";
+    outStream << std::fixed << std::setprecision(1)
+              << (static_cast<float>(rec.m_dataMap.at(HRS1)) / 10.0) << ",";
+    outStream << rec.m_dataMap.at(SPD) << ",";
+    outStream << rec.m_dataMap.at(ALT) << ",";
 
-    printLatLng(rec.m_dataMap.at(FlightRecord::Measurement::LAT), outStream);
-    printLatLng(rec.m_dataMap.at(FlightRecord::Measurement::LNG), outStream);
+    printLatLng(rec.m_dataMap.at(LAT), outStream);
+    printLatLng(rec.m_dataMap.at(LNG), outStream);
 
-    switch (rec.m_dataMap.at(FlightRecord::Measurement::MARK)) {
+    switch (rec.m_dataMap.at(MARK)) {
     case 0x02:
         outStream << "[";
         break;
@@ -150,15 +158,14 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
         if (g_verbose) {
             outStream << "Flt #" << hdr.flight_num << "\n";
             outStream << "Interval: " << hdr.interval << " sec\n";
-            outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " " << std::put_time(&local, "%T")
-                    << "\n";
+            outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
+                      << std::put_time(&local, "%T") << "\n";
         }
 
         outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
-                  << ",T1,OAT,DIF,CLD,MAP,RPM,HP,FF,FP,OILP,BAT,AMP,OILT"
-                  << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
+                  << ",T1,OAT,DIF,CLD,MAP,RPM,HP,FF,FP,OILP,BAT,AMP,OILT" << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK"
+                  << "\n";
     });
-    
 
     ff.setFlightRecordCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::FlightRecord rec) {
         if (flightId != -1 && hdr.flight_num != flightId) {
@@ -171,13 +178,10 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
         timeinfo.tm_mon = 5;
         timeinfo.tm_mday = 1;
 
-        // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but crash)
-        outStream << rec.m_recordSeq << ","
-                << (timeinfo.tm_mon + 1) << '/'
-                << timeinfo.tm_mday << '/'
-                << (timeinfo.tm_year + 1900) << ","
-                << std::put_time(&timeinfo, "%T")
-                << ", ";
+        // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
+        // crash)
+        outStream << rec.m_recordSeq << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+                  << (timeinfo.tm_year + 1900) << "," << std::put_time(&timeinfo, "%T") << ", ";
         printFlightDataRecord(rec, outStream);
 
         rec.m_isFast ? ++recordTime : recordTime += hdr.interval;

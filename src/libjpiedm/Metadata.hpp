@@ -2,11 +2,11 @@
  * Copyright @ 2024 Michel Hoche-Mong
  * SPDX-License-Identifier: CC-BY-4.0
  */
- 
+
 #pragma once
 
-#include <string>
 #include <FileHeaders.hpp>
+#include <string>
 
 namespace jpi_edm {
 

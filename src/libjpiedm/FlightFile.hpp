@@ -14,8 +14,8 @@
 #include <vector>
 
 #include "FileHeaders.hpp"
-#include "Metadata.hpp"
 #include "Flight.hpp"
+#include "Metadata.hpp"
 
 namespace jpi_edm {
 

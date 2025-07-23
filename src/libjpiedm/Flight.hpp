@@ -58,11 +58,6 @@ class FlightHeader
 /**
  * @brief A representation of the data found in a flight measurement record
  *
- * Multi-element measurements are combined into one final measurement, but
- * otherwise minimal data transformation is done. For instance, if the EDM is
- * configured to report in F, the temperatures will be in F. This gives the
- * application more control over how to display.
- *
  */
 class FlightRecord
 {

@@ -3,14 +3,12 @@
  * SPDX-License-Identifier: CC-BY-4.0
  */
 
-#include <Metadata.hpp>
 #include <FileHeaders.hpp>
+#include <Metadata.hpp>
 
 namespace jpi_edm {
 
-bool Metadata::isTwin() const {
-   return (m_configInfo.edm_model == 760 || m_configInfo.edm_model == 960);
-}
+bool Metadata::isTwin() const { return (m_configInfo.edm_model == 760 || m_configInfo.edm_model == 960); }
 
 EDMVersion Metadata::protoVersion() const
 {
@@ -37,9 +35,7 @@ EDMVersion Metadata::protoVersion() const
     return EDMVersion::V4;
 }
 
-bool Metadata::isOldRecFormat() const {
-    return (protoVersion() == EDMVersion::V1 || protoVersion() == EDMVersion::V2);
-}
+bool Metadata::isOldRecFormat() const { return (protoVersion() == EDMVersion::V1 || protoVersion() == EDMVersion::V2); }
 
 HeaderVersion Metadata::guessFlightHeaderVersion() const
 {

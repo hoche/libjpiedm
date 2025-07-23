@@ -63,10 +63,7 @@ void FlightFile::setFlightHeaderCompletionCb(std::function<void(FlightHeader &)>
     m_flightHeaderCompletionCb = cb;
 }
 
-void FlightFile::setFlightRecordCompletionCb(std::function<void(FlightRecord &)> cb)
-{
-    m_flightRecCompletionCb = cb;
-}
+void FlightFile::setFlightRecordCompletionCb(std::function<void(FlightRecord &)> cb) { m_flightRecCompletionCb = cb; }
 
 void FlightFile::setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb)
 {
@@ -246,7 +243,7 @@ void FlightFile::parseFileHeaders(std::istream &stream)
 }
 
 bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff,
-                                           std::iostream::off_type endOff, unsigned char checksum)
+                                        std::iostream::off_type endOff, unsigned char checksum)
 {
     auto curLoc{stream.tellg()};
 
@@ -307,7 +304,7 @@ std::streamoff FlightFile::detectFlightHeaderSize(std::istream &stream)
 }
 
 std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream, int flightId,
-                                                                  std::streamoff headerSize)
+                                                            std::streamoff headerSize)
 {
     auto startOff{stream.tellg()};
 #ifdef DEBUG_FLIGHT_HEADERS
@@ -430,8 +427,8 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     return flightHeader;
 }
 
-void FlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
-                                       std::shared_ptr<FlightHeader> &flightHeader, bool &isFast)
+void FlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, std::shared_ptr<FlightHeader> &flightHeader,
+                                    bool &isFast)
 {
     int oldFormat = false; // NOT ACTIVE YET
 
@@ -534,8 +531,8 @@ void FlightFile::parseFlightDataRec(std::istream &stream, int recordSeq,
     // FUTURE OPTIMIZATION: older files, we can just read all the values at once
 #endif
 
-    std::vector<int> highByteElems{42, 44, 48, 49, 50, 51, 52,  53,  54,  55,  56,  57,  58,  59,  60, 61,
-                                     62, 63, 79, 86, 87, 103, 108, 109, 110, 116, 117, 118};
+    std::vector<int> highByteElems{42, 44, 48, 49, 50, 51, 52, 53,  54,  55,  56,  57,  58,  59,
+                                   60, 61, 62, 63, 79, 86, 87, 103, 108, 109, 110, 116, 117, 118};
 
     if (recordSeq == 0) {
         m_stdRecs = 0;

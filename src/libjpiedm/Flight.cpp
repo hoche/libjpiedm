@@ -27,15 +27,15 @@ void FlightRecord::apply(std::vector<int> &values)
     };
 #endif
 
-/*
-    for (auto &[key, indices] : offsets) {
-        if (indices.size() > 1) {
-            m_dataMap[key] = values[indices[0]] + (values[indices[1]] << 8);
-        } else {
-            m_dataMap[key] = values[indices[0]];
+    /*
+        for (auto &[key, indices] : offsets) {
+            if (indices.size() > 1) {
+                m_dataMap[key] = values[indices[0]] + (values[indices[1]] << 8);
+            } else {
+                m_dataMap[key] = values[indices[0]];
+            }
         }
-    }
-*/
+    */
 
     // calculate DIF
     // TODO: this should see how many cylinders we have. 4? 6? 9?
@@ -45,7 +45,6 @@ void FlightRecord::apply(std::vector<int> &values)
         {m_dataMap[EGT1], m_dataMap[EGT2], m_dataMap[EGT3], m_dataMap[EGT4], m_dataMap[EGT5], m_dataMap[EGT6]});
     m_dataMap[DIF] = bounds.second - bounds.first;
     */
-
 }
 
 } // namespace jpi_edm

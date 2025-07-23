@@ -164,10 +164,7 @@ void ProtoHeader::apply(std::vector<unsigned long> values)
     value = values[0];
 }
 
-void ProtoHeader::dump(std::ostream &outStream)
-{
-    outStream << " ProtoHeader:" << "\n    value: " << value << "\n";
-}
+void ProtoHeader::dump(std::ostream &outStream) { outStream << " ProtoHeader:" << "\n    value: " << value << "\n"; }
 
 /**
  * Timestamp
