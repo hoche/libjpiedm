@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <memory>
 
 namespace jpi_edm {
 
@@ -55,25 +56,35 @@ class FlightHeader
     };
 };
 
-/**
- * @brief A representation of the data found in a flight measurement record
- *
- */
-class FlightRecord
+class FlightMetricsRecord
 {
   public:
-    FlightRecord() = delete;
-    FlightRecord(int recordSeq, bool isFast) : m_recordSeq(recordSeq), m_isFast(isFast){};
-    virtual ~FlightRecord(){};
+    FlightMetricsRecord() {};
+    virtual ~FlightMetricsRecord() {};
 
-    static const int MARK_IDX = 16;
-
-    virtual void apply(std::vector<int> &values);
+    void update(long recordSeq, std::map<int, int> &values, bool isFast);
 
   public:
-    int m_recordSeq;
-    bool m_isFast;
-    std::map<int, int> m_dataMap; // ordered map
+    bool m_isFast{false};
+    unsigned long m_recordSeq{0};
+    std::map<int, int> m_metrics;
+};
+
+class Flight
+{
+  public:
+    Flight();
+    virtual ~Flight() {};
+
+    void setFastFlag(bool flag) { m_fastFlag = flag; }
+
+  public:
+    bool m_fastFlag{false};
+    unsigned long m_stdRecCount{0};
+    unsigned long m_fastRecCount{0};
+
+    std::shared_ptr<FlightHeader> m_flightHeader;
+    std::shared_ptr<FlightMetricsRecord> m_metricsRecord;
 };
 
 } // namespace jpi_edm

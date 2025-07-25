@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <bitset>
 #include <cstring>
+#include <iostream>
 #include <iomanip>
 #include <iterator>
 #include <memory>
@@ -30,6 +31,7 @@
 #include "Flight.hpp"
 #include "FlightFile.hpp"
 #include "Metadata.hpp"
+#include "MetricId.hpp"
 
 namespace jpi_edm {
 
@@ -56,14 +58,14 @@ inline std::ostream &operator<<(std::ostream &o, const HexCharStruct &hs)
 
 inline HexCharStruct hex(unsigned char _c) { return HexCharStruct(_c); }
 
-void FlightFile::setMetadataCompletionCb(std::function<void(Metadata &)> cb) { m_metadataCompletionCb = cb; }
+void FlightFile::setMetadataCompletionCb(std::function<void(std::shared_ptr<Metadata>&)> cb) { m_metadataCompletionCb = cb; }
 
-void FlightFile::setFlightHeaderCompletionCb(std::function<void(FlightHeader &)> cb)
+void FlightFile::setFlightHeaderCompletionCb(std::function<void(std::shared_ptr<FlightHeader>&)> cb)
 {
     m_flightHeaderCompletionCb = cb;
 }
 
-void FlightFile::setFlightRecordCompletionCb(std::function<void(FlightRecord &)> cb) { m_flightRecCompletionCb = cb; }
+void FlightFile::setFlightRecordCompletionCb(std::function<void(std::shared_ptr<FlightMetricsRecord>&)> cb) { m_flightRecCompletionCb = cb; }
 
 void FlightFile::setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb)
 {
@@ -235,10 +237,17 @@ void FlightFile::parseFileHeaders(std::istream &stream)
         }
     }
 
-    m_metadata = metadata;
+    m_metadata = std::make_shared<Metadata>(metadata);
 
     if (m_metadataCompletionCb) {
-        m_metadataCompletionCb(metadata);
+        m_metadataCompletionCb(m_metadata);
+    }
+}
+
+void FlightFile::parseFileFooters(std::istream &stream)
+{
+    if (m_fileFooterCompletionCb) {
+        m_fileFooterCompletionCb();
     }
 }
 
@@ -280,6 +289,7 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
     }
     return true;
 }
+
 
 // This scans the stream, adding bytes to it until a checksum matches
 std::streamoff FlightFile::detectFlightHeaderSize(std::istream &stream)
@@ -422,13 +432,12 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     }
 
     if (m_flightHeaderCompletionCb) {
-        m_flightHeaderCompletionCb(*flightHeader);
+        m_flightHeaderCompletionCb(flightHeader);
     }
     return flightHeader;
 }
 
-void FlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, std::shared_ptr<FlightHeader> &flightHeader,
-                                    bool &isFast)
+void FlightFile::parseFlightDataRec(std::istream &stream, unsigned long recordSeq, std::shared_ptr<Flight> &flight)
 {
     int oldFormat = false; // NOT ACTIVE YET
 
@@ -528,28 +537,7 @@ void FlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, std::sh
         std::cout << "\n";
     }
     std::cout << "values to read: " << std::dec << fieldMap.count() << "\n";
-    // FUTURE OPTIMIZATION: older files, we can just read all the values at once
 #endif
-
-    std::vector<int> highByteElems{42, 44, 48, 49, 50, 51, 52, 53,  54,  55,  56,  57,  58,  59,
-                                   60, 61, 62, 63, 79, 86, 87, 103, 108, 109, 110, 116, 117, 118};
-
-    if (recordSeq == 0) {
-        m_stdRecs = 0;
-        m_fastRecs = 0;
-        std::vector<int> defaultValues(128, 0xF0);
-
-        // high byte elements always default to 0x00
-        for (auto i : highByteElems)
-            defaultValues[i] = 0;
-
-        // other special cases with defaults of 0x00 instead of 0xF0
-        std::vector<int> specialDefaults{30, 86, 87};
-        for (auto i : specialDefaults)
-            defaultValues[i] = 0;
-
-        m_values = defaultValues;
-    }
 
 #ifdef DEBUG_FLIGHTS
     std::cout << "values start offset: " << std::hex << stream.tellg() << std::dec << "\n";
@@ -557,37 +545,38 @@ void FlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, std::sh
     std::cout << "raw values:\n";
 #endif
 
-    // FUTURE OPTIMIZATION:
-    // 1. In older files, we can stop iterating at 48 bits instead of doing
-    // the full 128
-    // 2. Read the entire block at once, since we can tell how many bytes
-    // to read by counting the number of set bits in the fieldMap.
-    for (int k = 0; k < fieldMap.size(); ++k) {
-        if (fieldMap[k]) {
-            unsigned char diff;
-            stream.read(reinterpret_cast<char *>(&diff), 1);
+    std::map<int, int> values; 
+    for (int metricIdx = 0; metricIdx < fieldMap.size(); ++metricIdx) {
+        if (fieldMap[metricIdx]) {
+            char byte;
+            stream.read(reinterpret_cast<char *>(&byte), 1);
+            int val = byte; // promote to int
+            if (signMap[metricIdx]) { val = -val; };
+
 #ifdef DEBUG_FLIGHTS
-            std::cout << "[" << k << "]\t0x" << hex(diff) << "\t(" << int(diff) << ")\t" << (signMap[k] ? "-" : "+")
-                      << "\n";
+            std::cout << "[" << metricIdx << "]\t0x" << hex(byte) << "\t(" << int(byte) << ")\t"
+                    << (signMap[metricIdx] ? "-" : "+")
+                    << "   => " << val << "\n";
             if (++printCount % 16 == 0) {
                 std::cout << "\n";
             }
 #endif
-            // Special case for GPS values
-            if (k == 86 && diff == 0x64) {
-                m_values[k] = flightHeader->startLat;
-            } else if (k == 87 && diff == 0x64) {
-                m_values[k] = flightHeader->startLng;
-            } else {
-                // BUG: what we want isn't the difference of just the previous value of this byte,
-                // we want the difference of the previous value of the combined h+l bytes (the metric).
-                // This means we need to know the which values are combined this early in the processing.
-                signMap[k] ? m_values[k] -= diff : m_values[k] += diff;
+            values[metricIdx] = val;
+
+            if (metricIdx == MARK_IDX) {
+                switch (val) {
+                case 2:
+                    flight->setFastFlag(true);
+                    break;
+                case 3:
+                    flight->setFastFlag(false);
+                    break;
+                }
             }
-        } else if (recordSeq == 0) {
-            m_values[k] = 0;
         }
     }
+
+    flight->m_metricsRecord->update(recordSeq, values, flight->m_fastFlag);
 
     auto endOff{stream.tellg()};
 
@@ -608,35 +597,14 @@ void FlightFile::parseFlightDataRec(std::istream &stream, int recordSeq, std::sh
         throw std::runtime_error{msg.str()};
     }
 
-    // special test for the MARK value.
-    switch (m_values[FlightRecord::MARK_IDX]) {
-    case 0x02:
-        isFast = true;
-        break;
-    case 0x03:
-        isFast = false;
-        break;
-    }
 
     if (m_flightRecCompletionCb) {
-        FlightRecord fr(recordSeq, isFast);
-        fr.apply(m_values);
-        m_flightRecCompletionCb(fr);
+        m_flightRecCompletionCb(flight->m_metricsRecord);
     }
 }
 
-void FlightFile::parseFileFooters(std::istream &stream)
+void FlightFile::parseFlights(std::istream &stream)
 {
-    if (m_fileFooterCompletionCb) {
-        m_fileFooterCompletionCb();
-    }
-}
-
-bool FlightFile::parse(std::istream &stream)
-{
-    stream.seekg(0);
-    parseFileHeaders(stream);
-
     std::streamoff headerSize = detectFlightHeaderSize(stream);
 
 #ifdef DEBUG_FLIGHT_HEADERS
@@ -649,16 +617,11 @@ bool FlightFile::parse(std::istream &stream)
         std::cout << "======== startOff: " << std::hex << startOff << std::dec << "\n";
 #endif
 
-        auto flightHeader = parseFlightHeader(stream, flightDataCount.first, headerSize);
+        auto flight = std::make_shared<Flight>();
+        flight->m_flightHeader = parseFlightHeader(stream, flightDataCount.first, headerSize);
 
-        std::vector<int> values{128};
-        unsigned long recordSeq{0};
-        unsigned long stdRecCount{0};
-        unsigned long fastRecCount{0};
-        bool isFast{false};
-
-        for (; (stream.tellg() - startOff) < ((flightDataCount.second - 1L) * 2); ++recordSeq) {
-            parseFlightDataRec(stream, recordSeq, flightHeader, isFast);
+        for (unsigned long recordSeq = 0; (stream.tellg() - startOff) < ((flightDataCount.second - 1L) * 2); ++recordSeq) {
+            parseFlightDataRec(stream, recordSeq, flight);
 #ifdef DEBUG_PARSE
             auto bytesRead = stream.tellg() - startOff;
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex << stream.tellg()
@@ -666,21 +629,24 @@ bool FlightFile::parse(std::istream &stream)
                       << "\n"
                       << std::flush;
 #endif
-            if (isFast) {
-                ++fastRecCount;
-            } else {
-                ++stdRecCount;
-            }
         }
         if (m_flightCompletionCb) {
-            m_flightCompletionCb(stdRecCount, fastRecCount);
+            m_flightCompletionCb(flight->m_stdRecCount, flight->m_fastRecCount);
         }
     }
-
-    parseFileFooters(stream);
-    return true;
 }
 
-bool FlightFile::processFile(std::istream &stream) { return parse(stream); }
+void FlightFile::parse(std::istream &stream)
+{
+    stream.seekg(0);
+
+    parseFileHeaders(stream);
+    parseFlights(stream);
+    parseFileFooters(stream);
+}
+
+void FlightFile::processFile(std::istream &stream) {
+    parse(stream);
+}
 
 } // namespace jpi_edm

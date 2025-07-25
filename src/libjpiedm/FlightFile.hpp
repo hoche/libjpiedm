@@ -25,13 +25,13 @@ class FlightFile
     FlightFile(){};
     virtual ~FlightFile(){};
 
-    virtual void setMetadataCompletionCb(std::function<void(Metadata &)> cb);
-    virtual void setFlightHeaderCompletionCb(std::function<void(FlightHeader &)> cb);
-    virtual void setFlightRecordCompletionCb(std::function<void(FlightRecord &)> cb);
+    virtual void setMetadataCompletionCb(std::function<void(std::shared_ptr<Metadata>&)> cb);
+    virtual void setFlightHeaderCompletionCb(std::function<void(std::shared_ptr<FlightHeader>&)> cb);
+    virtual void setFlightRecordCompletionCb(std::function<void(std::shared_ptr<FlightMetricsRecord>&)> cb);
     virtual void setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb);
     virtual void setFileFooterCompletionCb(std::function<void(void)> cb);
 
-    virtual bool processFile(std::istream &stream);
+    virtual void processFile(std::istream &stream);
 
   private:
     /**
@@ -52,23 +52,21 @@ class FlightFile
                                 unsigned char checksum);
     std::streamoff detectFlightHeaderSize(std::istream &stream);
 
-    bool parse(std::istream &stream);
+    void parse(std::istream &stream);
 
     void parseFileHeaders(std::istream &stream);
     std::shared_ptr<FlightHeader> parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
-    void parseFlightDataRec(std::istream &stream, int recordId, std::shared_ptr<FlightHeader> &header, bool &isFast);
+    void parseFlightDataRec(std::istream &stream, unsigned long recordSeq, std::shared_ptr<Flight> &flight);
+    void parseFlights(std::istream &stream);
     void parseFileFooters(std::istream &stream);
 
   private:
-    Metadata m_metadata;
+    std::shared_ptr<Metadata> m_metadata;
     std::vector<std::pair<int, long>> m_flightDataCounts;
-    std::vector<int> m_values; // storage for the previous values so we can diff them
-    int m_stdRecs{0};
-    int m_fastRecs{0};
 
-    std::function<void(Metadata &)> m_metadataCompletionCb;
-    std::function<void(FlightHeader &)> m_flightHeaderCompletionCb;
-    std::function<void(FlightRecord &)> m_flightRecCompletionCb;
+    std::function<void(std::shared_ptr<Metadata>&)> m_metadataCompletionCb;
+    std::function<void(std::shared_ptr<FlightHeader>&)> m_flightHeaderCompletionCb;
+    std::function<void(std::shared_ptr<FlightMetricsRecord>&)> m_flightRecCompletionCb;
     std::function<void(unsigned long, unsigned long)> m_flightCompletionCb;
     std::function<void(void)> m_fileFooterCompletionCb;
 };

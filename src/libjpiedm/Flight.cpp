@@ -1,6 +1,4 @@
-/**
- * Copyright @ 2024 Michel Hoche-Mong
- * SPDX-License-Identifier: CC-BY-4.0
+/** * Copyright @ 2024 Michel Hoche-Mong * SPDX-License-Identifier: CC-BY-4.0
  *
  * @brief Classes for representing individual flights from a JPI EDM flight
  * file.
@@ -18,9 +16,18 @@
 namespace jpi_edm {
 
 // #define DEBUG_FLIGHT_RECORD
-
-void FlightRecord::apply(std::vector<int> &values)
+Flight::Flight()
 {
+    m_metricsRecord = std::make_shared<FlightMetricsRecord>();
+    // XXX init this, using the map array from the flight file
+}
+
+// this maybe should be in the Flight, not the MetricsRecord.
+void FlightMetricsRecord::update(long recordSeq, std::map<int, int> &values, bool isFast)
+{
+    m_recordSeq = recordSeq;
+    m_isFast = isFast;
+
 #ifdef DEBUG_FLIGHT_RECORD
     for (int i = 0; i < values.size(); ++i) {
         printf("[%d] %8x\t(%d)\t(%u)\n", i, values[i], (int)values[i], (unsigned)values[i]);

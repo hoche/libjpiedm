@@ -2,6 +2,8 @@
 
 namespace jpi_edm {
 
+static const int MARK_IDX = 16;
+
 enum MetricId {
     EGT11,
     EGT12,

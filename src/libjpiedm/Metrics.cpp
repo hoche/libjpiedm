@@ -25,9 +25,15 @@
  *  limitations under the License.
  */
 
+#include <iostream>
+#include <map>
+#include <vector>
+
 #include "Metrics.hpp"
 #include "Metadata.hpp"
 #include "MetricId.hpp"
+
+#define DEBUG_METRICS 1
 
 namespace jpi_edm {
 
@@ -37,6 +43,11 @@ std::map<int, Metric> Metrics::getBitToMetricMap(const EDMVersion &edmversion)
 
     for (const auto &metric : m_metrics) {
         if ((metric.getVersionMask() & edmversion) > 0) {
+#if DEBUG_METRICS
+            if (result.count(metric.getLowByteBit()) > 0) {
+                std::cout << "Duplicate metric entry for " << metric.getLowByteBit() << std::endl;
+            }
+#endif
             result.emplace(metric.getLowByteBit(), metric);
         }
     }
