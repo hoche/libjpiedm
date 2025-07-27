@@ -16,6 +16,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <memory>
 
 #ifdef _WIN32
 #include "getopt.h"
@@ -32,25 +33,25 @@ using namespace jpi_edm;
 
 static bool g_verbose = false;
 
-void printFlightInfo(jpi_edm::FlightHeader &hdr, unsigned long stdReqs, unsigned long fastReqs, std::ostream &outStream)
+void printFlightInfo(std::shared_ptr<jpi_edm::FlightHeader> &hdr, unsigned long stdReqs, unsigned long fastReqs, std::ostream &outStream)
 {
     std::tm local;
 #ifdef _WIN32
-    time_t flightStartTime = _mkgmtime(&hdr.startDate);
+    time_t flightStartTime = _mkgmtime(&hdr->startDate);
     gmtime_s(&local, &flightStartTime);
 #else
-    time_t flightStartTime = timegm(&hdr.startDate);
+    time_t flightStartTime = timegm(&hdr->startDate);
     local = *gmtime(&flightStartTime);
 #endif
 
-    auto min = (fastReqs / 60) + (stdReqs * hdr.interval) / 60;
+    auto min = (fastReqs / 60) + (stdReqs * hdr->interval) / 60;
     auto hrs = 0.01 + static_cast<float>(min) / 60;
     // min = min % 60;
 
-    outStream << "Flt #" << hdr.flight_num << " - ";
+    outStream << "Flt #" << hdr->flight_num << " - ";
     // outStream << hrs << ":" << std::setfill('0') << std::setw(2) << min << " Hours";
     outStream << std::fixed << std::setprecision(2) << hrs << " Hours";
-    outStream << " @ " << hdr.interval << " sec";
+    outStream << " @ " << hdr->interval << " sec";
     outStream << " " << std::put_time(&local, "%m/%d/%Y") << " " << std::put_time(&local, "%T");
     outStream << std::endl;
 }
@@ -63,58 +64,50 @@ void printLatLng(int measurement, std::ostream &outStream)
 }
 
 // Ugh. these should all be a macro or an inline that range checks.
-void printFlightDataRecord(const jpi_edm::FlightRecord &rec, std::ostream &outStream)
+void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
 {
-    outStream << rec.m_dataMap.at(EGT11) << ", ";
-    outStream << rec.m_dataMap.at(EGT12) << ", ";
-    outStream << rec.m_dataMap.at(EGT13) << ", ";
-    outStream << rec.m_dataMap.at(EGT14) << ", ";
-    outStream << rec.m_dataMap.at(EGT15) << ", ";
-    outStream << rec.m_dataMap.at(EGT16) << ", ";
+    outStream << rec->m_metrics.at(EGT11) << ", ";
+    outStream << rec->m_metrics.at(EGT12) << ", ";
+    outStream << rec->m_metrics.at(EGT13) << ", ";
+    outStream << rec->m_metrics.at(EGT14) << ", ";
+    outStream << rec->m_metrics.at(EGT15) << ", ";
+    outStream << rec->m_metrics.at(EGT16) << ", ";
 
-    outStream << rec.m_dataMap.at(CHT11) << ", ";
-    outStream << rec.m_dataMap.at(CHT12) << ", ";
-    outStream << rec.m_dataMap.at(CHT13) << ", ";
-    outStream << rec.m_dataMap.at(CHT14) << ", ";
-    outStream << rec.m_dataMap.at(CHT15) << ", ";
-    outStream << rec.m_dataMap.at(CHT16) << ", ";
+    outStream << rec->m_metrics.at(CHT11) << ", ";
+    outStream << rec->m_metrics.at(CHT12) << ", ";
+    outStream << rec->m_metrics.at(CHT13) << ", ";
+    outStream << rec->m_metrics.at(CHT14) << ", ";
+    outStream << rec->m_metrics.at(CHT15) << ", ";
+    outStream << rec->m_metrics.at(CHT16) << ", ";
 
-    outStream << rec.m_dataMap.at(TIT11) << ", ";
+    outStream << rec->m_metrics.at(TIT11) << ", ";
 
-    outStream << rec.m_dataMap.at(OAT) << ", ";
-    outStream << rec.m_dataMap.at(DIF1) << ", ";
-    outStream << rec.m_dataMap.at(CLD1) << ",";
-    outStream << std::fixed << std::setprecision(1)
-              << (static_cast<float>(rec.m_dataMap.at(MP1)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(RPM1) << ", ";
-    outStream << rec.m_dataMap.at(HP1) << ",";
+    outStream << rec->m_metrics.at(OAT) << ", ";
+    outStream << rec->m_metrics.at(DIF1) << ", ";
+    outStream << rec->m_metrics.at(CLD1) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(MP1)) / 10.0) << ", ";
+    outStream << rec->m_metrics.at(RPM1) << ", ";
+    outStream << rec->m_metrics.at(HP1) << ",";
 
-    outStream << std::fixed << std::setprecision(1)
-              << (static_cast<float>(rec.m_dataMap.at(FF11)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1)
-              << (static_cast<float>(rec.m_dataMap.at(FP1)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(OILP1) << ",";
-    outStream << std::fixed << std::setprecision(1)
-              << (static_cast<float>(rec.m_dataMap.at(VOLT1)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(AMP1) << ", ";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FF11)) / 10.0) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FP1)) / 10.0) << ", ";
+    outStream << rec->m_metrics.at(OILP1) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(VOLT1)) / 10.0) << ", ";
+    outStream << rec->m_metrics.at(AMP1) << ", ";
 
-    outStream << rec.m_dataMap.at(OILT1) << ",";
-    outStream << std::fixed << std::setprecision(1)
-              << (static_cast<float>(rec.m_dataMap.at(FUSD11)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1)
-              << (static_cast<float>(rec.m_dataMap.at(FLVL21)) / 10, 0) << ",";
-    outStream << std::fixed << std::setprecision(1)
-              << (static_cast<float>(rec.m_dataMap.at(FLVL11)) / 10.0) << ",";
+    outStream << rec->m_metrics.at(OILT1) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FUSD11)) / 10.0) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FLVL21)) / 10, 0) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FLVL11)) / 10.0) << ",";
 
-    outStream << std::fixed << std::setprecision(1)
-              << (static_cast<float>(rec.m_dataMap.at(HRS1)) / 10.0) << ",";
-    outStream << rec.m_dataMap.at(SPD) << ",";
-    outStream << rec.m_dataMap.at(ALT) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(HRS1)) / 10.0) << ",";
+    outStream << rec->m_metrics.at(SPD) << ",";
+    outStream << rec->m_metrics.at(ALT) << ",";
 
-    printLatLng(rec.m_dataMap.at(LAT), outStream);
-    printLatLng(rec.m_dataMap.at(LNG), outStream);
+    printLatLng(rec->m_metrics.at(LAT), outStream);
+    printLatLng(rec->m_metrics.at(LNG), outStream);
 
-    switch (rec.m_dataMap.at(MARK)) {
+    switch (rec->m_metrics.at(MARK)) {
     case 0x02:
         outStream << "[";
         break;
@@ -132,32 +125,32 @@ void printFlightDataRecord(const jpi_edm::FlightRecord &rec, std::ostream &outSt
 void printFlightData(std::istream &stream, int flightId, std::ostream &outStream)
 {
     jpi_edm::FlightFile ff;
-    jpi_edm::FlightHeader hdr;
+    std::shared_ptr<jpi_edm::FlightHeader> hdr;
     time_t recordTime;
 
     if (g_verbose) {
-        ff.setMetadataCompletionCb([&outStream](jpi_edm::Metadata md) { md.dump(outStream); });
+        ff.setMetadataCompletionCb([&outStream](std::shared_ptr<jpi_edm::Metadata> md) { md->dump(outStream); });
     }
 
-    ff.setFlightHeaderCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::FlightHeader fh) {
+    ff.setFlightHeaderCompletionCb([&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
         hdr = fh;
 
-        if (flightId != -1 && hdr.flight_num != flightId) {
+        if (flightId != -1 && hdr->flight_num != flightId) {
             return;
         }
 
         std::tm local;
 #ifdef _WIN32
-        recordTime = _mkgmtime(&hdr.startDate);
+        recordTime = _mkgmtime(&hdr->startDate);
         gmtime_s(&local, &recordTime);
 #else
-        recordTime = timegm(&hdr.startDate);
+        recordTime = timegm(&hdr->startDate);
         local = *gmtime(&recordTime);
 #endif
 
         if (g_verbose) {
-            outStream << "Flt #" << hdr.flight_num << "\n";
-            outStream << "Interval: " << hdr.interval << " sec\n";
+            outStream << "Flt #" << hdr->flight_num << "\n";
+            outStream << "Interval: " << hdr->interval << " sec\n";
             outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
                       << std::put_time(&local, "%T") << "\n";
         }
@@ -167,8 +160,8 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
                   << "\n";
     });
 
-    ff.setFlightRecordCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::FlightRecord rec) {
-        if (flightId != -1 && hdr.flight_num != flightId) {
+    ff.setFlightRecordCompletionCb([&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
+        if (flightId != -1 && hdr->flight_num != flightId) {
             return;
         }
 
@@ -180,11 +173,11 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
 
         // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
         // crash)
-        outStream << rec.m_recordSeq << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+        outStream << rec->m_recordSeq << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
                   << (timeinfo.tm_year + 1900) << "," << std::put_time(&timeinfo, "%T") << ", ";
-        printFlightDataRecord(rec, outStream);
+        printFlightMetricsRecord(rec, outStream);
 
-        rec.m_isFast ? ++recordTime : recordTime += hdr.interval;
+        rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
     });
 
     // Now do the work
@@ -194,9 +187,9 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
 void printFlightList(std::istream &stream, std::ostream &outStream)
 {
     jpi_edm::FlightFile ff;
-    jpi_edm::FlightHeader hdr;
+    std::shared_ptr<jpi_edm::FlightHeader> hdr;
 
-    ff.setFlightHeaderCompletionCb([&hdr](jpi_edm::FlightHeader fh) { hdr = fh; });
+    ff.setFlightHeaderCompletionCb([&hdr](std::shared_ptr<jpi_edm::FlightHeader> fh) { hdr = fh; });
     ff.setFlightCompletionCb([&hdr, &outStream](unsigned long stdReqs, unsigned long fastReqs) {
         printFlightInfo(hdr, stdReqs, fastReqs, outStream);
     });
