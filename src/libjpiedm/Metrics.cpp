@@ -29,9 +29,9 @@
 #include <map>
 #include <vector>
 
-#include "Metrics.hpp"
 #include "Metadata.hpp"
 #include "MetricId.hpp"
+#include "Metrics.hpp"
 
 #define DEBUG_METRICS 1
 

@@ -66,6 +66,7 @@ class Metric
     const std::optional<int> &getHighByteBit() const { return m_highByteBit; }
     const std::string &getName() const { return m_name; }
     ScaleFactor getScaleFactor() const { return m_scaleFactor; }
+    const int getInitialValue() const { return m_initValue; }
 
   private:
     int m_versionMask;

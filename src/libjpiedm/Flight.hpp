@@ -17,6 +17,9 @@
 #include <map>
 #include <memory>
 
+#include "Metadata.hpp"
+#include "Metrics.hpp"
+
 namespace jpi_edm {
 
 class FlightHeader
@@ -56,13 +59,12 @@ class FlightHeader
     };
 };
 
+/* only used for reporting the metrics */
 class FlightMetricsRecord
 {
   public:
-    FlightMetricsRecord() {};
-    virtual ~FlightMetricsRecord() {};
-
-    void update(long recordSeq, std::map<int, int> &values, bool isFast);
+    FlightMetricsRecord(){};
+    virtual ~FlightMetricsRecord(){};
 
   public:
     bool m_isFast{false};
@@ -73,18 +75,26 @@ class FlightMetricsRecord
 class Flight
 {
   public:
-    Flight();
-    virtual ~Flight() {};
+    Flight() = delete;
+    explicit Flight(const std::shared_ptr<Metadata> &metadata);
+    virtual ~Flight(){};
 
     void setFastFlag(bool flag) { m_fastFlag = flag; }
+    void incrementSequence() { ++m_recordSeq; }
+    void updateMetrics(const std::map<int, int> &values);
+
+    std::shared_ptr<FlightMetricsRecord> getFlightMetricsRecord();
 
   public:
+    unsigned long m_recordSeq{0};
     bool m_fastFlag{false};
     unsigned long m_stdRecCount{0};
     unsigned long m_fastRecCount{0};
 
     std::shared_ptr<FlightHeader> m_flightHeader;
-    std::shared_ptr<FlightMetricsRecord> m_metricsRecord;
+    std::map<int, Metric> m_metricsMap;
+
+    std::map<int, int> m_metricValues;
 };
 
 } // namespace jpi_edm

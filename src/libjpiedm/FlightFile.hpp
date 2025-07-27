@@ -25,9 +25,9 @@ class FlightFile
     FlightFile(){};
     virtual ~FlightFile(){};
 
-    virtual void setMetadataCompletionCb(std::function<void(std::shared_ptr<Metadata>&)> cb);
-    virtual void setFlightHeaderCompletionCb(std::function<void(std::shared_ptr<FlightHeader>&)> cb);
-    virtual void setFlightRecordCompletionCb(std::function<void(std::shared_ptr<FlightMetricsRecord>&)> cb);
+    virtual void setMetadataCompletionCb(std::function<void(std::shared_ptr<Metadata>)> cb);
+    virtual void setFlightHeaderCompletionCb(std::function<void(std::shared_ptr<FlightHeader>)> cb);
+    virtual void setFlightRecordCompletionCb(std::function<void(std::shared_ptr<FlightMetricsRecord>)> cb);
     virtual void setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb);
     virtual void setFileFooterCompletionCb(std::function<void(void)> cb);
 
@@ -56,7 +56,7 @@ class FlightFile
 
     void parseFileHeaders(std::istream &stream);
     std::shared_ptr<FlightHeader> parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
-    void parseFlightDataRec(std::istream &stream, unsigned long recordSeq, std::shared_ptr<Flight> &flight);
+    void parseFlightDataRec(std::istream &stream, std::shared_ptr<Flight> &flight);
     void parseFlights(std::istream &stream);
     void parseFileFooters(std::istream &stream);
 
@@ -64,9 +64,9 @@ class FlightFile
     std::shared_ptr<Metadata> m_metadata;
     std::vector<std::pair<int, long>> m_flightDataCounts;
 
-    std::function<void(std::shared_ptr<Metadata>&)> m_metadataCompletionCb;
-    std::function<void(std::shared_ptr<FlightHeader>&)> m_flightHeaderCompletionCb;
-    std::function<void(std::shared_ptr<FlightMetricsRecord>&)> m_flightRecCompletionCb;
+    std::function<void(std::shared_ptr<Metadata>)> m_metadataCompletionCb;
+    std::function<void(std::shared_ptr<FlightHeader>)> m_flightHeaderCompletionCb;
+    std::function<void(std::shared_ptr<FlightMetricsRecord>)> m_flightRecCompletionCb;
     std::function<void(unsigned long, unsigned long)> m_flightCompletionCb;
     std::function<void(void)> m_fileFooterCompletionCb;
 };

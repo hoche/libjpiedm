@@ -16,18 +16,18 @@
 namespace jpi_edm {
 
 // #define DEBUG_FLIGHT_RECORD
-Flight::Flight()
+
+Flight::Flight(const std::shared_ptr<Metadata> &metadata)
 {
-    m_metricsRecord = std::make_shared<FlightMetricsRecord>();
-    // XXX init this, using the map array from the flight file
+    m_metricsMap = Metrics::getBitToMetricMap(metadata->protoVersion());
+
+    for (const auto &mapPair : m_metricsMap) {
+        m_metricValues[mapPair.first] = mapPair.second.getInitialValue();
+    }
 }
 
-// this maybe should be in the Flight, not the MetricsRecord.
-void FlightMetricsRecord::update(long recordSeq, std::map<int, int> &values, bool isFast)
+void Flight::updateMetrics(const std::map<int, int> &values)
 {
-    m_recordSeq = recordSeq;
-    m_isFast = isFast;
-
 #ifdef DEBUG_FLIGHT_RECORD
     for (int i = 0; i < values.size(); ++i) {
         printf("[%d] %8x\t(%d)\t(%u)\n", i, values[i], (int)values[i], (unsigned)values[i]);
@@ -52,6 +52,12 @@ void FlightMetricsRecord::update(long recordSeq, std::map<int, int> &values, boo
         {m_dataMap[EGT1], m_dataMap[EGT2], m_dataMap[EGT3], m_dataMap[EGT4], m_dataMap[EGT5], m_dataMap[EGT6]});
     m_dataMap[DIF] = bounds.second - bounds.first;
     */
+}
+
+std::shared_ptr<FlightMetricsRecord> Flight::getFlightMetricsRecord()
+{
+    // XXX Fill me in
+    return std::make_shared<FlightMetricsRecord>();
 }
 
 } // namespace jpi_edm

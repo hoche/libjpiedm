@@ -9,8 +9,8 @@
 #include <algorithm>
 #include <bitset>
 #include <cstring>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <iterator>
 #include <memory>
 #include <sstream>
@@ -58,14 +58,20 @@ inline std::ostream &operator<<(std::ostream &o, const HexCharStruct &hs)
 
 inline HexCharStruct hex(unsigned char _c) { return HexCharStruct(_c); }
 
-void FlightFile::setMetadataCompletionCb(std::function<void(std::shared_ptr<Metadata>&)> cb) { m_metadataCompletionCb = cb; }
+void FlightFile::setMetadataCompletionCb(std::function<void(std::shared_ptr<Metadata>)> cb)
+{
+    m_metadataCompletionCb = cb;
+}
 
-void FlightFile::setFlightHeaderCompletionCb(std::function<void(std::shared_ptr<FlightHeader>&)> cb)
+void FlightFile::setFlightHeaderCompletionCb(std::function<void(std::shared_ptr<FlightHeader>)> cb)
 {
     m_flightHeaderCompletionCb = cb;
 }
 
-void FlightFile::setFlightRecordCompletionCb(std::function<void(std::shared_ptr<FlightMetricsRecord>&)> cb) { m_flightRecCompletionCb = cb; }
+void FlightFile::setFlightRecordCompletionCb(std::function<void(std::shared_ptr<FlightMetricsRecord>)> cb)
+{
+    m_flightRecCompletionCb = cb;
+}
 
 void FlightFile::setFlightCompletionCb(std::function<void(unsigned long, unsigned long)> cb)
 {
@@ -290,7 +296,6 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
     return true;
 }
 
-
 // This scans the stream, adding bytes to it until a checksum matches
 std::streamoff FlightFile::detectFlightHeaderSize(std::istream &stream)
 {
@@ -437,16 +442,18 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     return flightHeader;
 }
 
-void FlightFile::parseFlightDataRec(std::istream &stream, unsigned long recordSeq, std::shared_ptr<Flight> &flight)
+void FlightFile::parseFlightDataRec(std::istream &stream, std::shared_ptr<Flight> &flight)
 {
     int oldFormat = false; // NOT ACTIVE YET
+
+    flight->incrementSequence();
 
     int maskSize = oldFormat ? 1 : 2;
 
     auto startOff{stream.tellg()};
 #ifdef DEBUG_FLIGHTS
     std::cout << "-----------------------------------\n";
-    std::cout << "recordSeq: " << recordSeq << "\n";
+    std::cout << "recordSeq: " << flight->m_recordSeq << "\n";
     std::cout << "start offset: " << std::hex << startOff << std::dec << "\n";
 #endif
 
@@ -466,7 +473,7 @@ void FlightFile::parseFlightDataRec(std::istream &stream, unsigned long recordSe
 
     if (bmPopMap[0] != bmPopMap[1]) {
         std::stringstream msg;
-        msg << "bmPopMaps don't match (record: " << std::dec << recordSeq << " offset: " << std::hex
+        msg << "bmPopMaps don't match (record: " << std::dec << flight->m_recordSeq << " offset: " << std::hex
             << (stream.tellg() - static_cast<std::streamoff>(4L));
 #ifdef DEBUG_FLIGHTS
         std::cout << msg.str() << std::endl;
@@ -545,18 +552,19 @@ void FlightFile::parseFlightDataRec(std::istream &stream, unsigned long recordSe
     std::cout << "raw values:\n";
 #endif
 
-    std::map<int, int> values; 
+    std::map<int, int> values;
     for (int metricIdx = 0; metricIdx < fieldMap.size(); ++metricIdx) {
         if (fieldMap[metricIdx]) {
             char byte;
             stream.read(reinterpret_cast<char *>(&byte), 1);
             int val = byte; // promote to int
-            if (signMap[metricIdx]) { val = -val; };
+            if (signMap[metricIdx]) {
+                val = -val;
+            };
 
 #ifdef DEBUG_FLIGHTS
             std::cout << "[" << metricIdx << "]\t0x" << hex(byte) << "\t(" << int(byte) << ")\t"
-                    << (signMap[metricIdx] ? "-" : "+")
-                    << "   => " << val << "\n";
+                      << (signMap[metricIdx] ? "-" : "+") << "   => " << val << "\n";
             if (++printCount % 16 == 0) {
                 std::cout << "\n";
             }
@@ -576,7 +584,7 @@ void FlightFile::parseFlightDataRec(std::istream &stream, unsigned long recordSe
         }
     }
 
-    flight->m_metricsRecord->update(recordSeq, values, flight->m_fastFlag);
+    flight->updateMetrics(values);
 
     auto endOff{stream.tellg()};
 
@@ -590,16 +598,15 @@ void FlightFile::parseFlightDataRec(std::istream &stream, unsigned long recordSe
     stream.read(reinterpret_cast<char *>(&checksum), 1);
     if (!validateBinaryChecksum(stream, startOff, endOff, checksum)) {
         std::stringstream msg;
-        msg << "checksum failure in record " << std::dec << recordSeq;
+        msg << "checksum failure in record " << std::dec << flight->m_recordSeq;
 #ifdef DEBUG_FLIGHTS
         std::cout << msg.str() << std::endl;
 #endif
         throw std::runtime_error{msg.str()};
     }
 
-
     if (m_flightRecCompletionCb) {
-        m_flightRecCompletionCb(flight->m_metricsRecord);
+        m_flightRecCompletionCb(flight->getFlightMetricsRecord());
     }
 }
 
@@ -617,11 +624,11 @@ void FlightFile::parseFlights(std::istream &stream)
         std::cout << "======== startOff: " << std::hex << startOff << std::dec << "\n";
 #endif
 
-        auto flight = std::make_shared<Flight>();
+        auto flight = std::make_shared<Flight>(m_metadata);
         flight->m_flightHeader = parseFlightHeader(stream, flightDataCount.first, headerSize);
 
-        for (unsigned long recordSeq = 0; (stream.tellg() - startOff) < ((flightDataCount.second - 1L) * 2); ++recordSeq) {
-            parseFlightDataRec(stream, recordSeq, flight);
+        while ((stream.tellg() - startOff) < ((flightDataCount.second - 1L) * 2)) {
+            parseFlightDataRec(stream, flight);
 #ifdef DEBUG_PARSE
             auto bytesRead = stream.tellg() - startOff;
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex << stream.tellg()
@@ -645,8 +652,6 @@ void FlightFile::parse(std::istream &stream)
     parseFileFooters(stream);
 }
 
-void FlightFile::processFile(std::istream &stream) {
-    parse(stream);
-}
+void FlightFile::processFile(std::istream &stream) { parse(stream); }
 
 } // namespace jpi_edm
