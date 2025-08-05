@@ -63,7 +63,8 @@ class FlightHeader
 class FlightMetricsRecord
 {
   public:
-    FlightMetricsRecord(){};
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq, std::map<int,int>& metrics) :
+        m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(metrics) {};
     virtual ~FlightMetricsRecord(){};
 
   public:
@@ -94,6 +95,7 @@ class Flight
     std::shared_ptr<FlightHeader> m_flightHeader;
     std::map<int, Metric> m_metricsMap;
 
+    // the running total
     std::map<int, int> m_metricValues;
 };
 

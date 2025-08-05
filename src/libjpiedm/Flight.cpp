@@ -21,28 +21,49 @@ Flight::Flight(const std::shared_ptr<Metadata> &metadata)
 {
     m_metricsMap = Metrics::getBitToMetricMap(metadata->protoVersion());
 
-    for (const auto &mapPair : m_metricsMap) {
-        m_metricValues[mapPair.first] = mapPair.second.getInitialValue();
+    for (const auto &pair : m_metricsMap) {
+        m_metricValues[pair.first] = pair.second.getInitialValue();
     }
 }
 
-void Flight::updateMetrics(const std::map<int, int> &values)
+// The input to this is just the raw data from this time in the file.
+// We need to update the metrics with it by adding it to the previous
+// value.
+void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 {
 #ifdef DEBUG_FLIGHT_RECORD
-    for (int i = 0; i < values.size(); ++i) {
-        printf("[%d] %8x\t(%d)\t(%u)\n", i, values[i], (int)values[i], (unsigned)values[i]);
+    for (const auto& pair : valuesMap) {
+        printf("[%d] %8x\t(%d)\t(%u)\n", pair.first,
+            pair.second, (int)(pair.second), (unsigned)(pair.second));
     };
 #endif
 
-    /*
-        for (auto &[key, indices] : offsets) {
-            if (indices.size() > 1) {
-                m_dataMap[key] = values[indices[0]] + (values[indices[1]] << 8);
-            } else {
-                m_dataMap[key] = values[indices[0]];
+    for (const auto& pair : valuesMap) {
+        int bitIdx = pair.first;
+        auto it = m_metricsMap.find(bitIdx);
+
+        // if not found, the bitIdx is probably pointing at a high byte and we'll handle that
+        // when we do the low byte;
+        int value = pair.second;
+        if (it != m_metricsMap.end()) {
+            auto highByteBitIdx = it->second.getHighByteBitIdx();
+            if (highByteBitIdx.has_value()) {
+                if (valuesMap.find(highByteBitIdx.value()) != valuesMap.end()) {
+                    // yup, there's a high byte
+                    int highByte = valuesMap.at(highByteBitIdx.value());
+                    bool isNegative = (value < 0);
+                    if (isNegative) {
+                        value = 0 - value;
+                    }
+                    value = ((0xFF & highByte) << 8) + (0xFF & value);
+                    if (isNegative) {
+                        value = 0 - value;
+                    }
+                }
             }
+            m_metricValues[bitIdx] += value;
         }
-    */
+    }
 
     // calculate DIF
     // TODO: this should see how many cylinders we have. 4? 6? 9?
@@ -56,8 +77,7 @@ void Flight::updateMetrics(const std::map<int, int> &values)
 
 std::shared_ptr<FlightMetricsRecord> Flight::getFlightMetricsRecord()
 {
-    // XXX Fill me in
-    return std::make_shared<FlightMetricsRecord>();
+    return std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq, m_metricValues);
 }
 
 } // namespace jpi_edm

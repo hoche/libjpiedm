@@ -50,7 +50,7 @@ class Metric
 
     Metric(int versionMask, int lowByteBit, std::optional<int> highByteBit, MetricId mid, const std::string &name,
            ScaleFactor scale = ScaleFactor::NONE, InitValue initValue = InitValue::DEFAULT)
-        : m_versionMask(versionMask), m_lowByteBit(lowByteBit), m_highByteBit(highByteBit), m_measurementId(mid),
+        : m_versionMask(versionMask), m_lowByteBitIdx(lowByteBit), m_highByteBitIdx(highByteBit), m_measurementId(mid),
           m_name(name), m_scaleFactor(scale), m_initValue(static_cast<int>(initValue))
     {
     }
@@ -62,16 +62,16 @@ class Metric
     }
 
     int getVersionMask() const { return m_versionMask; }
-    int getLowByteBit() const { return m_lowByteBit; }
-    const std::optional<int> &getHighByteBit() const { return m_highByteBit; }
+    int getLowByteBitIdx() const { return m_lowByteBitIdx; }
+    const std::optional<int> &getHighByteBitIdx() const { return m_highByteBitIdx; }
     const std::string &getName() const { return m_name; }
     ScaleFactor getScaleFactor() const { return m_scaleFactor; }
     const int getInitialValue() const { return m_initValue; }
 
   private:
     int m_versionMask;
-    int m_lowByteBit;
-    std::optional<int> m_highByteBit;
+    int m_lowByteBitIdx;
+    std::optional<int> m_highByteBitIdx;
     int m_measurementId;
     std::string m_name;
     ScaleFactor m_scaleFactor;

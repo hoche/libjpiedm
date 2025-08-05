@@ -37,6 +37,8 @@
 
 namespace jpi_edm {
 
+// Maps low-byte bit indexes to Metric entries.
+// Only the low byte indexes are mapped.
 std::map<int, Metric> Metrics::getBitToMetricMap(const EDMVersion &edmversion)
 {
     std::map<int, Metric> result;
@@ -44,11 +46,11 @@ std::map<int, Metric> Metrics::getBitToMetricMap(const EDMVersion &edmversion)
     for (const auto &metric : m_metrics) {
         if ((metric.getVersionMask() & edmversion) > 0) {
 #if DEBUG_METRICS
-            if (result.count(metric.getLowByteBit()) > 0) {
-                std::cout << "Duplicate metric entry for " << metric.getLowByteBit() << std::endl;
+            if (result.count(metric.getLowByteBitIdx()) > 0) {
+                std::cout << "Duplicate metric entry for " << metric.getLowByteBitIdx() << std::endl;
             }
 #endif
-            result.emplace(metric.getLowByteBit(), metric);
+            result.emplace(metric.getLowByteBitIdx(), metric);
         }
     }
 
