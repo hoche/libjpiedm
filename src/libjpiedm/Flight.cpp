@@ -19,9 +19,9 @@ namespace jpi_edm {
 
 Flight::Flight(const std::shared_ptr<Metadata> &metadata)
 {
-    m_metricsMap = Metrics::getBitToMetricMap(metadata->protoVersion());
+    m_bit2MetricMap = Metrics::getBitToMetricMap(metadata->protoVersion());
 
-    for (const auto &pair : m_metricsMap) {
+    for (const auto &pair : m_bit2MetricMap) {
         m_metricValues[pair.first] = pair.second.getInitialValue();
     }
 }
@@ -40,12 +40,12 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 
     for (const auto& pair : valuesMap) {
         int bitIdx = pair.first;
-        auto it = m_metricsMap.find(bitIdx);
+        auto it = m_bit2MetricMap.find(bitIdx);
 
         // if not found, the bitIdx is probably pointing at a high byte and we'll handle that
         // when we do the low byte;
         int value = pair.second;
-        if (it != m_metricsMap.end()) {
+        if (it != m_bit2MetricMap.end()) {
             auto highByteBitIdx = it->second.getHighByteBitIdx();
             if (highByteBitIdx.has_value()) {
                 if (valuesMap.find(highByteBitIdx.value()) != valuesMap.end()) {
@@ -77,7 +77,19 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 
 std::shared_ptr<FlightMetricsRecord> Flight::getFlightMetricsRecord()
 {
-    return std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq, m_metricValues);
+    auto fmr = std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq);
+    // convert the m_metricValues map (keyed by bitidx - low byte) to a map keyed by MetricId
+    // so:
+    //   - for each key in the m_metricsValue map
+    //      - look up the Metric object in the m_bit2MetricMap
+    //      - pull out the MetricId and scale
+    //      - add an entry to a new map  such that map[MetricId] = m_metricsValue[key] * scale
+    for (const auto &pair : m_metricValues) {
+        Metric metric = m_bit2MetricsMap[pair.first];
+        fmr->m_metric[metric] = pair.second.getInitialValue();
+    }
+    fmr->m_metrics[EGT11] = 0;
+    return fmr;
 }
 
 } // namespace jpi_edm

@@ -63,14 +63,14 @@ class FlightHeader
 class FlightMetricsRecord
 {
   public:
-    FlightMetricsRecord(bool isFast, unsigned long recordSeq, std::map<int,int>& metrics) :
-        m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(metrics) {};
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq) :
+        m_isFast(isFast), m_recordSeq(recordSeq) {}
     virtual ~FlightMetricsRecord(){};
 
   public:
     bool m_isFast{false};
     unsigned long m_recordSeq{0};
-    std::map<int, int> m_metrics;
+    std::map<MetricId, int> m_metrics;
 };
 
 class Flight
@@ -93,10 +93,10 @@ class Flight
     unsigned long m_fastRecCount{0};
 
     std::shared_ptr<FlightHeader> m_flightHeader;
-    std::map<int, Metric> m_metricsMap;
+    std::map<int, Metric> m_bit2MetricMap; // keyed by bit offset
 
     // the running total
-    std::map<int, int> m_metricValues;
+    std::map<int, int> m_metricValues; // keyed by MetricId
 };
 
 } // namespace jpi_edm

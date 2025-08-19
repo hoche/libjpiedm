@@ -97,7 +97,7 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
 
     outStream << rec->m_metrics.at(OILT1) << ",";
     outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FUSD11)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FLVL21)) / 10, 0) << ",";
+    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FLVL21)) / 10.0) << ",";
     outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FLVL11)) / 10.0) << ",";
 
     outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(HRS1)) / 10.0) << ",";
