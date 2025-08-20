@@ -43,15 +43,15 @@ class Metric
   public:
     enum ScaleFactor { NONE, TEN, TEN_IF_GPH };
 
-    enum InitValue {
+    enum InitialValue {
         ZERO = 0x00,
         DEFAULT = 0xF0,
     };
 
     Metric(int versionMask, int lowByteBit, std::optional<int> highByteBit, MetricId mid, const std::string &name,
-           ScaleFactor scale = ScaleFactor::NONE, InitValue initValue = InitValue::DEFAULT)
-        : m_versionMask(versionMask), m_lowByteBitIdx(lowByteBit), m_highByteBitIdx(highByteBit), m_measurementId(mid),
-          m_name(name), m_scaleFactor(scale), m_initValue(static_cast<int>(initValue))
+           ScaleFactor scale = ScaleFactor::NONE, InitialValue initialValue = InitialValue::DEFAULT)
+        : m_versionMask(versionMask), m_lowByteBitIdx(lowByteBit), m_highByteBitIdx(highByteBit), m_metricId(mid),
+          m_name(name), m_scaleFactor(scale), m_initialValue(static_cast<float>(initialValue))
     {
     }
 
@@ -61,21 +61,22 @@ class Metric
     {
     }
 
+    MetricId getMetricId() const { return m_metricId; }
     int getVersionMask() const { return m_versionMask; }
     int getLowByteBitIdx() const { return m_lowByteBitIdx; }
     const std::optional<int> &getHighByteBitIdx() const { return m_highByteBitIdx; }
     const std::string &getName() const { return m_name; }
     ScaleFactor getScaleFactor() const { return m_scaleFactor; }
-    const int getInitialValue() const { return m_initValue; }
+    const float getInitialValue() const { return m_initialValue; }
 
   private:
     int m_versionMask;
     int m_lowByteBitIdx;
     std::optional<int> m_highByteBitIdx;
-    int m_measurementId;
+    MetricId m_metricId;
     std::string m_name;
     ScaleFactor m_scaleFactor;
-    int m_initValue;
+    float m_initialValue;
 };
 
 class Metrics

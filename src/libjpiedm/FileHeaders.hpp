@@ -69,6 +69,7 @@ class ConfigLimits : public FileHeader
     virtual void dump(std::ostream &outStream);
 
   public:
+    // These are all alarm values
     unsigned long volts_hi{0};
     unsigned long volts_lo{0};
     unsigned long egt_diff{0};
@@ -117,6 +118,8 @@ class ConfigInfo : public FileHeader
     virtual void apply(std::vector<unsigned long> values);
     virtual void dump(std::ostream &outStream);
 
+    static const int MAX_CYLS = 9; // up to 9 cyls possible
+
   public:
     unsigned long edm_model{0};
     uint32_t flags{0};
@@ -126,14 +129,21 @@ class ConfigInfo : public FileHeader
     unsigned long firmware_version{0}; // n.nn * 100
     unsigned long build_maj{0};
     unsigned long build_min{0};
+
+    // derived values
+    bool isTwin{false};
+    int numCylinders{4};
 };
 
 /**
  * $F = Fuel flow config and limits.
  *
  * Format:
- * empty,full,warning,kfactor,kfactor
+ * units,full,warning,kfactor,kfactor
  *
+ * units: 0 = GPH, 1 = LPH?
+ * full: max fuel onboard
+ * warning: low fuel warning level
  * K factor is the number of pulses expected for every one volumetric unit of
  * fluid passing through a given flow meter.
  *
@@ -149,7 +159,7 @@ class FuelLimits : public FileHeader
     virtual void dump(std::ostream &outStream);
 
   public:
-    unsigned long empty{0};
+    unsigned long units{0};
     unsigned long main_tank_size{0};
     unsigned long aux_tank_size{0};
     unsigned long k_factor_1{0};

@@ -14,9 +14,9 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <vector>
-#include <memory>
 
 #ifdef _WIN32
 #include "getopt.h"
@@ -33,7 +33,8 @@ using namespace jpi_edm;
 
 static bool g_verbose = false;
 
-void printFlightInfo(std::shared_ptr<jpi_edm::FlightHeader> &hdr, unsigned long stdReqs, unsigned long fastReqs, std::ostream &outStream)
+void printFlightInfo(std::shared_ptr<jpi_edm::FlightHeader> &hdr, unsigned long stdReqs, unsigned long fastReqs,
+                     std::ostream &outStream)
 {
     std::tm local;
 #ifdef _WIN32
@@ -132,53 +133,55 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
         ff.setMetadataCompletionCb([&outStream](std::shared_ptr<jpi_edm::Metadata> md) { md->dump(outStream); });
     }
 
-    ff.setFlightHeaderCompletionCb([&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
-        hdr = fh;
+    ff.setFlightHeaderCompletionCb(
+        [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
+            hdr = fh;
 
-        if (flightId != -1 && hdr->flight_num != flightId) {
-            return;
-        }
+            if (flightId != -1 && hdr->flight_num != flightId) {
+                return;
+            }
 
-        std::tm local;
+            std::tm local;
 #ifdef _WIN32
-        recordTime = _mkgmtime(&hdr->startDate);
-        gmtime_s(&local, &recordTime);
+            recordTime = _mkgmtime(&hdr->startDate);
+            gmtime_s(&local, &recordTime);
 #else
-        recordTime = timegm(&hdr->startDate);
-        local = *gmtime(&recordTime);
+            recordTime = timegm(&hdr->startDate);
+            local = *gmtime(&recordTime);
 #endif
 
-        if (g_verbose) {
-            outStream << "Flt #" << hdr->flight_num << "\n";
-            outStream << "Interval: " << hdr->interval << " sec\n";
-            outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
-                      << std::put_time(&local, "%T") << "\n";
-        }
+            if (g_verbose) {
+                outStream << "Flt #" << hdr->flight_num << "\n";
+                outStream << "Interval: " << hdr->interval << " sec\n";
+                outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
+                          << std::put_time(&local, "%T") << "\n";
+            }
 
-        outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
-                  << ",T1,OAT,DIF,CLD,MAP,RPM,HP,FF,FP,OILP,BAT,AMP,OILT" << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK"
-                  << "\n";
-    });
+            outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
+                      << ",T1,OAT,DIF,CLD,MAP,RPM,HP,FF,FP,OILP,BAT,AMP,OILT" << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK"
+                      << "\n";
+        });
 
-    ff.setFlightRecordCompletionCb([&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
-        if (flightId != -1 && hdr->flight_num != flightId) {
-            return;
-        }
+    ff.setFlightRecordCompletionCb(
+        [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
+            if (flightId != -1 && hdr->flight_num != flightId) {
+                return;
+            }
 
-        std::tm timeinfo = *std::gmtime(&recordTime);
+            std::tm timeinfo = *std::gmtime(&recordTime);
 
-        timeinfo.tm_year = 2025 - 1900;
-        timeinfo.tm_mon = 5;
-        timeinfo.tm_mday = 1;
+            timeinfo.tm_year = 2025 - 1900;
+            timeinfo.tm_mon = 5;
+            timeinfo.tm_mday = 1;
 
-        // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
-        // crash)
-        outStream << rec->m_recordSeq << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
-                  << (timeinfo.tm_year + 1900) << "," << std::put_time(&timeinfo, "%T") << ", ";
-        printFlightMetricsRecord(rec, outStream);
+            // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
+            // crash)
+            outStream << rec->m_recordSeq << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+                      << (timeinfo.tm_year + 1900) << "," << std::put_time(&timeinfo, "%T") << ", ";
+            printFlightMetricsRecord(rec, outStream);
 
-        rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
-    });
+            rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
+        });
 
     // Now do the work
     ff.processFile(stream);

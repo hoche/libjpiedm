@@ -104,8 +104,8 @@ const std::vector<Metric> Metrics::m_metrics = {
     Metric(V1   |V3|V4   ,  29,      CHT19, "engine[1].cylinder_head_temperature[9]"),
     Metric(   V2      |V5,  29,  61, EGT26, "engine[2].exhaust_gas_temperature[6]"),
     Metric(V1   |V3|V4   ,  30,      HP1,   "engine[1].horsepower"),
-    Metric(   V2      |V5,  30,  62, TIT21, "engine[2].turbine_inlet_temperature[1]", Metric::ScaleFactor::NONE, Metric::InitValue::ZERO),
-    Metric(   V2      |V5,  31,  63, TIT22, "engine[2].turbine_inlet_temperature[2]", Metric::ScaleFactor::NONE, Metric::InitValue::ZERO),
+    Metric(   V2      |V5,  30,  62, TIT21, "engine[2].turbine_inlet_temperature[1]", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
+    Metric(   V2      |V5,  31,  63, TIT22, "engine[2].turbine_inlet_temperature[2]", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
 
     // byte 4
     Metric(   V2      |V5,  32,      CHT21, "engine[2].cylinder_head_temperature[1]"),

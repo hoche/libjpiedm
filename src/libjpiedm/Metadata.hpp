@@ -33,10 +33,12 @@ class Metadata
 
     virtual void dump(std::ostream &outStream);
 
-    bool isTwin() const;
-    EDMVersion protoVersion() const;
-    bool isOldRecFormat() const;
-    HeaderVersion guessFlightHeaderVersion() const;
+    bool IsTwin() const;
+    bool IsGPH() const;
+    int NumCylinders() const;
+    EDMVersion ProtoVersion() const;
+    bool IsOldRecFormat() const;
+    HeaderVersion GuessFlightHeaderVersion() const;
 
   public:
     std::string m_tailNum{""};

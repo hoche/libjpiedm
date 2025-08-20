@@ -8,9 +8,11 @@
 
 namespace jpi_edm {
 
-bool Metadata::isTwin() const { return (m_configInfo.edm_model == 760 || m_configInfo.edm_model == 960); }
+bool Metadata::IsTwin() const { return m_configInfo.isTwin; }
+int Metadata::NumCylinders() const { return m_configInfo.numCylinders; }
+bool Metadata::IsGPH() const { return (m_fuelLimits.units == 0); }
 
-EDMVersion Metadata::protoVersion() const
+EDMVersion Metadata::ProtoVersion() const
 {
     // peel out twins first
     if (m_configInfo.edm_model == 760) {
@@ -35,9 +37,9 @@ EDMVersion Metadata::protoVersion() const
     return EDMVersion::V4;
 }
 
-bool Metadata::isOldRecFormat() const { return (protoVersion() == EDMVersion::V1 || protoVersion() == EDMVersion::V2); }
+bool Metadata::IsOldRecFormat() const { return (ProtoVersion() == EDMVersion::V1 || ProtoVersion() == EDMVersion::V2); }
 
-HeaderVersion Metadata::guessFlightHeaderVersion() const
+HeaderVersion Metadata::GuessFlightHeaderVersion() const
 {
     if (m_protoHeader.value > 1 || m_configInfo.edm_model >= 900) {
         if (m_configInfo.build_maj > 2010) {
@@ -54,7 +56,7 @@ HeaderVersion Metadata::guessFlightHeaderVersion() const
 void Metadata::dump(std::ostream &outStream)
 {
     outStream << "Tailnumber: " << m_tailNum << "\n";
-    outStream << "Old Rec Format: " << (isOldRecFormat() ? "yes" : "no") << "\n";
+    outStream << "Old Rec Format: " << (IsOldRecFormat() ? "yes" : "no") << "\n";
     m_configLimits.dump(outStream);
     m_configInfo.dump(outStream);
     m_fuelLimits.dump(outStream);

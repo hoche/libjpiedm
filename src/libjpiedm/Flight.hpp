@@ -63,8 +63,7 @@ class FlightHeader
 class FlightMetricsRecord
 {
   public:
-    FlightMetricsRecord(bool isFast, unsigned long recordSeq) :
-        m_isFast(isFast), m_recordSeq(recordSeq) {}
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq) : m_isFast(isFast), m_recordSeq(recordSeq) {}
     virtual ~FlightMetricsRecord(){};
 
   public:
@@ -92,11 +91,21 @@ class Flight
     unsigned long m_stdRecCount{0};
     unsigned long m_fastRecCount{0};
 
+    const std::shared_ptr<Metadata> m_metadata;
     std::shared_ptr<FlightHeader> m_flightHeader;
-    std::map<int, Metric> m_bit2MetricMap; // keyed by bit offset
 
-    // the running total
-    std::map<int, int> m_metricValues; // keyed by MetricId
+    // This is a fairly static object that is created when the file
+    // is first opened. It is a map of bit offsets to Metric objects.
+    // Note that only the low-byte offset of multiple-byte items will
+    // have an entry here.
+    std::map<int, Metric> m_bit2MetricMap;
+
+    // This is the running total, updated each time a data row is read
+    // out of the file. It is keyed on MetricId. Items are:
+    // - Initialized according to Metric.InitValue,
+    // - Scaled according to Metric.ScaleFactor,
+    // - and derived data is calculated (Min/Max elements, for example)
+    std::map<MetricId, int> m_metricValues;
 };
 
 } // namespace jpi_edm

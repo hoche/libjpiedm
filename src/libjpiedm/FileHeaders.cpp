@@ -86,6 +86,16 @@ void ConfigInfo::apply(std::vector<unsigned long> values)
         build_maj = *rit++;
     }
     firmware_version = *rit++;
+
+    isTwin = (edm_model == 760 || edm_model == 960);
+
+    uint32_t mask = 0x00000004;
+    unsigned n = 0;
+    while (n < MAX_CYLS && (flags & mask)) {
+        n++;
+        mask <<= 1;
+    }
+    numCylinders = n;
 }
 
 const uint32_t F_BAT = 0x00000001;
@@ -139,7 +149,7 @@ void FuelLimits::apply(std::vector<unsigned long> values)
         throw std::invalid_argument{"Incorrect number of arguments in $F line"};
     }
 
-    empty = values[0];
+    units = values[0];
     main_tank_size = values[1];
     aux_tank_size = values[2];
     k_factor_1 = values[3];
@@ -148,9 +158,9 @@ void FuelLimits::apply(std::vector<unsigned long> values)
 
 void FuelLimits::dump(std::ostream &outStream)
 {
-    outStream << "FuelLimits:" << "\n    empty: " << empty << "\n    main_tank_size: " << main_tank_size
-              << "\n    aux_tank_size: " << aux_tank_size << "\n    k_factor_2: " << k_factor_1
-              << "\n    k_factor_1: " << k_factor_2 << "\n";
+    outStream << "FuelLimits:" << "\n    units: " << (units ? "LPH" : "GPH")
+              << "\n    main_tank_size: " << main_tank_size << "\n    aux_tank_size: " << aux_tank_size
+              << "\n    k_factor_2: " << k_factor_1 << "\n    k_factor_1: " << k_factor_2 << "\n";
 }
 
 /**
