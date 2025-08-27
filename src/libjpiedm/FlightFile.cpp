@@ -457,9 +457,6 @@ void FlightFile::parseFlightDataRec(std::istream &stream, std::shared_ptr<Flight
     std::cout << "start offset: " << std::hex << startOff << std::dec << "\n";
 #endif
 
-    // FUTURE OPTIMIZATION: we can read all the datarec header at once - we know that it's
-    // either 3 bytes (old format) or 5 bytes
-
     // A pair of bitmaps, which should be identical
     // They indicate which bytes of the data bitmap are populated
     std::vector<std::uint16_t> bmPopMap{0, 0};
@@ -550,12 +547,13 @@ void FlightFile::parseFlightDataRec(std::istream &stream, std::shared_ptr<Flight
     std::cout << "values start offset: " << std::hex << stream.tellg() << std::dec << "\n";
     int printCount = 0;
     std::cout << "raw values:\n";
+    std::cout << "[idx]\thexval\tintval\tsign\tfinalval\n";
 #endif
 
     std::map<int, int> values;
     for (int metricIdx = 0; metricIdx < fieldMap.size(); ++metricIdx) {
         if (fieldMap[metricIdx]) {
-            char byte;
+            unsigned char byte;
             stream.read(reinterpret_cast<char *>(&byte), 1);
             int val = byte; // promote to int
             if (signMap[metricIdx]) {
@@ -564,7 +562,7 @@ void FlightFile::parseFlightDataRec(std::istream &stream, std::shared_ptr<Flight
 
 #ifdef DEBUG_FLIGHTS
             std::cout << "[" << metricIdx << "]\t0x" << hex(byte) << "\t(" << int(byte) << ")\t"
-                      << (signMap[metricIdx] ? "-" : "+") << "   => " << val << "\n";
+                      << (signMap[metricIdx] ? "-" : "+") << "   =>\t" << val << "\n";
             if (++printCount % 16 == 0) {
                 std::cout << "\n";
             }

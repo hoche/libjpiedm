@@ -59,56 +59,60 @@ void printFlightInfo(std::shared_ptr<jpi_edm::FlightHeader> &hdr, unsigned long 
 
 void printLatLng(int measurement, std::ostream &outStream)
 {
-    int hrs = measurement / 6000;
-    float min = float(abs(measurement) % 6000) / 100;
-    outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(3) << min << ",";
+    // Comment out for now
+    outStream << "00.00,";
+    //int hrs = measurement / 6000;
+    //float min = float(abs(measurement) % 6000) / 100;
+    //outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(2) << min << ",";
 }
 
 // Ugh. these should all be a macro or an inline that range checks.
 void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
 {
-    outStream << rec->m_metrics.at(EGT11) << ", ";
-    outStream << rec->m_metrics.at(EGT12) << ", ";
-    outStream << rec->m_metrics.at(EGT13) << ", ";
-    outStream << rec->m_metrics.at(EGT14) << ", ";
-    outStream << rec->m_metrics.at(EGT15) << ", ";
-    outStream << rec->m_metrics.at(EGT16) << ", ";
+    outStream << std::fixed << std::setprecision(0);
+    outStream << rec->m_metrics.at(EGT11) << ",";
+    outStream << rec->m_metrics.at(EGT12) << ",";
+    outStream << rec->m_metrics.at(EGT13) << ",";
+    outStream << rec->m_metrics.at(EGT14) << ",";
+    outStream << rec->m_metrics.at(EGT15) << ",";
+    outStream << rec->m_metrics.at(EGT16) << ",";
 
-    outStream << rec->m_metrics.at(CHT11) << ", ";
-    outStream << rec->m_metrics.at(CHT12) << ", ";
-    outStream << rec->m_metrics.at(CHT13) << ", ";
-    outStream << rec->m_metrics.at(CHT14) << ", ";
-    outStream << rec->m_metrics.at(CHT15) << ", ";
-    outStream << rec->m_metrics.at(CHT16) << ", ";
+    outStream << rec->m_metrics.at(CHT11) << ",";
+    outStream << rec->m_metrics.at(CHT12) << ",";
+    outStream << rec->m_metrics.at(CHT13) << ",";
+    outStream << rec->m_metrics.at(CHT14) << ",";
+    outStream << rec->m_metrics.at(CHT15) << ",";
+    outStream << rec->m_metrics.at(CHT16) << ",";
 
-    outStream << rec->m_metrics.at(TIT11) << ", ";
+    outStream << rec->m_metrics.at(TIT11) << ",";
 
-    outStream << rec->m_metrics.at(OAT) << ", ";
-    outStream << rec->m_metrics.at(DIF1) << ", ";
+    outStream << rec->m_metrics.at(OAT) << ",";
+    outStream << rec->m_metrics.at(DIF1) << ",";
     outStream << rec->m_metrics.at(CLD1) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(MP1)) / 10.0) << ", ";
-    outStream << rec->m_metrics.at(RPM1) << ", ";
+    outStream << std::setprecision(1) << rec->m_metrics.at(MAP1) << "," << std::setprecision(0);
+    outStream << rec->m_metrics.at(RPM1) << ",";
     outStream << rec->m_metrics.at(HP1) << ",";
 
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FF11)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FP1)) / 10.0) << ", ";
+    outStream << std::setprecision(1) << rec->m_metrics.at(FF11) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << rec->m_metrics.at(FP1) << "," << std::setprecision(0);
     outStream << rec->m_metrics.at(OILP1) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(VOLT1)) / 10.0) << ", ";
-    outStream << rec->m_metrics.at(AMP1) << ", ";
+    outStream << std::setprecision(1) << rec->m_metrics.at(VOLT1) << "," << std::setprecision(0);
+    outStream << rec->m_metrics.at(AMP1) << ",";
 
     outStream << rec->m_metrics.at(OILT1) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FUSD11)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FLVL21)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(FLVL11)) / 10.0) << ",";
+    outStream << std::setprecision(1) << rec->m_metrics.at(FUSD11) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << rec->m_metrics.at(RMAIN) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << rec->m_metrics.at(LMAIN) << "," << std::setprecision(0);
 
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec->m_metrics.at(HRS1)) / 10.0) << ",";
+    outStream << std::setprecision(1) << rec->m_metrics.at(HRS1) << "," << std::setprecision(0);
     outStream << rec->m_metrics.at(SPD) << ",";
     outStream << rec->m_metrics.at(ALT) << ",";
 
     printLatLng(rec->m_metrics.at(LAT), outStream);
     printLatLng(rec->m_metrics.at(LNG), outStream);
 
-    switch (rec->m_metrics.at(MARK)) {
+    int markVal = static_cast<int>(rec->m_metrics.at(MARK));
+    switch (markVal) {
     case 0x02:
         outStream << "[";
         break;
@@ -176,8 +180,8 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
 
             // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
             // crash)
-            outStream << rec->m_recordSeq << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
-                      << (timeinfo.tm_year + 1900) << "," << std::put_time(&timeinfo, "%T") << ", ";
+            outStream << rec->m_recordSeq-1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+                      << (timeinfo.tm_year + 1900) << "," << std::put_time(&timeinfo, "%T") << ",";
             printFlightMetricsRecord(rec, outStream);
 
             rec->m_isFast ? ++recordTime : recordTime += hdr->interval;

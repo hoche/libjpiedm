@@ -21,9 +21,25 @@ Flight::Flight(const std::shared_ptr<Metadata> &metadata) : m_metadata(metadata)
 {
     m_bit2MetricMap = Metrics::getBitToMetricMap(m_metadata->ProtoVersion());
 
+#ifdef DEBUG_FLIGHT_RECORD
+    std::cout << "Using map for proto " << m_metadata->ProtoVersion() << "\n";
+#endif
     for (const auto &[bitidx, metric] : m_bit2MetricMap) {
+#ifdef DEBUG_FLIGHT_RECORD
+        std::cout << "[" << bitidx << "] ==> " << metric.getShortName() << "\n";
+#endif
         m_metricValues[metric.getMetricId()] = metric.getInitialValue();
     }
+    // derived data that's not in the bit map
+    m_metricValues[DIF1] = 0;
+    m_metricValues[DIF2] = 0;
+
+#ifdef DEBUG_FLIGHT_RECORD
+    std::cout << "Initial metric values:\n";
+    for (const auto &[metricId, initialValue] : m_metricValues) {
+        std::cout << "[" << metricId << "] == " << initialValue << "\n";
+    }
+#endif
 }
 
 // The input to this is just the raw data from this time in the file.
@@ -32,23 +48,29 @@ Flight::Flight(const std::shared_ptr<Metadata> &metadata) : m_metadata(metadata)
 // We also calculate any derived values.
 void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 {
-#ifdef DEBUG_FLIGHT_RECORD
-    for (const auto &pair : valuesMap) {
-        printf("[%d] %8x\t(%d)\t(%u)\n", pair.first, pair.second, (int)(pair.second), (unsigned)(pair.second));
-    };
-#endif
-
     for (const auto &[bitIdx, bitValue] : valuesMap) {
         auto it = m_bit2MetricMap.find(bitIdx);
+#ifdef DEBUG_FLIGHT_RECORD
+        std::cout << "[" << std::setw(3) << std::right << std::setfill('0') << bitIdx << "] ";
+#endif
         if (it == m_bit2MetricMap.end()) {
+#ifdef DEBUG_FLIGHT_RECORD
+            std::cout << "highval, skipped\n";
+#endif
             // if not found, the bitIdx is probably pointing at a high byte and
             // we'll handle that when we do the low byte;
             continue;
         }
 
+#ifdef DEBUG_FLIGHT_RECORD
+            std::cout << "lowval, " << std::left << std::setw(10) << std::setfill(' ') << bitValue;
+#endif
         int value = bitValue;
         auto highByteBitIdx = it->second.getHighByteBitIdx();
         if (highByteBitIdx.has_value()) {
+#ifdef DEBUG_FLIGHT_RECORD
+            std::cout << "ORing with high at [" << highByteBitIdx.value() << "]";
+#endif
             if (valuesMap.find(highByteBitIdx.value()) != valuesMap.end()) {
                 // yup, there's a high byte
                 int highByte = valuesMap.at(highByteBitIdx.value());
@@ -62,6 +84,9 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
                 }
             }
         }
+#ifdef DEBUG_FLIGHT_RECORD
+        std::cout << "newval: " << value;
+#endif
 
         float scaledValue = value;
         switch (it->second.getScaleFactor()) {
@@ -69,12 +94,19 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
             scaledValue /= 10;
         case (Metric::ScaleFactor::TEN_IF_GPH):
             if (m_metadata->IsGPH()) {
-                value /= 10;
+                scaledValue /= 10;
             }
             // no default case
         }
 
-        m_metricValues[it->second.getMetricId()] += value;
+#ifdef DEBUG_FLIGHT_RECORD
+        std::cout << ", [" << it->second.getShortName() << "] -> " << m_metricValues[it->second.getMetricId()] << " + " << scaledValue << " == ";
+#endif
+        m_metricValues[it->second.getMetricId()] += scaledValue;
+#ifdef DEBUG_FLIGHT_RECORD
+        std::cout << m_metricValues[it->second.getMetricId()] << "\n";
+#endif
+
     }
 
     // Now do derived values
@@ -97,11 +129,7 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 std::shared_ptr<FlightMetricsRecord> Flight::getFlightMetricsRecord()
 {
     // This is just a copy of the m_metricValues map, with some additional info like fastFlag and seqno
-
-    // placeholder for now
-    auto fmr = std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq);
-    fmr->m_metrics[EGT11] = 0;
-    return fmr;
+    return std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq, m_metricValues);
 }
 
 } // namespace jpi_edm

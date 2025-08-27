@@ -48,16 +48,16 @@ class Metric
         DEFAULT = 0xF0,
     };
 
-    Metric(int versionMask, int lowByteBit, std::optional<int> highByteBit, MetricId mid, const std::string &name,
+    Metric(int versionMask, int lowByteBit, std::optional<int> highByteBit, MetricId mid, const std::string &shortName, const std::string &name,
            ScaleFactor scale = ScaleFactor::NONE, InitialValue initialValue = InitialValue::DEFAULT)
         : m_versionMask(versionMask), m_lowByteBitIdx(lowByteBit), m_highByteBitIdx(highByteBit), m_metricId(mid),
-          m_name(name), m_scaleFactor(scale), m_initialValue(static_cast<float>(initialValue))
+          m_shortName(shortName), m_name(name), m_scaleFactor(scale), m_initialValue(static_cast<float>(initialValue))
     {
     }
 
-    Metric(int versionMask, int lowByteBit, MetricId mid, const std::string &name,
+    Metric(int versionMask, int lowByteBit, MetricId mid, const std::string &shortName, const std::string &name,
            ScaleFactor scale = ScaleFactor::NONE)
-        : Metric(versionMask, lowByteBit, std::nullopt, mid, name, scale)
+        : Metric(versionMask, lowByteBit, std::nullopt, mid, shortName, name, scale)
     {
     }
 
@@ -65,6 +65,7 @@ class Metric
     int getVersionMask() const { return m_versionMask; }
     int getLowByteBitIdx() const { return m_lowByteBitIdx; }
     const std::optional<int> &getHighByteBitIdx() const { return m_highByteBitIdx; }
+    const std::string &getShortName() const { return m_shortName; }
     const std::string &getName() const { return m_name; }
     ScaleFactor getScaleFactor() const { return m_scaleFactor; }
     const float getInitialValue() const { return m_initialValue; }
@@ -74,6 +75,7 @@ class Metric
     int m_lowByteBitIdx;
     std::optional<int> m_highByteBitIdx;
     MetricId m_metricId;
+    std::string m_shortName;
     std::string m_name;
     ScaleFactor m_scaleFactor;
     float m_initialValue;

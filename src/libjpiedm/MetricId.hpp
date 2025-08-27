@@ -65,8 +65,8 @@ enum MetricId {
     IAT1,
     IAT2,
 
-    MP1,
-    MP2,
+    MAP1,
+    MAP2,
 
     VOLT1,
     VOLT2,

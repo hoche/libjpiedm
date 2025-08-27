@@ -63,13 +63,14 @@ class FlightHeader
 class FlightMetricsRecord
 {
   public:
-    FlightMetricsRecord(bool isFast, unsigned long recordSeq) : m_isFast(isFast), m_recordSeq(recordSeq) {}
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq, std::map<MetricId, float>& m_metricMap) : 
+        m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(m_metricMap) {}
     virtual ~FlightMetricsRecord(){};
 
   public:
     bool m_isFast{false};
     unsigned long m_recordSeq{0};
-    std::map<MetricId, int> m_metrics;
+    std::map<MetricId, float> m_metrics;
 };
 
 class Flight
@@ -105,7 +106,7 @@ class Flight
     // - Initialized according to Metric.InitValue,
     // - Scaled according to Metric.ScaleFactor,
     // - and derived data is calculated (Min/Max elements, for example)
-    std::map<MetricId, int> m_metricValues;
+    std::map<MetricId, float> m_metricValues;
 };
 
 } // namespace jpi_edm
