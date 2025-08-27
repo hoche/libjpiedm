@@ -61,9 +61,10 @@ void printLatLng(int measurement, std::ostream &outStream)
 {
     // Comment out for now
     outStream << "00.00,";
-    //int hrs = measurement / 6000;
-    //float min = float(abs(measurement) % 6000) / 100;
-    //outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(2) << min << ",";
+    // int hrs = measurement / 6000;
+    // float min = float(abs(measurement) % 6000) / 100;
+    // outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(2) << min <<
+    // ",";
 }
 
 // Ugh. these should all be a macro or an inline that range checks.
@@ -180,7 +181,7 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
 
             // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
             // crash)
-            outStream << rec->m_recordSeq-1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+            outStream << rec->m_recordSeq - 1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
                       << (timeinfo.tm_year + 1900) << "," << std::put_time(&timeinfo, "%T") << ",";
             printFlightMetricsRecord(rec, outStream);
 

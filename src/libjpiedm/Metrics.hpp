@@ -48,8 +48,9 @@ class Metric
         DEFAULT = 0xF0,
     };
 
-    Metric(int versionMask, int lowByteBit, std::optional<int> highByteBit, MetricId mid, const std::string &shortName, const std::string &name,
-           ScaleFactor scale = ScaleFactor::NONE, InitialValue initialValue = InitialValue::DEFAULT)
+    Metric(int versionMask, int lowByteBit, std::optional<int> highByteBit, MetricId mid, const std::string &shortName,
+           const std::string &name, ScaleFactor scale = ScaleFactor::NONE,
+           InitialValue initialValue = InitialValue::DEFAULT)
         : m_versionMask(versionMask), m_lowByteBitIdx(lowByteBit), m_highByteBitIdx(highByteBit), m_metricId(mid),
           m_shortName(shortName), m_name(name), m_scaleFactor(scale), m_initialValue(static_cast<float>(initialValue))
     {

@@ -63,7 +63,7 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
         }
 
 #ifdef DEBUG_FLIGHT_RECORD
-            std::cout << "lowval, " << std::left << std::setw(10) << std::setfill(' ') << bitValue;
+        std::cout << "lowval, " << std::left << std::setw(10) << std::setfill(' ') << bitValue;
 #endif
         int value = bitValue;
         auto highByteBitIdx = it->second.getHighByteBitIdx();
@@ -100,13 +100,13 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
         }
 
 #ifdef DEBUG_FLIGHT_RECORD
-        std::cout << ", [" << it->second.getShortName() << "] -> " << m_metricValues[it->second.getMetricId()] << " + " << scaledValue << " == ";
+        std::cout << ", [" << it->second.getShortName() << "] -> " << m_metricValues[it->second.getMetricId()] << " + "
+                  << scaledValue << " == ";
 #endif
         m_metricValues[it->second.getMetricId()] += scaledValue;
 #ifdef DEBUG_FLIGHT_RECORD
         std::cout << m_metricValues[it->second.getMetricId()] << "\n";
 #endif
-
     }
 
     // Now do derived values

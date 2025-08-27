@@ -63,8 +63,10 @@ class FlightHeader
 class FlightMetricsRecord
 {
   public:
-    FlightMetricsRecord(bool isFast, unsigned long recordSeq, std::map<MetricId, float>& m_metricMap) : 
-        m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(m_metricMap) {}
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq, std::map<MetricId, float> &m_metricMap)
+        : m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(m_metricMap)
+    {
+    }
     virtual ~FlightMetricsRecord(){};
 
   public:
