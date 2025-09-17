@@ -17,6 +17,8 @@ namespace jpi_edm {
 
 // #define DEBUG_FLIGHT_RECORD
 
+// Figure out which version of the metrics to use (V1, V2, etc),
+// and set the initial values.
 Flight::Flight(const std::shared_ptr<Metadata> &metadata) : m_metadata(metadata)
 {
     m_bit2MetricMap = Metrics::getBitToMetricMap(m_metadata->ProtoVersion());
@@ -24,12 +26,18 @@ Flight::Flight(const std::shared_ptr<Metadata> &metadata) : m_metadata(metadata)
 #ifdef DEBUG_FLIGHT_RECORD
     std::cout << "Using map for proto " << m_metadata->ProtoVersion() << "\n";
 #endif
+    bool isGPH = m_metadata->IsGPH();
     for (const auto &[bitidx, metric] : m_bit2MetricMap) {
 #ifdef DEBUG_FLIGHT_RECORD
         std::cout << "[" << bitidx << "] ==> " << metric.getShortName() << "\n";
 #endif
         m_metricValues[metric.getMetricId()] = metric.getInitialValue();
+        if ((metric.getScaleFactor() == Metric::ScaleFactor::TEN) ||
+            (metric.getScaleFactor() == Metric::ScaleFactor::TEN_IF_GPH && isGPH)) {
+            m_metricValues[metric.getMetricId()] /= 10;
+        }
     }
+
     // derived data that's not in the bit map
     m_metricValues[DIF1] = 0;
     m_metricValues[DIF2] = 0;
@@ -48,6 +56,7 @@ Flight::Flight(const std::shared_ptr<Metadata> &metadata) : m_metadata(metadata)
 // We also calculate any derived values.
 void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 {
+    bool isGPH = m_metadata->IsGPH();
     for (const auto &[bitIdx, bitValue] : valuesMap) {
         auto it = m_bit2MetricMap.find(bitIdx);
 #ifdef DEBUG_FLIGHT_RECORD
@@ -89,14 +98,10 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 #endif
 
         float scaledValue = value;
-        switch (it->second.getScaleFactor()) {
-        case (Metric::ScaleFactor::TEN):
+        auto metric = it->second;
+        if ((metric.getScaleFactor() == Metric::ScaleFactor::TEN) ||
+            (metric.getScaleFactor() == Metric::ScaleFactor::TEN_IF_GPH && isGPH)) {
             scaledValue /= 10;
-        case (Metric::ScaleFactor::TEN_IF_GPH):
-            if (m_metadata->IsGPH()) {
-                scaledValue /= 10;
-            }
-            // no default case
         }
 
 #ifdef DEBUG_FLIGHT_RECORD

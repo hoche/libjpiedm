@@ -157,8 +157,8 @@ const std::vector<Metric> Metrics::m_metrics = {
     Metric(         V4|V5,  83,      IDSTR(ALT), "altitude"), // in feet
     Metric(         V4   ,  84,      IDSTR(RAUX),"right_aux.fuel_level", Metric::ScaleFactor::TEN_IF_GPH),
     Metric(         V4|V5,  85,      IDSTR(SPD), "airspeed"), // in knots
-    Metric(         V4|V5,  86,      IDSTR(LAT), "latitude"),
-    Metric(         V4|V5,  87,      IDSTR(LNG), "longitude"),
+    Metric(         V4|V5,  86,      IDSTR(LAT), "latitude", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
+    Metric(         V4|V5,  87,      IDSTR(LNG), "longitude", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
 
     // byte 11
     Metric(            V5,  88,      IDSTR(MAP2),  "engine[2].manifold_pressure", Metric::ScaleFactor::TEN),
