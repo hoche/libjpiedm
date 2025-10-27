@@ -71,21 +71,21 @@ void printLatLng(int measurement, std::ostream &outStream)
 void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
 {
     outStream << std::fixed << std::setprecision(0);
-/*
-    outStream << rec->m_metrics.at(EGT11) << ",";
-    outStream << rec->m_metrics.at(EGT12) << ",";
-    outStream << rec->m_metrics.at(EGT13) << ",";
-    outStream << rec->m_metrics.at(EGT14) << ",";
-    outStream << rec->m_metrics.at(EGT15) << ",";
-    outStream << rec->m_metrics.at(EGT16) << ",";
+    /*
+        outStream << rec->m_metrics.at(EGT11) << ",";
+        outStream << rec->m_metrics.at(EGT12) << ",";
+        outStream << rec->m_metrics.at(EGT13) << ",";
+        outStream << rec->m_metrics.at(EGT14) << ",";
+        outStream << rec->m_metrics.at(EGT15) << ",";
+        outStream << rec->m_metrics.at(EGT16) << ",";
 
-    outStream << rec->m_metrics.at(CHT11) << ",";
-    outStream << rec->m_metrics.at(CHT12) << ",";
-    outStream << rec->m_metrics.at(CHT13) << ",";
-    outStream << rec->m_metrics.at(CHT14) << ",";
-    outStream << rec->m_metrics.at(CHT15) << ",";
-    outStream << rec->m_metrics.at(CHT16) << ",";
-*/
+        outStream << rec->m_metrics.at(CHT11) << ",";
+        outStream << rec->m_metrics.at(CHT12) << ",";
+        outStream << rec->m_metrics.at(CHT13) << ",";
+        outStream << rec->m_metrics.at(CHT14) << ",";
+        outStream << rec->m_metrics.at(CHT15) << ",";
+        outStream << rec->m_metrics.at(CHT16) << ",";
+    */
 
     outStream << rec->m_metrics.at(TIT11) << ",";
     outStream << rec->m_metrics.at(TIT12) << ",";
@@ -98,6 +98,7 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
     outStream << rec->m_metrics.at(HP1) << ",";
 
     outStream << std::setprecision(1) << rec->m_metrics.at(FF11) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << rec->m_metrics.at(FF12) << "," << std::setprecision(0);
     outStream << std::setprecision(1) << rec->m_metrics.at(FP1) << "," << std::setprecision(0);
     outStream << rec->m_metrics.at(OILP1) << ",";
     outStream << std::setprecision(1) << rec->m_metrics.at(VOLT1) << "," << std::setprecision(0);
@@ -165,12 +166,9 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
                           << std::put_time(&local, "%T") << "\n";
             }
 
-            outStream << "INDEX,DATE,TIME"
-                      //<< ",E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
-                      << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FP"
-                      << ",OILP,BAT,AMP,OILT"
-                      << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK"
-                      << "\n";
+            outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
+                      << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
+                      << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
         });
 
     ff.setFlightRecordCompletionCb(

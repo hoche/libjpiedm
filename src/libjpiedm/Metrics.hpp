@@ -57,8 +57,8 @@ class Metric
     }
 
     Metric(int versionMask, int lowByteBit, MetricId mid, const std::string &shortName, const std::string &name,
-           ScaleFactor scale = ScaleFactor::NONE)
-        : Metric(versionMask, lowByteBit, std::nullopt, mid, shortName, name, scale)
+           ScaleFactor scale = ScaleFactor::NONE, InitialValue initialValue = InitialValue::DEFAULT)
+        : Metric(versionMask, lowByteBit, std::nullopt, mid, shortName, name, scale, initialValue)
     {
     }
 
