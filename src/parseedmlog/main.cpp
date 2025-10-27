@@ -71,6 +71,7 @@ void printLatLng(int measurement, std::ostream &outStream)
 void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
 {
     outStream << std::fixed << std::setprecision(0);
+/*
     outStream << rec->m_metrics.at(EGT11) << ",";
     outStream << rec->m_metrics.at(EGT12) << ",";
     outStream << rec->m_metrics.at(EGT13) << ",";
@@ -84,8 +85,10 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
     outStream << rec->m_metrics.at(CHT14) << ",";
     outStream << rec->m_metrics.at(CHT15) << ",";
     outStream << rec->m_metrics.at(CHT16) << ",";
+*/
 
     outStream << rec->m_metrics.at(TIT11) << ",";
+    outStream << rec->m_metrics.at(TIT12) << ",";
 
     outStream << rec->m_metrics.at(OAT) << ",";
     outStream << rec->m_metrics.at(DIF1) << ",";
@@ -162,8 +165,11 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
                           << std::put_time(&local, "%T") << "\n";
             }
 
-            outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
-                      << ",T1,OAT,DIF,CLD,MAP,RPM,HP,FF,FP,OILP,BAT,AMP,OILT" << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK"
+            outStream << "INDEX,DATE,TIME"
+                      //<< ",E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
+                      << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FP"
+                      << ",OILP,BAT,AMP,OILT"
+                      << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK"
                       << "\n";
         });
 
