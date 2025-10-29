@@ -28,17 +28,23 @@ enum HeaderVersion {
 class Metadata
 {
   public:
-    Metadata(){};
-    virtual ~Metadata(){};
+    Metadata() = default;
+    virtual ~Metadata() = default;
+
+    // Explicitly handle copy and move operations
+    Metadata(const Metadata &) = default;
+    Metadata &operator=(const Metadata &) = default;
+    Metadata(Metadata &&) = default;
+    Metadata &operator=(Metadata &&) = default;
 
     virtual void dump(std::ostream &outStream) const;
 
-    bool IsTwin() const;
-    bool IsGPH() const;
-    int NumCylinders() const;
-    EDMVersion ProtoVersion() const;
-    bool IsOldRecFormat() const;
-    HeaderVersion GuessFlightHeaderVersion() const;
+    [[nodiscard]] bool IsTwin() const;
+    [[nodiscard]] bool IsGPH() const;
+    [[nodiscard]] int NumCylinders() const;
+    [[nodiscard]] EDMVersion ProtoVersion() const;
+    [[nodiscard]] bool IsOldRecFormat() const;
+    [[nodiscard]] HeaderVersion GuessFlightHeaderVersion() const;
 
   public:
     std::string m_tailNum{""};

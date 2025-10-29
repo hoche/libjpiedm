@@ -44,6 +44,15 @@ namespace jpi_edm {
 class FileHeader
 {
   public:
+    FileHeader() = default;
+    virtual ~FileHeader() = default;
+
+    // Explicitly handle copy and move operations
+    FileHeader(const FileHeader &) = default;
+    FileHeader &operator=(const FileHeader &) = default;
+    FileHeader(FileHeader &&) = default;
+    FileHeader &operator=(FileHeader &&) = default;
+
     /* Throws an exception if an insufficient number of arguments
      * are in the vector.
      */
@@ -63,8 +72,8 @@ class FileHeader
 class ConfigLimits : public FileHeader
 {
   public:
-    ConfigLimits(){};
-    virtual ~ConfigLimits(){};
+    ConfigLimits() = default;
+    virtual ~ConfigLimits() = default;
     virtual void apply(const std::vector<unsigned long> &values);
     virtual void dump(std::ostream &outStream) const;
 
@@ -113,8 +122,8 @@ class ConfigLimits : public FileHeader
 class ConfigInfo : public FileHeader
 {
   public:
-    ConfigInfo(){};
-    virtual ~ConfigInfo(){};
+    ConfigInfo() = default;
+    virtual ~ConfigInfo() = default;
     virtual void apply(const std::vector<unsigned long> &values);
     virtual void dump(std::ostream &outStream) const;
 
@@ -153,8 +162,8 @@ class ConfigInfo : public FileHeader
 class FuelLimits : public FileHeader
 {
   public:
-    FuelLimits(){};
-    virtual ~FuelLimits(){};
+    FuelLimits() = default;
+    virtual ~FuelLimits() = default;
     virtual void apply(const std::vector<unsigned long> &values);
     virtual void dump(std::ostream &outStream) const;
 
@@ -178,8 +187,8 @@ class FuelLimits : public FileHeader
 class ProtoHeader : public FileHeader
 {
   public:
-    ProtoHeader(){};
-    virtual ~ProtoHeader(){};
+    ProtoHeader() = default;
+    virtual ~ProtoHeader() = default;
     virtual void apply(const std::vector<unsigned long> &values);
     virtual void dump(std::ostream &outStream) const;
 
@@ -199,8 +208,8 @@ class ProtoHeader : public FileHeader
 class TimeStamp : public FileHeader
 {
   public:
-    TimeStamp(){};
-    virtual ~TimeStamp(){};
+    TimeStamp() = default;
+    virtual ~TimeStamp() = default;
     virtual void apply(const std::vector<unsigned long> &values);
     virtual void dump(std::ostream &outStream) const;
 

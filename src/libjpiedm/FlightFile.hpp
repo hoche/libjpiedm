@@ -22,8 +22,14 @@ namespace jpi_edm {
 class FlightFile
 {
   public:
-    FlightFile(){};
-    virtual ~FlightFile(){};
+    FlightFile() = default;
+    virtual ~FlightFile() = default;
+
+    // Explicitly handle copy and move operations
+    FlightFile(const FlightFile &) = delete;
+    FlightFile &operator=(const FlightFile &) = delete;
+    FlightFile(FlightFile &&) = default;
+    FlightFile &operator=(FlightFile &&) = default;
 
     virtual void setMetadataCompletionCb(std::function<void(std::shared_ptr<Metadata>)> cb);
     virtual void setFlightHeaderCompletionCb(std::function<void(std::shared_ptr<FlightHeader>)> cb);
@@ -48,14 +54,15 @@ class FlightFile
      * didn't match.
      */
     void validateHeaderChecksum(int lineno, const char *line);
-    bool validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff, std::iostream::off_type endOff,
-                                unsigned char checksum);
-    std::streamoff detectFlightHeaderSize(std::istream &stream);
+    [[nodiscard]] bool validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff,
+                                              std::iostream::off_type endOff, unsigned char checksum);
+    [[nodiscard]] std::streamoff detectFlightHeaderSize(std::istream &stream);
 
     void parse(std::istream &stream);
 
     void parseFileHeaders(std::istream &stream);
-    std::shared_ptr<FlightHeader> parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
+    [[nodiscard]] std::shared_ptr<FlightHeader> parseFlightHeader(std::istream &stream, int flightId,
+                                                                  std::streamoff headerSize);
     void parseFlightDataRec(std::istream &stream, const std::shared_ptr<Flight> &flight);
     void parseFlights(std::istream &stream);
     void parseFileFooters(std::istream &stream);

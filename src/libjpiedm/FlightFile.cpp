@@ -238,11 +238,9 @@ void FlightFile::parseFileHeaders(std::istream &stream)
             break;
         default:
         {
-            std::stringstream msg;
-            msg << "Invalid file format:  Unknown header on line: line " << lineno;
-            // this isn't really a critical error, but should get noted somehow
-            // throw std::runtime_error{msg.str()};
-            // LOG_MESSAGE{msg}
+            // Unknown header types are not critical errors - they may be future extensions
+            // For now, we log to stderr and continue parsing
+            std::cerr << "Warning: Unknown header on line " << lineno << std::endl;
         } break;
         }
     }

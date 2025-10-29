@@ -81,9 +81,10 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 #ifdef DEBUG_FLIGHT_RECORD
             std::cout << "ORing with high at [" << highByteBitIdx.value() << "]";
 #endif
-            if (valuesMap.find(highByteBitIdx.value()) != valuesMap.end()) {
+            // Use C++17 if-with-initializer to avoid double lookup
+            if (auto it = valuesMap.find(highByteBitIdx.value()); it != valuesMap.end()) {
                 // yup, there's a high byte
-                int highByte = valuesMap.at(highByteBitIdx.value());
+                int highByte = it->second;
                 bool isNegative = (value < 0);
                 if (isNegative) {
                     value = 0 - value; // make it positive to make the bitshift easier

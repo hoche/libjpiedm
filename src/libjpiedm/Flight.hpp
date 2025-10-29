@@ -25,8 +25,14 @@ namespace jpi_edm {
 class FlightHeader
 {
   public:
-    FlightHeader(){};
-    virtual ~FlightHeader(){};
+    FlightHeader() = default;
+    virtual ~FlightHeader() = default;
+
+    // Explicitly handle copy and move operations
+    FlightHeader(const FlightHeader &) = default;
+    FlightHeader &operator=(const FlightHeader &) = default;
+    FlightHeader(FlightHeader &&) = default;
+    FlightHeader &operator=(FlightHeader &&) = default;
 
     virtual void dump(std::ostream &outStream) const
     {
@@ -68,7 +74,13 @@ class FlightMetricsRecord
         : m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(m_metricMap)
     {
     }
-    virtual ~FlightMetricsRecord(){};
+    virtual ~FlightMetricsRecord() = default;
+
+    // Explicitly handle copy and move operations
+    FlightMetricsRecord(const FlightMetricsRecord &) = default;
+    FlightMetricsRecord &operator=(const FlightMetricsRecord &) = default;
+    FlightMetricsRecord(FlightMetricsRecord &&) = default;
+    FlightMetricsRecord &operator=(FlightMetricsRecord &&) = default;
 
   public:
     bool m_isFast{false};
@@ -81,13 +93,19 @@ class Flight
   public:
     Flight() = delete;
     explicit Flight(const std::shared_ptr<Metadata> &metadata);
-    virtual ~Flight(){};
+    virtual ~Flight() = default;
+
+    // Explicitly handle copy and move operations (non-copyable and non-move-assignable due to const member)
+    Flight(const Flight &) = delete;
+    Flight &operator=(const Flight &) = delete;
+    Flight(Flight &&) = default;
+    Flight &operator=(Flight &&) = delete; // Can't move-assign due to const m_metadata
 
     void setFastFlag(bool flag) { m_fastFlag = flag; }
     void incrementSequence() { ++m_recordSeq; }
     void updateMetrics(const std::map<int, int> &values);
 
-    std::shared_ptr<FlightMetricsRecord> getFlightMetricsRecord();
+    [[nodiscard]] std::shared_ptr<FlightMetricsRecord> getFlightMetricsRecord();
 
   public:
     unsigned long m_recordSeq{0};
