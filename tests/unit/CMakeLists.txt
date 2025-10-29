@@ -25,6 +25,7 @@ add_executable(unit_tests
     flight_test.cpp
     flightfile_test.cpp
     error_handling_test.cpp
+    stream_validation_test.cpp
 )
 
 target_link_libraries(unit_tests
