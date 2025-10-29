@@ -281,6 +281,9 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
                                         std::iostream::off_type endOff, unsigned char checksum)
 {
     auto curLoc{stream.tellg()};
+    if (curLoc == -1) {
+        throw std::runtime_error("Failed to get current stream position for checksum validation");
+    }
 
     // checksum - go back to the start of the record and add or xor everything
     // up to the end
@@ -288,9 +291,20 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
     unsigned char checksum_xor{0};
 
     stream.seekg(startOff);
+    if (!stream) {
+        throw std::runtime_error("Failed to seek to checksum start position");
+    }
+
     auto len = endOff - startOff;
     std::vector<char> buffer(len);
     stream.read(buffer.data(), len);
+
+    if (!stream || stream.gcount() != len) {
+        std::stringstream msg;
+        msg << "Failed to read " << len << " bytes for checksum validation. "
+            << "Read " << stream.gcount() << " bytes instead.";
+        throw std::runtime_error(msg.str());
+    }
 
     for (const auto &byte : buffer) {
         checksum_sum += static_cast<unsigned char>(byte);
@@ -305,6 +319,9 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
 #endif
 
     stream.seekg(curLoc, std::ios_base::beg);
+    if (!stream) {
+        throw std::runtime_error("Failed to restore stream position after checksum validation");
+    }
     if (checksum != checksum_sum && checksum != checksum_xor) {
         return false;
     }
@@ -315,21 +332,43 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
 std::optional<std::streamoff> FlightFile::detectFlightHeaderSize(std::istream &stream)
 {
     auto startOff{stream.tellg()};
+    if (startOff == -1) {
+        throw std::runtime_error("Failed to get stream position for flight header detection");
+    }
 
     std::streamoff offset;
     unsigned char checksum;
     for (offset = MAX_FLIGHT_HEADER_SIZE; offset >= MIN_FLIGHT_HEADER_SIZE; offset -= HEADER_SIZE_STEP) {
+        stream.clear(); // Clear any error flags from previous iterations
         stream.seekg(startOff + offset, std::ios_base::beg);
+        if (!stream) {
+            // Seek failed (beyond EOF) - try next offset
+            continue;
+        }
+
         stream.read(reinterpret_cast<char *>(&checksum), 1);
+        if (!stream || stream.gcount() != 1) {
+            // Read failed - try next offset
+            continue;
+        }
+
         if (validateBinaryChecksum(stream, startOff, startOff + offset, checksum)) {
             // reset the stream and return the found offset
+            stream.clear(); // Clear any error flags before final seek
             stream.seekg(startOff, std::ios_base::beg);
+            if (!stream) {
+                throw std::runtime_error("Failed to reset stream position after finding header size");
+            }
             return offset;
         }
     }
 
     // reset the stream and return nullopt if not found
+    stream.clear(); // Clear any error flags before final seek
     stream.seekg(startOff, std::ios_base::beg);
+    if (!stream) {
+        throw std::runtime_error("Failed to reset stream position after header size detection");
+    }
     return std::nullopt;
 }
 
@@ -337,6 +376,10 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
                                                             std::streamoff headerSize)
 {
     auto startOff{stream.tellg()};
+    if (startOff == -1) {
+        throw std::runtime_error("Failed to get stream position for flight header parsing");
+    }
+
 #ifdef DEBUG_FLIGHT_HEADERS
     std::cout << "Flight Header start offset: 0x" << std::hex << startOff << std::dec << std::endl;
 #endif
@@ -344,6 +387,9 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     auto flightHeader = std::make_shared<FlightHeader>();
 
     stream.read(reinterpret_cast<char *>(&flightHeader->flight_num), 2);
+    if (!stream || stream.gcount() != 2) {
+        throw std::runtime_error("Failed to read flight number from header");
+    }
     flightHeader->flight_num = ntohs(flightHeader->flight_num);
 
     if (flightHeader->flight_num != flightId) {
@@ -357,6 +403,9 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
 
     uint16_t flags[2];
     stream.read(reinterpret_cast<char *>(&flags), 4);
+    if (!stream || stream.gcount() != 4) {
+        throw std::runtime_error("Failed to read flags from flight header");
+    }
     flightHeader->flags = htons(flags[0]) | (htons(flags[1]) << 16);
 
 #ifdef DEBUG_FLIGHT_HEADERS
@@ -371,6 +420,9 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
         for (int i = 0; stream.tellg() < intervalOffset; ++i) {
             uint16_t val;
             stream.read(reinterpret_cast<char *>(&val), 2);
+            if (!stream || stream.gcount() != 2) {
+                throw std::runtime_error("Failed to read GPS data field from flight header");
+            }
             val = ntohs(val);
             switch (i) {
             case HEADER_DATA_GPS_LAT_HIGH_IDX:
@@ -406,13 +458,22 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     } else {
         // small header. just skip the data block
         stream.seekg(intervalOffset, std::ios_base::beg);
+        if (!stream) {
+            throw std::runtime_error("Failed to seek to interval field in flight header");
+        }
     }
 
     stream.read(reinterpret_cast<char *>(&flightHeader->interval), 2);
+    if (!stream || stream.gcount() != 2) {
+        throw std::runtime_error("Failed to read interval from flight header");
+    }
     flightHeader->interval = ntohs(flightHeader->interval);
 
     uint16_t dt;
     stream.read(reinterpret_cast<char *>(&dt), 2);
+    if (!stream || stream.gcount() != 2) {
+        throw std::runtime_error("Failed to read date from flight header");
+    }
     dt = ntohs(dt);
     flightHeader->startDate.tm_mday = (dt & DATE_MDAY_MASK);
     flightHeader->startDate.tm_mon = ((dt & DATE_MONTH_MASK) >> DATE_MONTH_SHIFT) - 1;
@@ -420,6 +481,9 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
 
     uint16_t tm;
     stream.read(reinterpret_cast<char *>(&tm), 2);
+    if (!stream || stream.gcount() != 2) {
+        throw std::runtime_error("Failed to read time from flight header");
+    }
     tm = ntohs(tm);
     flightHeader->startDate.tm_sec = (tm & TIME_SECONDS_MASK) * TIME_SECONDS_SCALE;
     flightHeader->startDate.tm_min = (tm & TIME_MINUTES_MASK) >> TIME_MINUTES_SHIFT;
@@ -437,6 +501,9 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
 #endif
 
     auto endOff{stream.tellg()};
+    if (endOff == -1) {
+        throw std::runtime_error("Failed to get stream position after reading flight header");
+    }
 
 #ifdef DEBUG_FLIGHT_HEADERS
     std::cout << "\n";
@@ -446,6 +513,9 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
 
     unsigned char checksum;
     stream.read(reinterpret_cast<char *>(&checksum), 1);
+    if (!stream || stream.gcount() != 1) {
+        throw std::runtime_error("Failed to read checksum from flight header");
+    }
     if (!validateBinaryChecksum(stream, startOff, endOff, checksum)) {
         std::stringstream msg;
         msg << "checksum failure in flight header ";
@@ -470,6 +540,10 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
     int maskSize = oldFormat ? 1 : 2;
 
     auto startOff{stream.tellg()};
+    if (startOff == -1) {
+        throw std::runtime_error("Failed to get stream position for flight data record");
+    }
+
 #ifdef DEBUG_FLIGHTS
     std::cout << "-----------------------------------\n";
     std::cout << "recordSeq: " << flight->m_recordSeq << "\n";
@@ -480,7 +554,18 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
     // They indicate which bytes of the data bitmap are populated
     std::vector<std::uint16_t> bmPopMap{0, 0};
     stream.read(reinterpret_cast<char *>(&bmPopMap[0]), maskSize);
+    if (!stream || stream.gcount() != maskSize) {
+        std::stringstream msg;
+        msg << "Failed to read bmPopMap[0] in flight data record " << flight->m_recordSeq;
+        throw std::runtime_error(msg.str());
+    }
+
     stream.read(reinterpret_cast<char *>(&bmPopMap[1]), maskSize);
+    if (!stream || stream.gcount() != maskSize) {
+        std::stringstream msg;
+        msg << "Failed to read bmPopMap[1] in flight data record " << flight->m_recordSeq;
+        throw std::runtime_error(msg.str());
+    }
 
 #ifdef DEBUG_FLIGHTS
     std::cout << "bmPopMap[0]: " << std::hex << bmPopMap[0] << "   bmPopMap[1]: " << bmPopMap[1] << std::dec << "\n";
@@ -502,6 +587,11 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
 
     char repeatCount;
     stream.read(&repeatCount, 1);
+    if (!stream || stream.gcount() != 1) {
+        std::stringstream msg;
+        msg << "Failed to read repeat count in flight data record " << flight->m_recordSeq;
+        throw std::runtime_error(msg.str());
+    }
 
     // The next few bytes indicate which measurements are available
     const int mapBytes = maskSize * BITS_PER_BYTE;
@@ -511,6 +601,11 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
         if (flags[i]) {
             char val;
             stream.read(&val, 1);
+            if (!stream || stream.gcount() != 1) {
+                std::stringstream msg;
+                msg << "Failed to read field map byte " << i << " in flight data record " << flight->m_recordSeq;
+                throw std::runtime_error(msg.str());
+            }
             for (int k = 0; k < BITS_PER_BYTE; ++k) {
                 fieldMap.set(i * BITS_PER_BYTE + k, val & (1 << k)); // set the proper bit to 1
             }
@@ -526,6 +621,11 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
         if (flags[i] && (i != EGT_HIGHBYTE_IDX_1 && i != EGT_HIGHBYTE_IDX_2)) {
             char val;
             stream.read(&val, 1);
+            if (!stream || stream.gcount() != 1) {
+                std::stringstream msg;
+                msg << "Failed to read sign map byte " << i << " in flight data record " << flight->m_recordSeq;
+                throw std::runtime_error(msg.str());
+            }
             for (int k = 0; k < BITS_PER_BYTE; ++k) {
                 signMap.set(i * BITS_PER_BYTE + k, val & (1 << k)); // set the proper bit to 1
             }
@@ -570,10 +670,16 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
 #endif
 
     std::map<int, int> values;
-    for (int metricIdx = 0; metricIdx < fieldMap.size(); ++metricIdx) {
+    for (size_t metricIdx = 0; metricIdx < fieldMap.size(); ++metricIdx) {
         if (fieldMap[metricIdx]) {
             unsigned char byte;
             stream.read(reinterpret_cast<char *>(&byte), 1);
+            if (!stream || stream.gcount() != 1) {
+                std::stringstream msg;
+                msg << "Failed to read metric value byte at index " << metricIdx
+                    << " in flight data record " << flight->m_recordSeq;
+                throw std::runtime_error(msg.str());
+            }
             int val = byte; // promote to int
             if (signMap[metricIdx]) {
                 val = -val;
@@ -604,6 +710,9 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
     flight->updateMetrics(values);
 
     auto endOff{stream.tellg()};
+    if (endOff == -1) {
+        throw std::runtime_error("Failed to get stream position after reading flight data values");
+    }
 
 #ifdef DEBUG_FLIGHTS
     std::cout << "\n";
@@ -613,6 +722,11 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
 
     unsigned char checksum;
     stream.read(reinterpret_cast<char *>(&checksum), 1);
+    if (!stream || stream.gcount() != 1) {
+        std::stringstream msg;
+        msg << "Failed to read checksum from flight data record " << flight->m_recordSeq;
+        throw std::runtime_error(msg.str());
+    }
     if (!validateBinaryChecksum(stream, startOff, endOff, checksum)) {
         std::stringstream msg;
         msg << "checksum failure in record " << std::dec << flight->m_recordSeq;
@@ -629,6 +743,11 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
 
 void FlightFile::parseFlights(std::istream &stream)
 {
+    // If there are no flights to parse, return early
+    if (m_flightDataCounts.empty()) {
+        return;
+    }
+
     auto headerSizeOpt = detectFlightHeaderSize(stream);
 
     if (!headerSizeOpt.has_value()) {
