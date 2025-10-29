@@ -181,6 +181,12 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
 
     ff.setFlightRecordCompletionCb(
         [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
+            // Check if hdr is valid before dereferencing
+            if (!hdr) {
+                std::cerr << "Warning: Flight record callback invoked without flight header" << std::endl;
+                return;
+            }
+
             if (flightId.has_value() && hdr->flight_num != flightId.value()) {
                 return;
             }
