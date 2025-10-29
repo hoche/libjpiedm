@@ -67,7 +67,13 @@ void printLatLng(int measurement, std::ostream &outStream)
     // ",";
 }
 
-// Ugh. these should all be a macro or an inline that range checks.
+// Safe metric accessor with default value
+inline float getMetric(const std::map<MetricId, float>& metrics, MetricId id, float defaultValue = 0.0f)
+{
+    auto it = metrics.find(id);
+    return (it != metrics.end()) ? it->second : defaultValue;
+}
+
 void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
 {
     outStream << std::fixed << std::setprecision(0);
@@ -87,36 +93,36 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
         outStream << rec->m_metrics.at(CHT16) << ",";
     */
 
-    outStream << rec->m_metrics.at(TIT11) << ",";
-    outStream << rec->m_metrics.at(TIT12) << ",";
+    outStream << getMetric(rec->m_metrics, TIT11) << ",";
+    outStream << getMetric(rec->m_metrics, TIT12) << ",";
 
-    outStream << rec->m_metrics.at(OAT) << ",";
-    outStream << rec->m_metrics.at(DIF1) << ",";
-    outStream << rec->m_metrics.at(CLD1) << ",";
-    outStream << std::setprecision(1) << rec->m_metrics.at(MAP1) << "," << std::setprecision(0);
-    outStream << rec->m_metrics.at(RPM1) << ",";
-    outStream << rec->m_metrics.at(HP1) << ",";
+    outStream << getMetric(rec->m_metrics, OAT) << ",";
+    outStream << getMetric(rec->m_metrics, DIF1) << ",";
+    outStream << getMetric(rec->m_metrics, CLD1) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, MAP1) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, RPM1) << ",";
+    outStream << getMetric(rec->m_metrics, HP1) << ",";
 
-    outStream << std::setprecision(1) << rec->m_metrics.at(FF11) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << rec->m_metrics.at(FF12) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << rec->m_metrics.at(FP1) << "," << std::setprecision(0);
-    outStream << rec->m_metrics.at(OILP1) << ",";
-    outStream << std::setprecision(1) << rec->m_metrics.at(VOLT1) << "," << std::setprecision(0);
-    outStream << rec->m_metrics.at(AMP1) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FF11) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FF12) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FP1) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, OILP1) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, VOLT1) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, AMP1) << ",";
 
-    outStream << rec->m_metrics.at(OILT1) << ",";
-    outStream << std::setprecision(1) << rec->m_metrics.at(FUSD11) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << rec->m_metrics.at(RMAIN) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << rec->m_metrics.at(LMAIN) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, OILT1) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD11) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, RMAIN) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, LMAIN) << "," << std::setprecision(0);
 
-    outStream << std::setprecision(1) << rec->m_metrics.at(HRS1) << "," << std::setprecision(0);
-    outStream << rec->m_metrics.at(SPD) << ",";
-    outStream << rec->m_metrics.at(ALT) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, HRS1) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, SPD) << ",";
+    outStream << getMetric(rec->m_metrics, ALT) << ",";
 
-    printLatLng(rec->m_metrics.at(LAT), outStream);
-    printLatLng(rec->m_metrics.at(LNG), outStream);
+    printLatLng(static_cast<int>(getMetric(rec->m_metrics, LAT)), outStream);
+    printLatLng(static_cast<int>(getMetric(rec->m_metrics, LNG)), outStream);
 
-    int markVal = static_cast<int>(rec->m_metrics.at(MARK));
+    int markVal = static_cast<int>(getMetric(rec->m_metrics, MARK));
     switch (markVal) {
     case 0x02:
         outStream << "[";

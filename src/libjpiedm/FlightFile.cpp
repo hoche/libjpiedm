@@ -99,18 +99,18 @@ std::vector<unsigned long> FlightFile::split_header_line(int lineno, std::string
         token = line.substr(0, pos);
         if (token[0] != '$') {
             try {
-                unsigned long val = std::strtoul(token.c_str(), NULL, 10);
+                unsigned long val = std::stoul(token);
                 if (val == 999999999) {
                     val = USHRT_MAX; // special case for $A record
                 }
                 values.push_back(val);
-            } catch ([[maybe_unused]] std::invalid_argument const &ex) {
+            } catch (const std::invalid_argument &ex) {
                 std::stringstream msg;
-                msg << "invalid argument in header: line " << lineno;
+                msg << "invalid argument in header: line " << lineno << " (" << ex.what() << ")";
                 throw std::invalid_argument{msg.str()};
-            } catch ([[maybe_unused]] std::out_of_range const &ex) {
+            } catch (const std::out_of_range &ex) {
                 std::stringstream msg;
-                msg << "invalid header: line " << lineno;
+                msg << "out of range value in header: line " << lineno << " (" << ex.what() << ")";
                 throw std::out_of_range{msg.str()};
             }
         }
@@ -179,7 +179,9 @@ void FlightFile::parseFileHeaders(std::istream &stream)
 
         // strip off the trailing CR
         auto newEnd = std::strrchr(line, '\r');
-        *newEnd = '\0';
+        if (newEnd) {
+            *newEnd = '\0';
+        }
 
         validateHeaderChecksum(lineno, line);
 
@@ -269,18 +271,13 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
 
     stream.seekg(startOff);
     auto len = endOff - startOff;
-    char *buffer = new char[len];
-    try {
-        stream.read(buffer, len);
-    } catch ([[maybe_unused]] const std::exception &e) {
-        delete[] buffer;
-        throw;
+    std::vector<char> buffer(len);
+    stream.read(buffer.data(), len);
+
+    for (const auto& byte : buffer) {
+        checksum_sum += static_cast<unsigned char>(byte);
+        checksum_xor ^= static_cast<unsigned char>(byte);
     }
-    for (int i = 0; i < len; ++i) {
-        checksum_sum += buffer[i];
-        checksum_xor ^= buffer[i];
-    }
-    delete[] buffer;
     checksum_sum = -checksum_sum;
 
 #ifdef DEBUG_FLIGHTS
