@@ -22,6 +22,8 @@ add_executable(unit_tests
     metadata_test.cpp
     metrics_test.cpp
     fileheaders_test.cpp
+    flight_test.cpp
+    flightfile_test.cpp
 )
 
 target_link_libraries(unit_tests
