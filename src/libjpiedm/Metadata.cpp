@@ -53,7 +53,7 @@ HeaderVersion Metadata::GuessFlightHeaderVersion() const
     return HeaderVersion::HEADER_V1;
 }
 
-void Metadata::dump(std::ostream &outStream)
+void Metadata::dump(std::ostream &outStream) const
 {
     outStream << "Tailnumber: " << m_tailNum << "\n";
     outStream << "Old Rec Format: " << (IsOldRecFormat() ? "yes" : "no") << "\n";

@@ -43,7 +43,7 @@ const int maxheaderlen = 128;
 /**
  * ConfigLimits
  */
-void ConfigLimits::apply(std::vector<unsigned long> values)
+void ConfigLimits::apply(const std::vector<unsigned long> &values)
 {
     if (values.size() < 8) {
         throw std::invalid_argument{"Incorrect number of arguments in $A line"};
@@ -58,7 +58,7 @@ void ConfigLimits::apply(std::vector<unsigned long> values)
     oil_temp_lo = values[7];
 }
 
-void ConfigLimits::dump(std::ostream &outStream)
+void ConfigLimits::dump(std::ostream &outStream) const
 {
     outStream << "ConfigLimits:" << "\n    volts_hi: " << volts_hi << "\n    volts_lo: " << volts_lo
               << "\n    egt_diff: " << egt_diff << "\n    cht_temp_hi: " << cht_temp_hi
@@ -67,7 +67,7 @@ void ConfigLimits::dump(std::ostream &outStream)
               << "\n    oil_temp_lo: " << oil_temp_lo << "\n";
 }
 
-void ConfigInfo::apply(std::vector<unsigned long> values)
+void ConfigInfo::apply(const std::vector<unsigned long> &values)
 {
     bool short_header{false};
 
@@ -132,7 +132,7 @@ const uint32_t F_DIF = F_E1 | F_E2; // DIF exists if there's more than one EGT
 const uint32_t F_HP = F_RPM | F_MAP | F_FF;
 const uint32_t F_MARK = 0x00000001; // 1 bit always seems to exist
 
-void ConfigInfo::dump(std::ostream &outStream)
+void ConfigInfo::dump(std::ostream &outStream) const
 {
     outStream << "ConfigInfo:" << "\n    edm_model: " << edm_model << "\n    flags: " << flags << " 0x" << std::hex
               << flags << std::dec << " b" << std::bitset<32>(flags) << "\n    firmware_version: " << firmware_version
@@ -143,7 +143,7 @@ void ConfigInfo::dump(std::ostream &outStream)
 /**
  * FuelLimits
  */
-void FuelLimits::apply(std::vector<unsigned long> values)
+void FuelLimits::apply(const std::vector<unsigned long> &values)
 {
     if (values.size() < 5) {
         throw std::invalid_argument{"Incorrect number of arguments in $F line"};
@@ -156,7 +156,7 @@ void FuelLimits::apply(std::vector<unsigned long> values)
     k_factor_2 = values[4];
 }
 
-void FuelLimits::dump(std::ostream &outStream)
+void FuelLimits::dump(std::ostream &outStream) const
 {
     outStream << "FuelLimits:" << "\n    units: " << (units ? "LPH" : "GPH")
               << "\n    main_tank_size: " << main_tank_size << "\n    aux_tank_size: " << aux_tank_size
@@ -166,7 +166,7 @@ void FuelLimits::dump(std::ostream &outStream)
 /**
  * ProtoHeader
  */
-void ProtoHeader::apply(std::vector<unsigned long> values)
+void ProtoHeader::apply(const std::vector<unsigned long> &values)
 {
     if (values.size() < 1) {
         throw std::invalid_argument{"Incorrect number of arguments in $P line"};
@@ -174,12 +174,15 @@ void ProtoHeader::apply(std::vector<unsigned long> values)
     value = values[0];
 }
 
-void ProtoHeader::dump(std::ostream &outStream) { outStream << " ProtoHeader:" << "\n    value: " << value << "\n"; }
+void ProtoHeader::dump(std::ostream &outStream) const
+{
+    outStream << " ProtoHeader:" << "\n    value: " << value << "\n";
+}
 
 /**
  * Timestamp
  */
-void TimeStamp::apply(std::vector<unsigned long> values)
+void TimeStamp::apply(const std::vector<unsigned long> &values)
 {
     if (values.size() < 6) {
         throw std::invalid_argument{"Incorrect number of arguments in $T line"};
@@ -193,7 +196,7 @@ void TimeStamp::apply(std::vector<unsigned long> values)
     flight_num = values[5];
 }
 
-void TimeStamp::dump(std::ostream &outStream)
+void TimeStamp::dump(std::ostream &outStream) const
 {
     outStream << "TimeStamp:" << "\n    mon: " << mon << "\n    day: " << day << "\n    yr: " << yr
               << "\n    hh: " << hh << "\n    mm: " << mm << "\n    flight_num: " << flight_num << "\n";

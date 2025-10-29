@@ -28,15 +28,16 @@ class FlightHeader
     FlightHeader(){};
     virtual ~FlightHeader(){};
 
-    virtual void dump(std::ostream &outStream)
+    virtual void dump(std::ostream &outStream) const
     {
         std::tm local;
+        std::tm dateCopy = startDate; // timegm may modify the struct, so make a copy
 
 #ifdef _WIN32
-        time_t recordTime = _mkgmtime(&startDate);
+        time_t recordTime = _mkgmtime(&dateCopy);
         gmtime_s(&local, &recordTime);
 #else
-        time_t recordTime = timegm(&startDate);
+        time_t recordTime = timegm(&dateCopy);
         local = *gmtime(&recordTime);
 #endif
         outStream << "Flight Header:" << "\n    flight_num: " << flight_num << "\n    flags: " << flags << " 0x"
@@ -63,7 +64,7 @@ class FlightHeader
 class FlightMetricsRecord
 {
   public:
-    FlightMetricsRecord(bool isFast, unsigned long recordSeq, std::map<MetricId, float> &m_metricMap)
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &m_metricMap)
         : m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(m_metricMap)
     {
     }

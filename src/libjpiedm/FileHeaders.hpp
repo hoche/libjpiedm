@@ -47,8 +47,8 @@ class FileHeader
     /* Throws an exception if an insufficient number of arguments
      * are in the vector.
      */
-    virtual void apply(std::vector<unsigned long> values) = 0;
-    virtual void dump(std::ostream &outStream) = 0;
+    virtual void apply(const std::vector<unsigned long> &values) = 0;
+    virtual void dump(std::ostream &outStream) const = 0;
 };
 
 /**
@@ -65,8 +65,8 @@ class ConfigLimits : public FileHeader
   public:
     ConfigLimits(){};
     virtual ~ConfigLimits(){};
-    virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream &outStream);
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
 
   public:
     // These are all alarm values
@@ -115,8 +115,8 @@ class ConfigInfo : public FileHeader
   public:
     ConfigInfo(){};
     virtual ~ConfigInfo(){};
-    virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream &outStream);
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
 
     static const int MAX_CYLS = 9; // up to 9 cyls possible
 
@@ -155,8 +155,8 @@ class FuelLimits : public FileHeader
   public:
     FuelLimits(){};
     virtual ~FuelLimits(){};
-    virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream &outStream);
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
 
   public:
     unsigned long units{0};
@@ -180,8 +180,8 @@ class ProtoHeader : public FileHeader
   public:
     ProtoHeader(){};
     virtual ~ProtoHeader(){};
-    virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream &outStream);
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
 
   public:
     unsigned long value{0};
@@ -201,8 +201,8 @@ class TimeStamp : public FileHeader
   public:
     TimeStamp(){};
     virtual ~TimeStamp(){};
-    virtual void apply(std::vector<unsigned long> values);
-    virtual void dump(std::ostream &outStream);
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
 
   public:
     unsigned long mon{0};

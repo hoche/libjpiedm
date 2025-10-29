@@ -274,7 +274,7 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
     std::vector<char> buffer(len);
     stream.read(buffer.data(), len);
 
-    for (const auto& byte : buffer) {
+    for (const auto &byte : buffer) {
         checksum_sum += static_cast<unsigned char>(byte);
         checksum_xor ^= static_cast<unsigned char>(byte);
     }
@@ -439,7 +439,7 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     return flightHeader;
 }
 
-void FlightFile::parseFlightDataRec(std::istream &stream, std::shared_ptr<Flight> &flight)
+void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<Flight> &flight)
 {
     int oldFormat = false; // NOT ACTIVE YET
 

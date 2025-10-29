@@ -68,7 +68,7 @@ void printLatLng(int measurement, std::ostream &outStream)
 }
 
 // Safe metric accessor with default value
-inline float getMetric(const std::map<MetricId, float>& metrics, MetricId id, float defaultValue = 0.0f)
+inline float getMetric(const std::map<MetricId, float> &metrics, MetricId id, float defaultValue = 0.0f)
 {
     auto it = metrics.find(id);
     return (it != metrics.end()) ? it->second : defaultValue;

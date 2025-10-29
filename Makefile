@@ -11,10 +11,9 @@ clean: ## clean the local system
 .PHONY: clean
 
 format: ## run clang-format
-	clang-format -i src/*.cpp \
-					src/*.h \
-					utils/*.c \
-					tests/*.cpp
+	clang-format -i src/libjpiedm/*.cpp \
+			src/libjpiedm/*.hpp \
+			src/parseedmlog/*.cpp
 .PHONY: format
 
 test: ## run tests

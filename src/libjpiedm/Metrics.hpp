@@ -69,7 +69,7 @@ class Metric
     const std::string &getShortName() const { return m_shortName; }
     const std::string &getName() const { return m_name; }
     ScaleFactor getScaleFactor() const { return m_scaleFactor; }
-    const float getInitialValue() const { return m_initialValue; }
+    float getInitialValue() const { return m_initialValue; }
 
   private:
     int m_versionMask;

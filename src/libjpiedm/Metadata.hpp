@@ -31,7 +31,7 @@ class Metadata
     Metadata(){};
     virtual ~Metadata(){};
 
-    virtual void dump(std::ostream &outStream);
+    virtual void dump(std::ostream &outStream) const;
 
     bool IsTwin() const;
     bool IsGPH() const;

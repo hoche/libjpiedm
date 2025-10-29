@@ -56,7 +56,7 @@ class FlightFile
 
     void parseFileHeaders(std::istream &stream);
     std::shared_ptr<FlightHeader> parseFlightHeader(std::istream &stream, int flightId, std::streamoff headerSize);
-    void parseFlightDataRec(std::istream &stream, std::shared_ptr<Flight> &flight);
+    void parseFlightDataRec(std::istream &stream, const std::shared_ptr<Flight> &flight);
     void parseFlights(std::istream &stream);
     void parseFileFooters(std::istream &stream);
 
