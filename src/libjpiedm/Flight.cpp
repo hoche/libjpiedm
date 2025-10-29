@@ -118,19 +118,55 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 
     // Now do derived values
 
-    // calculate DIF
-    // TODO: this should see how many cylinders we have. 4? 6? 9?
-    //       check the FileHeader.ConfigInfo featureFlags
-    // TODO: we also need to handle DIF2 for multi
-    // TODO: Convert to F if featureFlags says to
-    // TODO:
-    if (m_metadata->NumCylinders() == SINGLE_ENGINE_CYLINDER_COUNT) {
+    // Calculate DIF1 (differential between hottest and coolest EGT for engine 1)
+    // DIF represents the spread in exhaust gas temperatures across cylinders
+    int numCylinders = m_metadata->NumCylinders();
+    if (numCylinders > 0) {
+        std::vector<float> egtValues;
+        egtValues.reserve(numCylinders);
+
+        // Collect all EGT values for active cylinders on engine 1
+        const MetricId egtMetrics[] = {MetricId::EGT11, MetricId::EGT12, MetricId::EGT13,
+                                       MetricId::EGT14, MetricId::EGT15, MetricId::EGT16,
+                                       MetricId::EGT17, MetricId::EGT18, MetricId::EGT19};
+
+        for (int i = 0; i < numCylinders && i < 9; ++i) {
+            auto it = m_metricValues.find(egtMetrics[i]);
+            if (it != m_metricValues.end() && it->second > 0) {
+                egtValues.push_back(it->second);
+            }
+        }
+
+        // Calculate DIF1 only if we have at least 2 EGT readings
+        if (egtValues.size() >= 2) {
+            auto bounds = std::minmax_element(egtValues.begin(), egtValues.end());
+            m_metricValues[MetricId::DIF1] = *bounds.second - *bounds.first;
+        }
     }
-    /*
-    auto bounds = std::minmax(
-        {m_dataMap[EGT1], m_dataMap[EGT2], m_dataMap[EGT3], m_dataMap[EGT4], m_dataMap[EGT5], m_dataMap[EGT6]});
-    m_dataMap[DIF] = bounds.second - bounds.first;
-    */
+
+    // Calculate DIF2 for twin-engine aircraft (engine 2)
+    if (m_metadata->IsTwin() && numCylinders > 0) {
+        std::vector<float> egtValues;
+        egtValues.reserve(numCylinders);
+
+        // Collect all EGT values for active cylinders on engine 2
+        const MetricId egtMetrics[] = {MetricId::EGT21, MetricId::EGT22, MetricId::EGT23,
+                                       MetricId::EGT24, MetricId::EGT25, MetricId::EGT26,
+                                       MetricId::EGT27, MetricId::EGT28, MetricId::EGT29};
+
+        for (int i = 0; i < numCylinders && i < 9; ++i) {
+            auto it = m_metricValues.find(egtMetrics[i]);
+            if (it != m_metricValues.end() && it->second > 0) {
+                egtValues.push_back(it->second);
+            }
+        }
+
+        // Calculate DIF2 only if we have at least 2 EGT readings
+        if (egtValues.size() >= 2) {
+            auto bounds = std::minmax_element(egtValues.begin(), egtValues.end());
+            m_metricValues[MetricId::DIF2] = *bounds.second - *bounds.first;
+        }
+    }
 }
 
 std::shared_ptr<FlightMetricsRecord> Flight::getFlightMetricsRecord()
