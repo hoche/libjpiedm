@@ -32,6 +32,7 @@
 #include "FlightFile.hpp"
 #include "Metadata.hpp"
 #include "MetricId.hpp"
+#include "ProtocolConstants.hpp"
 
 namespace jpi_edm {
 
@@ -43,7 +44,8 @@ namespace jpi_edm {
 #define DEBUG_FLIGHT_HEADERS
 #endif
 
-const int maxheaderlen = 256;
+// Use constant from ProtocolConstants.hpp
+const int maxheaderlen = MAX_HEADER_LINE_LENGTH;
 
 // Debugging utility to convert char to hex for printing
 struct HexCharStruct {
@@ -100,7 +102,7 @@ std::vector<unsigned long> FlightFile::split_header_line(int lineno, std::string
         if (token[0] != '$') {
             try {
                 unsigned long val = std::stoul(token);
-                if (val == 999999999) {
+                if (val == SPECIAL_VALUE_SENTINEL_A_RECORD) {
                     val = USHRT_MAX; // special case for $A record
                 }
                 values.push_back(val);
@@ -164,7 +166,7 @@ void FlightFile::parseFileHeaders(std::istream &stream)
 
     // line is terminated with CRLF (\r\n)
     // read to the LF (\n) (getline won't include the LF in the return)
-    std::unique_ptr<char[]> buffer(new char[1024]);
+    std::unique_ptr<char[]> buffer(new char[HEADER_BUFFER_SIZE]);
     while (stream.good() && !end_of_headers) {
         lineno++;
 
@@ -301,7 +303,7 @@ std::streamoff FlightFile::detectFlightHeaderSize(std::istream &stream)
     bool found = false;
     std::streamoff offset;
     unsigned char checksum;
-    for (offset = 28; offset >= 14; offset -= 2) {
+    for (offset = MAX_FLIGHT_HEADER_SIZE; offset >= MIN_FLIGHT_HEADER_SIZE; offset -= HEADER_SIZE_STEP) {
         stream.seekg(startOff + offset, std::ios_base::beg);
         stream.read(reinterpret_cast<char *>(&checksum), 1);
         if (validateBinaryChecksum(stream, startOff, startOff + offset, checksum)) {
@@ -345,8 +347,8 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     std::cout << "flags: 0x" << std::hex << flightHeader->flags << std::dec << "\n";
 #endif
 
-    std::streamoff intervalOffset = startOff + headerSize - std::streamoff(6L);
-    if (headerSize >= 28) {
+    std::streamoff intervalOffset = startOff + headerSize - std::streamoff(INTERVAL_FIELD_TRAILING_BYTES);
+    if (headerSize >= MAX_FLIGHT_HEADER_SIZE) {
         // big header, with at least seven data fields before the interval field
         // This potentially has GPS data in fields 3,4 and 5,6.
         uint32_t latlng{0};
@@ -355,24 +357,28 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
             stream.read(reinterpret_cast<char *>(&val), 2);
             val = ntohs(val);
             switch (i) {
-            case 3:
+            case HEADER_DATA_GPS_LAT_HIGH_IDX:
                 latlng = static_cast<uint32_t>(val << 16);
                 break;
-            case 4:
+            case HEADER_DATA_GPS_LAT_LOW_IDX:
                 flightHeader->startLat = static_cast<int32_t>(latlng | val);
 #ifdef DEBUG_FLIGHT_HEADERS
                 std::cout << "Starting latitude: " << std::setprecision(6)
-                          << (static_cast<float>(flightHeader->startLat) / 6000.0) << "\n";
+                          << (static_cast<float>(flightHeader->startLat) /
+                              static_cast<float>(GPS_COORD_SCALE_DENOMINATOR))
+                          << "\n";
 #endif
                 break;
-            case 5:
+            case HEADER_DATA_GPS_LNG_HIGH_IDX:
                 latlng = static_cast<uint32_t>(val << 16);
                 break;
-            case 6:
+            case HEADER_DATA_GPS_LNG_LOW_IDX:
                 flightHeader->startLng = static_cast<int32_t>(latlng | val);
 #ifdef DEBUG_FLIGHT_HEADERS
                 std::cout << "Starting longitude: " << std::setprecision(6)
-                          << (static_cast<float>(flightHeader->startLng) / 6000.0) << "\n";
+                          << (static_cast<float>(flightHeader->startLng) /
+                              static_cast<float>(GPS_COORD_SCALE_DENOMINATOR))
+                          << "\n";
 #endif
                 break;
 #ifdef DEBUG_FLIGHT_HEADERS
@@ -392,16 +398,16 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     uint16_t dt;
     stream.read(reinterpret_cast<char *>(&dt), 2);
     dt = ntohs(dt);
-    flightHeader->startDate.tm_mday = (dt & 0x1f);
-    flightHeader->startDate.tm_mon = ((dt & 0x01ff) >> 5) - 1;
-    flightHeader->startDate.tm_year = (dt >> 9) + 100;
+    flightHeader->startDate.tm_mday = (dt & DATE_MDAY_MASK);
+    flightHeader->startDate.tm_mon = ((dt & DATE_MONTH_MASK) >> DATE_MONTH_SHIFT) - 1;
+    flightHeader->startDate.tm_year = (dt >> DATE_YEAR_SHIFT) + DATE_YEAR_OFFSET;
 
     uint16_t tm;
     stream.read(reinterpret_cast<char *>(&tm), 2);
     tm = ntohs(tm);
-    flightHeader->startDate.tm_sec = (tm & 0x1f) * 2;
-    flightHeader->startDate.tm_min = (tm & 0x07ff) >> 5;
-    flightHeader->startDate.tm_hour = (tm >> 11);
+    flightHeader->startDate.tm_sec = (tm & TIME_SECONDS_MASK) * TIME_SECONDS_SCALE;
+    flightHeader->startDate.tm_min = (tm & TIME_MINUTES_MASK) >> TIME_MINUTES_SHIFT;
+    flightHeader->startDate.tm_hour = (tm >> TIME_HOURS_SHIFT);
 
 #ifdef DEBUG_FLIGHT_HEADERS
     std::cout << "date: 0x" << std::hex << dt << std::dec << "\n";
@@ -482,15 +488,15 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
     stream.read(&repeatCount, 1);
 
     // The next few bytes indicate which measurements are available
-    const int mapBytes = maskSize * 8;
+    const int mapBytes = maskSize * BITS_PER_BYTE;
 
-    std::bitset<128> fieldMap;
+    std::bitset<MAX_METRIC_FIELDS> fieldMap;
     for (int i = 0; i < mapBytes; ++i) {
         if (flags[i]) {
             char val;
             stream.read(&val, 1);
-            for (int k = 0; k < 8; ++k) {
-                fieldMap.set(i * 8 + k, val & (1 << k)); // set the proper bit to 1
+            for (int k = 0; k < BITS_PER_BYTE; ++k) {
+                fieldMap.set(i * BITS_PER_BYTE + k, val & (1 << k)); // set the proper bit to 1
             }
         }
     }
@@ -499,13 +505,13 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
     // whether it should be added to or subtracted from the previous value.
     // Note that we skip bytes 6 & 7 - they are the high bytes of the EGTs and
     // the sign bits aren't used (they use the sign bits from the low bytes).
-    std::bitset<128> signMap;
+    std::bitset<MAX_METRIC_FIELDS> signMap;
     for (int i = 0; i < mapBytes; ++i) {
-        if (flags[i] && (i != 6 && i != 7)) {
+        if (flags[i] && (i != EGT_HIGHBYTE_IDX_1 && i != EGT_HIGHBYTE_IDX_2)) {
             char val;
             stream.read(&val, 1);
-            for (int k = 0; k < 8; ++k) {
-                signMap.set(i * 8 + k, val & (1 << k)); // set the proper bit to 1
+            for (int k = 0; k < BITS_PER_BYTE; ++k) {
+                signMap.set(i * BITS_PER_BYTE + k, val & (1 << k)); // set the proper bit to 1
             }
         }
     }

@@ -35,9 +35,12 @@
 #include <vector>
 
 #include "FileHeaders.hpp"
+#include "ProtocolConstants.hpp"
 
 namespace jpi_edm {
 
+// Note: This constant is unused in this file but kept for backwards compatibility
+// Header line length is actually MAX_HEADER_LINE_LENGTH (256) in ProtocolConstants.hpp
 const int maxheaderlen = 128;
 
 /**
@@ -45,7 +48,7 @@ const int maxheaderlen = 128;
  */
 void ConfigLimits::apply(const std::vector<unsigned long> &values)
 {
-    if (values.size() < 8) {
+    if (values.size() < CONFIG_LIMITS_FIELD_COUNT) {
         throw std::invalid_argument{"Incorrect number of arguments in $A line"};
     }
     volts_hi = values[0];
@@ -71,12 +74,12 @@ void ConfigInfo::apply(const std::vector<unsigned long> &values)
 {
     bool short_header{false};
 
-    if (values.size() < 5) {
+    if (values.size() < CONFIG_INFO_MIN_FIELD_COUNT) {
         throw std::invalid_argument{"Incorrect number of arguments in $C line"};
     }
 
     edm_model = values[0];
-    flags = (values[2] << 16) | (values[1] & 0x0000FFFF);
+    flags = (values[2] << 16) | (values[1] & CONFIG_FLAGS_LOWER_16_BITS_MASK);
     unk1 = values[3];
 
     // iterate backwards from end
@@ -87,9 +90,9 @@ void ConfigInfo::apply(const std::vector<unsigned long> &values)
     }
     firmware_version = *rit++;
 
-    isTwin = (edm_model == 760 || edm_model == 960);
+    isTwin = (edm_model == EDM_MODEL_760_TWIN || edm_model == EDM_MODEL_960_TWIN);
 
-    uint32_t mask = 0x00000004;
+    uint32_t mask = CYLINDER_FLAG_START_MASK;
     unsigned n = 0;
     while (n < MAX_CYLS && (flags & mask)) {
         n++;
@@ -145,7 +148,7 @@ void ConfigInfo::dump(std::ostream &outStream) const
  */
 void FuelLimits::apply(const std::vector<unsigned long> &values)
 {
-    if (values.size() < 5) {
+    if (values.size() < FUEL_LIMITS_FIELD_COUNT) {
         throw std::invalid_argument{"Incorrect number of arguments in $F line"};
     }
 
@@ -168,7 +171,7 @@ void FuelLimits::dump(std::ostream &outStream) const
  */
 void ProtoHeader::apply(const std::vector<unsigned long> &values)
 {
-    if (values.size() < 1) {
+    if (values.size() < PROTO_HEADER_FIELD_COUNT) {
         throw std::invalid_argument{"Incorrect number of arguments in $P line"};
     }
     value = values[0];
@@ -184,7 +187,7 @@ void ProtoHeader::dump(std::ostream &outStream) const
  */
 void TimeStamp::apply(const std::vector<unsigned long> &values)
 {
-    if (values.size() < 6) {
+    if (values.size() < TIMESTAMP_FIELD_COUNT) {
         throw std::invalid_argument{"Incorrect number of arguments in $T line"};
     }
 

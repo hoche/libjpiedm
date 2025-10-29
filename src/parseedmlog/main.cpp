@@ -28,6 +28,7 @@
 #include "Flight.hpp"
 #include "FlightFile.hpp"
 #include "MetricId.hpp"
+#include "ProtocolConstants.hpp"
 
 using namespace jpi_edm;
 
@@ -45,8 +46,8 @@ void printFlightInfo(std::shared_ptr<jpi_edm::FlightHeader> &hdr, unsigned long 
     local = *gmtime(&flightStartTime);
 #endif
 
-    auto min = (fastReqs / 60) + (stdReqs * hdr->interval) / 60;
-    auto hrs = 0.01 + static_cast<float>(min) / 60;
+    auto min = (fastReqs / MINUTES_PER_HOUR) + (stdReqs * hdr->interval) / MINUTES_PER_HOUR;
+    auto hrs = HOURS_ROUNDING_OFFSET + static_cast<float>(min) / MINUTES_PER_HOUR;
     // min = min % 60;
 
     outStream << "Flt #" << hdr->flight_num << " - ";
@@ -61,8 +62,8 @@ void printLatLng(int measurement, std::ostream &outStream)
 {
     // Comment out for now
     outStream << "00.00,";
-    // int hrs = measurement / 6000;
-    // float min = float(abs(measurement) % 6000) / 100;
+    // int hrs = measurement / GPS_COORD_SCALE_DENOMINATOR;
+    // float min = float(abs(measurement) % GPS_COORD_SCALE_DENOMINATOR) / GPS_MINUTES_DECIMAL_DIVISOR;
     // outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(2) << min <<
     // ",";
 }
@@ -124,13 +125,13 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
 
     int markVal = static_cast<int>(getMetric(rec->m_metrics, MARK));
     switch (markVal) {
-    case 0x02:
+    case MARK_START:
         outStream << "[";
         break;
-    case 0x03:
+    case MARK_END:
         outStream << "]";
         break;
-    case 0x04:
+    case MARK_UNKNOWN:
         outStream << "<";
         break;
     }
@@ -152,7 +153,7 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
         [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
             hdr = fh;
 
-            if (flightId != -1 && hdr->flight_num != flightId) {
+            if (flightId != ALL_FLIGHTS_MARKER && hdr->flight_num != flightId) {
                 return;
             }
 
@@ -179,20 +180,20 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
 
     ff.setFlightRecordCompletionCb(
         [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
-            if (flightId != -1 && hdr->flight_num != flightId) {
+            if (flightId != ALL_FLIGHTS_MARKER && hdr->flight_num != flightId) {
                 return;
             }
 
             std::tm timeinfo = *std::gmtime(&recordTime);
 
-            timeinfo.tm_year = 2025 - 1900;
-            timeinfo.tm_mon = 5;
-            timeinfo.tm_mday = 1;
+            timeinfo.tm_year = TEST_YEAR - TM_YEAR_BASE;
+            timeinfo.tm_mon = TEST_MONTH;
+            timeinfo.tm_mday = TEST_DAY;
 
             // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
             // crash)
             outStream << rec->m_recordSeq - 1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
-                      << (timeinfo.tm_year + 1900) << "," << std::put_time(&timeinfo, "%T") << ",";
+                      << (timeinfo.tm_year + TM_YEAR_BASE) << "," << std::put_time(&timeinfo, "%T") << ",";
             printFlightMetricsRecord(rec, outStream);
 
             rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
@@ -274,7 +275,7 @@ int main(int argc, char *argv[])
     bool onlyListFlights{false};
     std::vector<std::string> filelist{};
     std::string outputFile{};
-    int flightId{-1};
+    int flightId{ALL_FLIGHTS_MARKER};
 
     int c;
     while ((c = getopt(argc, argv, "hf:lo:v")) != -1) {

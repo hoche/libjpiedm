@@ -5,6 +5,7 @@
 
 #include <FileHeaders.hpp>
 #include <Metadata.hpp>
+#include <ProtocolConstants.hpp>
 
 namespace jpi_edm {
 
@@ -15,14 +16,14 @@ bool Metadata::IsGPH() const { return (m_fuelLimits.units == 0); }
 EDMVersion Metadata::ProtoVersion() const
 {
     // peel out twins first
-    if (m_configInfo.edm_model == 760) {
+    if (m_configInfo.edm_model == EDM_MODEL_760_TWIN) {
         return EDMVersion::V2;
     }
-    if (m_configInfo.edm_model == 960) {
+    if (m_configInfo.edm_model == EDM_MODEL_960_TWIN) {
         return EDMVersion::V5;
     }
 
-    if (m_configInfo.edm_model < 900) {
+    if (m_configInfo.edm_model < EDM_MODEL_SINGLE_THRESHOLD) {
         if (m_protoHeader.value < 2) {
             return EDMVersion::V1; // old 700 or 800
         }
@@ -30,7 +31,7 @@ EDMVersion Metadata::ProtoVersion() const
     }
 
     // 900+. check firmware version
-    if (m_configInfo.firmware_version <= 108) {
+    if (m_configInfo.firmware_version <= EDM_FIRMWARE_V1_THRESHOLD) {
         return EDMVersion::V1;
     }
 
@@ -41,11 +42,11 @@ bool Metadata::IsOldRecFormat() const { return (ProtoVersion() == EDMVersion::V1
 
 HeaderVersion Metadata::GuessFlightHeaderVersion() const
 {
-    if (m_protoHeader.value > 1 || m_configInfo.edm_model >= 900) {
-        if (m_configInfo.build_maj > 2010) {
+    if (m_protoHeader.value > PROTO_HEADER_THRESHOLD || m_configInfo.edm_model >= EDM_MODEL_SINGLE_THRESHOLD) {
+        if (m_configInfo.build_maj > BUILD_VERSION_HEADER_V4_THRESHOLD) {
             return HeaderVersion::HEADER_V4;
         }
-        if (m_configInfo.build_maj > 880) {
+        if (m_configInfo.build_maj > BUILD_VERSION_HEADER_V3_THRESHOLD) {
             return HeaderVersion::HEADER_V3;
         }
         return HeaderVersion::HEADER_V2;

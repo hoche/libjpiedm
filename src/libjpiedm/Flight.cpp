@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "Flight.hpp"
+#include "ProtocolConstants.hpp"
 
 namespace jpi_edm {
 
@@ -34,7 +35,7 @@ Flight::Flight(const std::shared_ptr<Metadata> &metadata) : m_metadata(metadata)
         m_metricValues[metric.getMetricId()] = metric.getInitialValue();
         if ((metric.getScaleFactor() == Metric::ScaleFactor::TEN) ||
             (metric.getScaleFactor() == Metric::ScaleFactor::TEN_IF_GPH && isGPH)) {
-            m_metricValues[metric.getMetricId()] /= 10;
+            m_metricValues[metric.getMetricId()] /= METRIC_SCALE_DIVISOR;
         }
     }
 
@@ -87,7 +88,7 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
                 if (isNegative) {
                     value = 0 - value; // make it positive to make the bitshift easier
                 }
-                value = ((0xFF & highByte) << 8) + (0xFF & value); // shift the new high byte on
+                value = ((BYTE_MASK & highByte) << 8) + (BYTE_MASK & value); // shift the new high byte on
                 if (isNegative) {
                     value = 0 - value; // make it negative again if necessary
                 }
@@ -101,7 +102,7 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
         auto metric = it->second;
         if ((metric.getScaleFactor() == Metric::ScaleFactor::TEN) ||
             (metric.getScaleFactor() == Metric::ScaleFactor::TEN_IF_GPH && isGPH)) {
-            scaledValue /= 10;
+            scaledValue /= METRIC_SCALE_DIVISOR;
         }
 
 #ifdef DEBUG_FLIGHT_RECORD
@@ -122,7 +123,7 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
     // TODO: we also need to handle DIF2 for multi
     // TODO: Convert to F if featureFlags says to
     // TODO:
-    if (m_metadata->NumCylinders() == 4) {
+    if (m_metadata->NumCylinders() == SINGLE_ENGINE_CYLINDER_COUNT) {
     }
     /*
     auto bounds = std::minmax(
