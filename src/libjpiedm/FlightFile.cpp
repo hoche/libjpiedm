@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -130,25 +131,42 @@ void FlightFile::validateHeaderChecksum(int lineno, const char *line)
         throw std::invalid_argument{msg.str()};
     }
 
-    const char *endp = strrchr(line, '*');
-    const char *p = line + 1;
+    // Convert to std::string for safer operations
+    std::string lineStr(line);
 
-    if (!endp || *endp != '*') {
+    // Find the asterisk separator
+    size_t asteriskPos = lineStr.rfind('*');
+    if (asteriskPos == std::string::npos || asteriskPos == 0) {
         std::stringstream msg;
         msg << "invalid header: line " << lineno;
         throw std::invalid_argument{msg.str()};
     }
 
-    uint16_t testval;
-    uint8_t cs = 0;
-    if (sscanf(endp + 1, "%hx", &testval) != 1) {
+    // Extract checksum string (after asterisk)
+    std::string checksumStr = lineStr.substr(asteriskPos + 1);
+
+    // Parse checksum with bounds checking
+    uint16_t testval = 0;
+    try {
+        size_t pos = 0;
+        unsigned long parsed = std::stoul(checksumStr, &pos, 16);
+        if (pos != checksumStr.length() || parsed > 0xFF) {
+            std::stringstream msg;
+            msg << "invalid header checksum format: line " << lineno;
+            throw std::invalid_argument{msg.str()};
+        }
+        testval = static_cast<uint16_t>(parsed);
+    } catch (const std::exception&) {
         std::stringstream msg;
         msg << "invalid header checksum format: line " << lineno;
         throw std::invalid_argument{msg.str()};
     }
 
-    while (p < endp)
-        cs ^= *p++;
+    // Calculate checksum (XOR of all bytes between $ and *)
+    uint8_t cs = 0;
+    for (size_t i = 1; i < asteriskPos; ++i) {
+        cs ^= static_cast<uint8_t>(lineStr[i]);
+    }
 
     if (testval != cs) {
         std::stringstream msg;
@@ -625,23 +643,58 @@ void FlightFile::parseFlights(std::istream &stream)
 
     for (auto &&flightDataCount : m_flightDataCounts) {
         auto startOff{stream.tellg()};
+        if (startOff == -1) {
+            throw std::runtime_error("Failed to get stream position before reading flight data");
+        }
+
 #ifdef DEBUG_PARSE
         std::cout << "======== startOff: " << std::hex << startOff << std::dec << "\n";
 #endif
 
+        // Validate flight data count is reasonable (prevent integer overflow)
+        const std::streamoff MAX_FLIGHT_RECORDS = 1000000; // 1 million records max
+        if (flightDataCount.second < 1 || flightDataCount.second > MAX_FLIGHT_RECORDS) {
+            std::stringstream msg;
+            msg << "Invalid flight data count: " << flightDataCount.second
+                << " (must be between 1 and " << MAX_FLIGHT_RECORDS << ")";
+            throw std::runtime_error(msg.str());
+        }
+
+        // Calculate total bytes to read with overflow checking
+        std::streamoff recordCount = flightDataCount.second - 1L;
+        std::streamoff totalBytes;
+        if (recordCount > std::numeric_limits<std::streamoff>::max() / 2) {
+            throw std::runtime_error("Flight data count too large - would cause integer overflow");
+        }
+        totalBytes = recordCount * 2;
+
         auto flight = std::make_shared<Flight>(m_metadata);
         flight->m_flightHeader = parseFlightHeader(stream, flightDataCount.first, headerSize);
 
-        while ((stream.tellg() - startOff) < ((flightDataCount.second - 1L) * 2)) {
+        if (!stream.good()) {
+            throw std::runtime_error("Stream error after reading flight header");
+        }
+
+        while ((stream.tellg() - startOff) < totalBytes) {
+            if (!stream.good()) {
+                std::stringstream msg;
+                msg << "Stream error while reading flight data records at position " << stream.tellg();
+                throw std::runtime_error(msg.str());
+            }
+
             parseFlightDataRec(stream, flight);
+
 #ifdef DEBUG_PARSE
             auto bytesRead = stream.tellg() - startOff;
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex << stream.tellg()
-                      << std::dec << "    ((flightDataCount.second-1)*2): " << ((flightDataCount.second - 1L) * 2)
-                      << "\n"
-                      << std::flush;
+                      << std::dec << "    totalBytes: " << totalBytes << "\n" << std::flush;
 #endif
         }
+
+        if (!stream.good()) {
+            throw std::runtime_error("Stream error after reading flight data");
+        }
+
         if (m_flightCompletionCb) {
             m_flightCompletionCb(flight->m_stdRecCount, flight->m_fastRecCount);
         }
