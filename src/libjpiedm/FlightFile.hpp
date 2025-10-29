@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -56,7 +57,7 @@ class FlightFile
     void validateHeaderChecksum(int lineno, const char *line);
     [[nodiscard]] bool validateBinaryChecksum(std::istream &stream, std::iostream::off_type startOff,
                                               std::iostream::off_type endOff, unsigned char checksum);
-    [[nodiscard]] std::streamoff detectFlightHeaderSize(std::istream &stream);
+    [[nodiscard]] std::optional<std::streamoff> detectFlightHeaderSize(std::istream &stream);
 
     void parse(std::istream &stream);
 

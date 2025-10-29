@@ -294,25 +294,25 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
 }
 
 // This scans the stream, adding bytes to it until a checksum matches
-std::streamoff FlightFile::detectFlightHeaderSize(std::istream &stream)
+std::optional<std::streamoff> FlightFile::detectFlightHeaderSize(std::istream &stream)
 {
     auto startOff{stream.tellg()};
 
-    bool found = false;
     std::streamoff offset;
     unsigned char checksum;
     for (offset = MAX_FLIGHT_HEADER_SIZE; offset >= MIN_FLIGHT_HEADER_SIZE; offset -= HEADER_SIZE_STEP) {
         stream.seekg(startOff + offset, std::ios_base::beg);
         stream.read(reinterpret_cast<char *>(&checksum), 1);
         if (validateBinaryChecksum(stream, startOff, startOff + offset, checksum)) {
-            found = true;
-            break;
+            // reset the stream and return the found offset
+            stream.seekg(startOff, std::ios_base::beg);
+            return offset;
         }
     }
 
-    // reset the stream
+    // reset the stream and return nullopt if not found
     stream.seekg(startOff, std::ios_base::beg);
-    return (found ? offset : 0);
+    return std::nullopt;
 }
 
 std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream, int flightId,
@@ -611,10 +611,16 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
 
 void FlightFile::parseFlights(std::istream &stream)
 {
-    std::streamoff headerSize = detectFlightHeaderSize(stream);
+    auto headerSizeOpt = detectFlightHeaderSize(stream);
+
+    if (!headerSizeOpt.has_value()) {
+        throw std::runtime_error("Failed to detect flight header size - invalid file format");
+    }
+
+    std::streamoff headerSize = headerSizeOpt.value();
 
 #ifdef DEBUG_FLIGHT_HEADERS
-    std::cout << "Detect flight header size: " << headerSize << std::endl;
+    std::cout << "Detected flight header size: " << headerSize << std::endl;
 #endif
 
     for (auto &&flightDataCount : m_flightDataCounts) {

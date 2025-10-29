@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <vector>
 
@@ -139,7 +140,7 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
     outStream << "\n";
 }
 
-void printFlightData(std::istream &stream, int flightId, std::ostream &outStream)
+void printFlightData(std::istream &stream, std::optional<int> flightId, std::ostream &outStream)
 {
     jpi_edm::FlightFile ff;
     std::shared_ptr<jpi_edm::FlightHeader> hdr;
@@ -153,7 +154,7 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
         [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
             hdr = fh;
 
-            if (flightId != ALL_FLIGHTS_MARKER && hdr->flight_num != flightId) {
+            if (flightId.has_value() && hdr->flight_num != flightId.value()) {
                 return;
             }
 
@@ -180,7 +181,7 @@ void printFlightData(std::istream &stream, int flightId, std::ostream &outStream
 
     ff.setFlightRecordCompletionCb(
         [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
-            if (flightId != ALL_FLIGHTS_MARKER && hdr->flight_num != flightId) {
+            if (flightId.has_value() && hdr->flight_num != flightId.value()) {
                 return;
             }
 
@@ -215,7 +216,8 @@ void printFlightList(std::istream &stream, std::ostream &outStream)
     ff.processFile(stream);
 }
 
-void processFiles(std::vector<std::string> &filelist, int flightId, bool onlyListFlights, std::string &outputFile)
+void processFiles(std::vector<std::string> &filelist, std::optional<int> flightId, bool onlyListFlights,
+                  std::string &outputFile)
 {
     for (auto &&filename : filelist) {
         if (filelist.size() > 1) {
@@ -275,7 +277,7 @@ int main(int argc, char *argv[])
     bool onlyListFlights{false};
     std::vector<std::string> filelist{};
     std::string outputFile{};
-    int flightId{ALL_FLIGHTS_MARKER};
+    std::optional<int> flightId; // std::nullopt means all flights
 
     int c;
     while ((c = getopt(argc, argv, "hf:lo:v")) != -1) {

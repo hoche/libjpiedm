@@ -127,7 +127,7 @@ class ConfigInfo : public FileHeader
     virtual void apply(const std::vector<unsigned long> &values);
     virtual void dump(std::ostream &outStream) const;
 
-    static const int MAX_CYLS = 9; // up to 9 cyls possible
+    static constexpr int MAX_CYLS = 9; // up to 9 cyls possible
 
   public:
     unsigned long edm_model{0};

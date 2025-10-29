@@ -94,9 +94,6 @@ constexpr uint32_t CYLINDER_FLAG_START_MASK = 0x00000004;
 /// When this value appears, it should be converted to USHRT_MAX
 constexpr unsigned long SPECIAL_VALUE_SENTINEL_A_RECORD = 999999999;
 
-/// Marker value indicating "all flights" (used in parseedmlog)
-constexpr int ALL_FLIGHTS_MARKER = -1;
-
 // ============================================================================
 // Flight Header Detection and Parsing
 // ============================================================================
