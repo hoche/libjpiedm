@@ -636,25 +636,31 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
     std::cout << "repeatCount: " << hex(repeatCount) << "\n";
     {
         std::cout << "          ";
-        for (int count = 0, i = fieldMap.size() / 8 - 1; i >= 0; i--) {
-            std::cout << " Byte " << hex(i) << "  ";
+        if (fieldMap.size() > 0) {
+            for (size_t count = 0, i = fieldMap.size() / 8; i > 0; --i) {
+                std::cout << " Byte " << hex(i - 1) << "  ";
+            }
         }
         std::cout << "\n";
         std::cout << "fieldMap: ";
-        for (int count = 0, i = fieldMap.size() - 1; i >= 0; i--) {
-            std::cout << fieldMap[i];
-            if (++count == 8) {
-                std::cout << " ";
-                count = 0;
+        if (fieldMap.size() > 0) {
+            for (size_t count = 0, i = fieldMap.size(); i > 0; --i) {
+                std::cout << fieldMap[i - 1];
+                if (++count == 8) {
+                    std::cout << " ";
+                    count = 0;
+                }
             }
         }
         std::cout << "\n";
         std::cout << " signMap: ";
-        for (int count = 0, i = signMap.size() - 1; i >= 0; i--) {
-            std::cout << signMap[i];
-            if (++count == 8) {
-                std::cout << " ";
-                count = 0;
+        if (signMap.size() > 0) {
+            for (size_t count = 0, i = signMap.size(); i > 0; --i) {
+                std::cout << signMap[i - 1];
+                if (++count == 8) {
+                    std::cout << " ";
+                    count = 0;
+                }
             }
         }
         std::cout << "\n";
