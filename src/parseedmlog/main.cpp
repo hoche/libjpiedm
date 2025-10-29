@@ -10,6 +10,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
@@ -299,7 +300,26 @@ int main(int argc, char *argv[])
                 showHelp(argv[0]);
                 return 0;
             }
-            flightId = atoi(optarg);
+            try {
+                size_t idx = 0;
+                int flightNum = std::stoi(optarg, &idx);
+                if (idx != strlen(optarg)) {
+                    std::cerr << "Error: Invalid flight number format (contains non-numeric characters): "
+                              << optarg << std::endl;
+                    return 1;
+                }
+                if (flightNum < 0) {
+                    std::cerr << "Error: Flight number must be non-negative" << std::endl;
+                    return 1;
+                }
+                flightId = flightNum;
+            } catch (const std::invalid_argument&) {
+                std::cerr << "Error: Flight number must be a valid integer: " << optarg << std::endl;
+                return 1;
+            } catch (const std::out_of_range&) {
+                std::cerr << "Error: Flight number out of range: " << optarg << std::endl;
+                return 1;
+            }
             break;
         case 'l':
             if (optarg) {
