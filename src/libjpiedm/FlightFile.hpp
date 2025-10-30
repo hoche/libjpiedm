@@ -83,6 +83,81 @@ class FlightFile
      */
     [[nodiscard]] FlightRange flights(std::istream &stream);
 
+    // =========================================================================
+    // Flight Detection API (lightweight flight enumeration)
+    // =========================================================================
+
+    /**
+     * @brief Information about a flight detected in the file.
+     *
+     * This lightweight structure contains only the metadata found in the
+     * file headers ($D records), without parsing the actual flight data.
+     */
+    struct FlightInfo {
+        int flightNumber;           ///< Flight ID from $D record
+        long recordCount;           ///< Number of data records (approximate)
+        std::streamoff dataSize;    ///< Size of flight data in bytes (recordCount * 2)
+    };
+
+    /**
+     * @brief Detect and enumerate flights in the file without parsing flight data.
+     *
+     * This method only parses the file headers to extract flight information
+     * from $D records. It does NOT parse any flight data, making it very fast
+     * for large files. Useful for:
+     * - Listing available flights
+     * - Checking if a specific flight exists
+     * - Determining file contents before full parsing
+     *
+     * @param stream Input stream containing the EDM file
+     * @return Vector of FlightInfo structures, one per flight
+     * @throws std::runtime_error if the file headers cannot be parsed
+     *
+     * Example:
+     * @code
+     *   FlightFile parser;
+     *   std::ifstream stream("data.jpi", std::ios::binary);
+     *
+     *   // Quickly enumerate flights without parsing data
+     *   auto flights = parser.detectFlights(stream);
+     *
+     *   std::cout << "File contains " << flights.size() << " flights:\n";
+     *   for (const auto& info : flights) {
+     *       std::cout << "  Flight #" << info.flightNumber
+     *                 << " - ~" << info.recordCount << " records"
+     *                 << " (" << info.dataSize << " bytes)\n";
+     *   }
+     * @endcode
+     */
+    [[nodiscard]] std::vector<FlightInfo> detectFlights(std::istream &stream);
+
+    /**
+     * @brief Get flight count and metadata without parsing flight data.
+     *
+     * Convenience method that parses headers and returns both metadata
+     * and flight information. More efficient than calling detectFlights()
+     * and accessing metadata separately.
+     *
+     * @param stream Input stream containing the EDM file
+     * @param[out] metadata Shared pointer to metadata (filled on success)
+     * @return Vector of FlightInfo structures
+     * @throws std::runtime_error if the file headers cannot be parsed
+     *
+     * Example:
+     * @code
+     *   FlightFile parser;
+     *   std::ifstream stream("data.jpi", std::ios::binary);
+     *
+     *   std::shared_ptr<Metadata> metadata;
+     *   auto flights = parser.detectFlights(stream, metadata);
+     *
+     *   std::cout << "Protocol: " << metadata->ProtoVersion() << "\n";
+     *   std::cout << "Flights: " << flights.size() << "\n";
+     * @endcode
+     */
+    [[nodiscard]] std::vector<FlightInfo> detectFlights(std::istream &stream,
+                                                         std::shared_ptr<Metadata> &metadata);
+
   private:
     // Make parseFlightHeader and parseFlightDataRec accessible to iterator
     friend class FlightIterator;

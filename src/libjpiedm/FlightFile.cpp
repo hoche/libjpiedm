@@ -861,4 +861,38 @@ FlightRange FlightFile::flights(std::istream &stream)
     return FlightRange(&stream, this, m_metadata, &m_flightDataCounts, headerSize);
 }
 
+std::vector<FlightFile::FlightInfo> FlightFile::detectFlights(std::istream &stream)
+{
+    std::shared_ptr<Metadata> metadata;
+    return detectFlights(stream, metadata);
+}
+
+std::vector<FlightFile::FlightInfo> FlightFile::detectFlights(std::istream &stream,
+                                                               std::shared_ptr<Metadata> &metadata)
+{
+    // Parse file headers to extract $D records
+    stream.seekg(0);
+    parseFileHeaders(stream);
+
+    // Return metadata to caller
+    metadata = m_metadata;
+
+    // Convert internal flight data counts to FlightInfo structures
+    std::vector<FlightInfo> flightInfos;
+    flightInfos.reserve(m_flightDataCounts.size());
+
+    for (const auto& [flightNum, recordCount] : m_flightDataCounts) {
+        FlightInfo info;
+        info.flightNumber = flightNum;
+        info.recordCount = recordCount;
+        // Data size is approximately recordCount * 2 bytes
+        // (the header parsing already stores recordCount, which represents byte pairs)
+        info.dataSize = static_cast<std::streamoff>(recordCount) * 2;
+
+        flightInfos.push_back(info);
+    }
+
+    return flightInfos;
+}
+
 } // namespace jpi_edm
