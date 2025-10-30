@@ -31,6 +31,7 @@
 #include "FileHeaders.hpp"
 #include "Flight.hpp"
 #include "FlightFile.hpp"
+#include "FlightIterator.hpp"
 #include "Metadata.hpp"
 #include "MetricId.hpp"
 #include "ProtocolConstants.hpp"
@@ -836,5 +837,28 @@ void FlightFile::parse(std::istream &stream)
 }
 
 void FlightFile::processFile(std::istream &stream) { parse(stream); }
+
+FlightRange FlightFile::flights(std::istream &stream)
+{
+    // Parse file headers to get metadata and flight counts
+    stream.seekg(0);
+    parseFileHeaders(stream);
+
+    // If there are no flights, return an empty range
+    if (m_flightDataCounts.empty()) {
+        return FlightRange(&stream, this, m_metadata, &m_flightDataCounts, 0);
+    }
+
+    // Detect flight header size
+    auto headerSizeOpt = detectFlightHeaderSize(stream);
+    if (!headerSizeOpt.has_value()) {
+        throw std::runtime_error("Failed to detect flight header size - invalid file format");
+    }
+
+    std::streamoff headerSize = headerSizeOpt.value();
+
+    // Return a range object that provides begin/end iterators
+    return FlightRange(&stream, this, m_metadata, &m_flightDataCounts, headerSize);
+}
 
 } // namespace jpi_edm

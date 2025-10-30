@@ -20,6 +20,9 @@
 
 namespace jpi_edm {
 
+// Forward declarations for iterator API
+class FlightRange;
+
 class FlightFile
 {
   public:
@@ -32,6 +35,10 @@ class FlightFile
     FlightFile(FlightFile &&) = default;
     FlightFile &operator=(FlightFile &&) = default;
 
+    // =========================================================================
+    // Callback-based API (original streaming interface)
+    // =========================================================================
+
     virtual void setMetadataCompletionCb(std::function<void(std::shared_ptr<Metadata>)> cb);
     virtual void setFlightHeaderCompletionCb(std::function<void(std::shared_ptr<FlightHeader>)> cb);
     virtual void setFlightRecordCompletionCb(std::function<void(std::shared_ptr<FlightMetricsRecord>)> cb);
@@ -40,7 +47,46 @@ class FlightFile
 
     virtual void processFile(std::istream &stream);
 
+    // =========================================================================
+    // Iterator-based API (modern C++ interface with lazy evaluation)
+    // =========================================================================
+
+    /**
+     * @brief Get an iterable range of flights for streaming iteration.
+     *
+     * This method provides a lazy-evaluation iterator interface that parses
+     * flights on-demand as you iterate. It does NOT load all flights into
+     * memory, maintaining the streaming architecture of the library.
+     *
+     * The stream must remain valid for the lifetime of the returned range
+     * and any active iterators.
+     *
+     * @param stream Input stream containing the EDM file
+     * @return FlightRange that can be used in range-based for loops
+     * @throws std::runtime_error if the file headers cannot be parsed
+     *
+     * Example:
+     * @code
+     *   FlightFile file;
+     *   std::ifstream stream("data.jpi", std::ios::binary);
+     *
+     *   // Flights are parsed on-demand as you iterate
+     *   for (const auto& flight : file.flights(stream)) {
+     *       std::cout << "Flight " << flight.getHeader().flight_num << "\n";
+     *
+     *       // Records within each flight are also parsed on-demand
+     *       for (const auto& record : flight) {
+     *           std::cout << "  Record " << record->m_recordSeq << "\n";
+     *       }
+     *   }
+     * @endcode
+     */
+    [[nodiscard]] FlightRange flights(std::istream &stream);
+
   private:
+    // Make parseFlightHeader and parseFlightDataRec accessible to iterator
+    friend class FlightIterator;
+    friend class FlightView;
     /**
      * Parse a header into a vector of unsigned longs.
      *
