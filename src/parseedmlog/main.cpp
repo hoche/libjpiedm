@@ -153,73 +153,88 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
         ff.setMetadataCompletionCb([&outStream](std::shared_ptr<jpi_edm::Metadata> md) { md->dump(outStream); });
     }
 
-    ff.setFlightHeaderCompletionCb(
-        [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
-            hdr = fh;
+    ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
+        hdr = fh;
 
-            if (flightId.has_value() && hdr->flight_num != flightId.value()) {
-                return;
-            }
-
-            std::tm local;
+        std::tm local;
 #ifdef _WIN32
-            recordTime = _mkgmtime(&hdr->startDate);
-            gmtime_s(&local, &recordTime);
+        recordTime = _mkgmtime(&hdr->startDate);
+        gmtime_s(&local, &recordTime);
 #else
-            recordTime = timegm(&hdr->startDate);
-            local = *gmtime(&recordTime);
+        recordTime = timegm(&hdr->startDate);
+        local = *gmtime(&recordTime);
 #endif
 
-            if (g_verbose) {
-                outStream << "Flt #" << hdr->flight_num << "\n";
-                outStream << "Interval: " << hdr->interval << " sec\n";
-                outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
-                          << std::put_time(&local, "%T") << "\n";
-            }
+        if (g_verbose) {
+            outStream << "Flt #" << hdr->flight_num << "\n";
+            outStream << "Interval: " << hdr->interval << " sec\n";
+            outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
+                      << std::put_time(&local, "%T") << "\n";
+        }
 
-            outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
-                      << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
-                      << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
-        });
+        outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
+                  << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
+                  << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
+    });
 
-    ff.setFlightRecordCompletionCb(
-        [&flightId, &hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
-            // Check if hdr is valid before dereferencing
-            if (!hdr) {
-                std::cerr << "Warning: Flight record callback invoked without flight header" << std::endl;
-                return;
-            }
+    ff.setFlightRecordCompletionCb([&hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
+        // Check if hdr is valid before dereferencing
+        if (!hdr) {
+            std::cerr << "Warning: Flight record callback invoked without flight header" << std::endl;
+            return;
+        }
 
-            if (flightId.has_value() && hdr->flight_num != flightId.value()) {
-                return;
-            }
+        std::tm timeinfo = *std::gmtime(&recordTime);
 
-            std::tm timeinfo = *std::gmtime(&recordTime);
+        // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
+        // crash)
+        outStream << rec->m_recordSeq - 1 << "," << std::setfill('0') << std::setw(2) << (timeinfo.tm_mon + 1) << '/'
+                  << std::setfill('0') << std::setw(2) << timeinfo.tm_mday << '/' << (timeinfo.tm_year + TM_YEAR_BASE)
+                  << "," << std::put_time(&timeinfo, "%T") << ",";
+        printFlightMetricsRecord(rec, outStream);
 
-            // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
-            // crash)
-            outStream << rec->m_recordSeq - 1 << "," << std::setfill('0') << std::setw(2) << (timeinfo.tm_mon + 1)
-                      << '/' << std::setfill('0') << std::setw(2) << timeinfo.tm_mday << '/'
-                      << (timeinfo.tm_year + TM_YEAR_BASE) << "," << std::put_time(&timeinfo, "%T") << ",";
-            printFlightMetricsRecord(rec, outStream);
+        rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
+    });
 
-            rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
-        });
-
-    // Now do the work
-    ff.processFile(stream);
+    // Now do the work - use the new single-flight API if a specific flight is requested
+    if (flightId.has_value()) {
+        ff.processFile(stream, flightId.value());
+    } else {
+        ff.processFile(stream);
+    }
 }
 
 void printFlightList(std::istream &stream, std::ostream &outStream)
 {
     jpi_edm::FlightFile ff;
-    std::shared_ptr<jpi_edm::FlightHeader> hdr;
 
-    ff.setFlightHeaderCompletionCb([&hdr](std::shared_ptr<jpi_edm::FlightHeader> fh) { hdr = fh; });
-    ff.setFlightCompletionCb([&hdr, &outStream](unsigned long stdReqs, unsigned long fastReqs) {
-        printFlightInfo(hdr, stdReqs, fastReqs, outStream);
-    });
-    ff.processFile(stream);
+    try {
+        // Use the efficient detectFlights() to get flight information without parsing flight data
+        std::shared_ptr<jpi_edm::Metadata> metadata;
+        auto flights = ff.detectFlights(stream, metadata);
+
+        if (flights.empty()) {
+            outStream << "No flights found in file\n";
+            return;
+        }
+
+        // For each detected flight, we need to parse it to get full details for printFlightInfo
+        // Reset the stream to process flights one by one
+        stream.clear();
+        stream.seekg(0);
+
+        std::shared_ptr<jpi_edm::FlightHeader> hdr;
+        ff.setFlightHeaderCompletionCb([&hdr](std::shared_ptr<jpi_edm::FlightHeader> fh) { hdr = fh; });
+        ff.setFlightCompletionCb([&hdr, &outStream](unsigned long stdReqs, unsigned long fastReqs) {
+            printFlightInfo(hdr, stdReqs, fastReqs, outStream);
+        });
+
+        // Parse all flights
+        ff.processFile(stream);
+
+    } catch (const std::exception &ex) {
+        std::cerr << "Error listing flights: " << ex.what() << "\n";
+    }
 }
 
 void processFiles(std::vector<std::string> &filelist, std::optional<int> flightId, bool onlyListFlights,
