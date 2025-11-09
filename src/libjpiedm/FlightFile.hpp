@@ -94,9 +94,9 @@ class FlightFile
      * file headers ($D records), without parsing the actual flight data.
      */
     struct FlightInfo {
-        int flightNumber;           ///< Flight ID from $D record
-        long recordCount;           ///< Number of data records (approximate)
-        std::streamoff dataSize;    ///< Size of flight data in bytes (recordCount * 2)
+        int flightNumber;        ///< Flight ID from $D record
+        long recordCount;        ///< Number of data records (approximate)
+        std::streamoff dataSize; ///< Size of flight data in bytes (recordCount * 2)
     };
 
     /**
@@ -155,8 +155,7 @@ class FlightFile
      *   std::cout << "Flights: " << flights.size() << "\n";
      * @endcode
      */
-    [[nodiscard]] std::vector<FlightInfo> detectFlights(std::istream &stream,
-                                                         std::shared_ptr<Metadata> &metadata);
+    [[nodiscard]] std::vector<FlightInfo> detectFlights(std::istream &stream, std::shared_ptr<Metadata> &metadata);
 
   private:
     // Make parseFlightHeader and parseFlightDataRec accessible to iterator

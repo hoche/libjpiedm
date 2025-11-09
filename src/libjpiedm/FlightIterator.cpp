@@ -17,13 +17,9 @@ namespace jpi_edm {
 // FlightView::RecordIterator Implementation
 // =============================================================================
 
-FlightView::RecordIterator::RecordIterator(std::istream* stream,
-                                           FlightFile* parser,
-                                           std::shared_ptr<Flight> flight,
-                                           std::streamoff startOffset,
-                                           std::streamoff totalBytes)
-    : m_stream(stream), m_parser(parser), m_flight(flight),
-      m_startOffset(startOffset), m_totalBytes(totalBytes),
+FlightView::RecordIterator::RecordIterator(std::istream *stream, FlightFile *parser, std::shared_ptr<Flight> flight,
+                                           std::streamoff startOffset, std::streamoff totalBytes)
+    : m_stream(stream), m_parser(parser), m_flight(flight), m_startOffset(startOffset), m_totalBytes(totalBytes),
       m_currentOffset(0), m_isEnd(false)
 {
     if (!m_stream || !m_parser || !m_flight) {
@@ -63,7 +59,7 @@ void FlightView::RecordIterator::advance()
         // Parse the next record
         m_parser->parseFlightDataRec(*m_stream, m_flight);
         m_currentRecord = m_flight->getFlightMetricsRecord();
-    } catch (const std::exception&) {
+    } catch (const std::exception &) {
         // If parsing fails, mark as end
         m_isEnd = true;
         m_currentRecord.reset();
@@ -87,7 +83,7 @@ FlightView::RecordIterator::pointer FlightView::RecordIterator::operator->() con
     return &m_currentRecord;
 }
 
-FlightView::RecordIterator& FlightView::RecordIterator::operator++()
+FlightView::RecordIterator &FlightView::RecordIterator::operator++()
 {
     advance();
     return *this;
@@ -100,7 +96,7 @@ FlightView::RecordIterator FlightView::RecordIterator::operator++(int)
     return temp;
 }
 
-bool FlightView::RecordIterator::operator==(const RecordIterator& other) const
+bool FlightView::RecordIterator::operator==(const RecordIterator &other) const
 {
     // Two end iterators are equal
     if (m_isEnd && other.m_isEnd) {
@@ -115,26 +111,17 @@ bool FlightView::RecordIterator::operator==(const RecordIterator& other) const
            (m_stream->tellg() == other.m_stream->tellg());
 }
 
-bool FlightView::RecordIterator::operator!=(const RecordIterator& other) const
-{
-    return !(*this == other);
-}
+bool FlightView::RecordIterator::operator!=(const RecordIterator &other) const { return !(*this == other); }
 
 // =============================================================================
 // FlightView Implementation
 // =============================================================================
 
-FlightView::FlightView(std::istream* stream,
-                       FlightFile* parser,
-                       std::shared_ptr<FlightHeader> header,
-                       std::shared_ptr<Flight> flight,
-                       std::streamoff startOffset,
-                       std::streamoff totalBytes,
-                       unsigned long stdRecCount,
-                       unsigned long fastRecCount)
-    : m_stream(stream), m_parser(parser), m_header(header), m_flight(flight),
-      m_startOffset(startOffset), m_totalBytes(totalBytes),
-      m_stdRecCount(stdRecCount), m_fastRecCount(fastRecCount)
+FlightView::FlightView(std::istream *stream, FlightFile *parser, std::shared_ptr<FlightHeader> header,
+                       std::shared_ptr<Flight> flight, std::streamoff startOffset, std::streamoff totalBytes,
+                       unsigned long stdRecCount, unsigned long fastRecCount)
+    : m_stream(stream), m_parser(parser), m_header(header), m_flight(flight), m_startOffset(startOffset),
+      m_totalBytes(totalBytes), m_stdRecCount(stdRecCount), m_fastRecCount(fastRecCount)
 {
     if (!m_header) {
         throw std::invalid_argument("FlightView: header cannot be null");
@@ -158,15 +145,11 @@ FlightView::RecordIterator FlightView::end() const
 // FlightIterator Implementation
 // =============================================================================
 
-FlightIterator::FlightIterator(std::istream* stream,
-                               FlightFile* parser,
-                               std::shared_ptr<Metadata> metadata,
-                               const std::vector<std::pair<int, long>>* flightDataCounts,
-                               std::streamoff headerSize,
+FlightIterator::FlightIterator(std::istream *stream, FlightFile *parser, std::shared_ptr<Metadata> metadata,
+                               const std::vector<std::pair<int, long>> *flightDataCounts, std::streamoff headerSize,
                                size_t index)
-    : m_stream(stream), m_parser(parser), m_metadata(metadata),
-      m_flightDataCounts(flightDataCounts), m_headerSize(headerSize),
-      m_index(index), m_isEnd(false)
+    : m_stream(stream), m_parser(parser), m_metadata(metadata), m_flightDataCounts(flightDataCounts),
+      m_headerSize(headerSize), m_index(index), m_isEnd(false)
 {
     if (!m_stream || !m_parser || !m_metadata || !m_flightDataCounts) {
         m_isEnd = true;
@@ -195,7 +178,7 @@ void FlightIterator::advance()
     }
 
     try {
-        const auto& flightDataCount = (*m_flightDataCounts)[m_index];
+        const auto &flightDataCount = (*m_flightDataCounts)[m_index];
 
         auto startOff = m_stream->tellg();
         if (startOff == -1) {
@@ -234,8 +217,7 @@ void FlightIterator::advance()
         }
 
         // Create FlightView (records will be parsed lazily)
-        m_currentFlight = FlightView(m_stream, m_parser, flightHeader, flight,
-                                     dataStartOff, totalBytes,
+        m_currentFlight = FlightView(m_stream, m_parser, flightHeader, flight, dataStartOff, totalBytes,
                                      flight->m_stdRecCount, flight->m_fastRecCount);
 
         // Skip to end of this flight's data for next iteration
@@ -245,7 +227,7 @@ void FlightIterator::advance()
             throw std::runtime_error("Failed to skip to end of flight data");
         }
 
-    } catch (const std::exception&) {
+    } catch (const std::exception &) {
         m_isEnd = true;
         throw;
     }
@@ -267,7 +249,7 @@ FlightIterator::pointer FlightIterator::operator->() const
     return &m_currentFlight;
 }
 
-FlightIterator& FlightIterator::operator++()
+FlightIterator &FlightIterator::operator++()
 {
     ++m_index;
     advance();
@@ -282,7 +264,7 @@ FlightIterator FlightIterator::operator++(int)
     return temp;
 }
 
-bool FlightIterator::operator==(const FlightIterator& other) const
+bool FlightIterator::operator==(const FlightIterator &other) const
 {
     // Two end iterators are equal
     if (m_isEnd && other.m_isEnd) {
@@ -296,22 +278,16 @@ bool FlightIterator::operator==(const FlightIterator& other) const
     return (m_stream == other.m_stream) && (m_index == other.m_index);
 }
 
-bool FlightIterator::operator!=(const FlightIterator& other) const
-{
-    return !(*this == other);
-}
+bool FlightIterator::operator!=(const FlightIterator &other) const { return !(*this == other); }
 
 // =============================================================================
 // FlightRange Implementation
 // =============================================================================
 
-FlightRange::FlightRange(std::istream* stream,
-                         FlightFile* parser,
-                         std::shared_ptr<Metadata> metadata,
-                         const std::vector<std::pair<int, long>>* flightDataCounts,
-                         std::streamoff headerSize)
-    : m_stream(stream), m_parser(parser), m_metadata(metadata),
-      m_flightDataCounts(flightDataCounts), m_headerSize(headerSize)
+FlightRange::FlightRange(std::istream *stream, FlightFile *parser, std::shared_ptr<Metadata> metadata,
+                         const std::vector<std::pair<int, long>> *flightDataCounts, std::streamoff headerSize)
+    : m_stream(stream), m_parser(parser), m_metadata(metadata), m_flightDataCounts(flightDataCounts),
+      m_headerSize(headerSize)
 {
 }
 
@@ -328,8 +304,7 @@ FlightIterator FlightRange::end() const
     if (!m_stream || !m_parser || !m_metadata || !m_flightDataCounts) {
         return FlightIterator(); // Return end iterator
     }
-    return FlightIterator(m_stream, m_parser, m_metadata, m_flightDataCounts,
-                         m_headerSize, m_flightDataCounts->size());
+    return FlightIterator(m_stream, m_parser, m_metadata, m_flightDataCounts, m_headerSize, m_flightDataCounts->size());
 }
 
 } // namespace jpi_edm

@@ -53,32 +53,29 @@ class FlightView
         using iterator_category = std::input_iterator_tag;
         using value_type = std::shared_ptr<FlightMetricsRecord>;
         using difference_type = std::ptrdiff_t;
-        using pointer = const value_type*;
-        using reference = const value_type&;
+        using pointer = const value_type *;
+        using reference = const value_type &;
 
         RecordIterator() = default;
 
         // Construct begin iterator
-        RecordIterator(std::istream* stream,
-                       FlightFile* parser,
-                       std::shared_ptr<Flight> flight,
-                       std::streamoff startOffset,
-                       std::streamoff totalBytes);
+        RecordIterator(std::istream *stream, FlightFile *parser, std::shared_ptr<Flight> flight,
+                       std::streamoff startOffset, std::streamoff totalBytes);
 
         // Iterator operations
         reference operator*() const;
         pointer operator->() const;
-        RecordIterator& operator++();
+        RecordIterator &operator++();
         RecordIterator operator++(int);
 
-        bool operator==(const RecordIterator& other) const;
-        bool operator!=(const RecordIterator& other) const;
+        bool operator==(const RecordIterator &other) const;
+        bool operator!=(const RecordIterator &other) const;
 
       private:
         void advance();
 
-        std::istream* m_stream{nullptr};
-        FlightFile* m_parser{nullptr};
+        std::istream *m_stream{nullptr};
+        FlightFile *m_parser{nullptr};
         std::shared_ptr<Flight> m_flight;
         std::streamoff m_startOffset{0};
         std::streamoff m_totalBytes{0};
@@ -89,17 +86,12 @@ class FlightView
 
     FlightView() = default;
 
-    FlightView(std::istream* stream,
-               FlightFile* parser,
-               std::shared_ptr<FlightHeader> header,
-               std::shared_ptr<Flight> flight,
-               std::streamoff startOffset,
-               std::streamoff totalBytes,
-               unsigned long stdRecCount,
-               unsigned long fastRecCount);
+    FlightView(std::istream *stream, FlightFile *parser, std::shared_ptr<FlightHeader> header,
+               std::shared_ptr<Flight> flight, std::streamoff startOffset, std::streamoff totalBytes,
+               unsigned long stdRecCount, unsigned long fastRecCount);
 
     // Access to flight metadata
-    [[nodiscard]] const FlightHeader& getHeader() const { return *m_header; }
+    [[nodiscard]] const FlightHeader &getHeader() const { return *m_header; }
     [[nodiscard]] std::shared_ptr<FlightHeader> getHeaderPtr() const { return m_header; }
     [[nodiscard]] unsigned long getStandardRecordCount() const { return m_stdRecCount; }
     [[nodiscard]] unsigned long getFastRecordCount() const { return m_fastRecCount; }
@@ -110,8 +102,8 @@ class FlightView
     [[nodiscard]] RecordIterator end() const;
 
   private:
-    std::istream* m_stream{nullptr};
-    FlightFile* m_parser{nullptr};
+    std::istream *m_stream{nullptr};
+    FlightFile *m_parser{nullptr};
     std::shared_ptr<FlightHeader> m_header;
     std::shared_ptr<Flight> m_flight;
     std::streamoff m_startOffset{0};
@@ -147,35 +139,32 @@ class FlightIterator
     using iterator_category = std::input_iterator_tag;
     using value_type = FlightView;
     using difference_type = std::ptrdiff_t;
-    using pointer = const value_type*;
-    using reference = const value_type&;
+    using pointer = const value_type *;
+    using reference = const value_type &;
 
     FlightIterator() = default;
 
     // Construct begin iterator
-    FlightIterator(std::istream* stream,
-                   FlightFile* parser,
-                   std::shared_ptr<Metadata> metadata,
-                   const std::vector<std::pair<int, long>>* flightDataCounts,
-                   std::streamoff headerSize,
+    FlightIterator(std::istream *stream, FlightFile *parser, std::shared_ptr<Metadata> metadata,
+                   const std::vector<std::pair<int, long>> *flightDataCounts, std::streamoff headerSize,
                    size_t index = 0);
 
     // Iterator operations
     reference operator*() const;
     pointer operator->() const;
-    FlightIterator& operator++();
+    FlightIterator &operator++();
     FlightIterator operator++(int);
 
-    bool operator==(const FlightIterator& other) const;
-    bool operator!=(const FlightIterator& other) const;
+    bool operator==(const FlightIterator &other) const;
+    bool operator!=(const FlightIterator &other) const;
 
   private:
     void advance();
 
-    std::istream* m_stream{nullptr};
-    FlightFile* m_parser{nullptr};
+    std::istream *m_stream{nullptr};
+    FlightFile *m_parser{nullptr};
     std::shared_ptr<Metadata> m_metadata;
-    const std::vector<std::pair<int, long>>* m_flightDataCounts{nullptr};
+    const std::vector<std::pair<int, long>> *m_flightDataCounts{nullptr};
     std::streamoff m_headerSize{0};
     size_t m_index{0};
     FlightView m_currentFlight;
@@ -191,20 +180,17 @@ class FlightIterator
 class FlightRange
 {
   public:
-    FlightRange(std::istream* stream,
-                FlightFile* parser,
-                std::shared_ptr<Metadata> metadata,
-                const std::vector<std::pair<int, long>>* flightDataCounts,
-                std::streamoff headerSize);
+    FlightRange(std::istream *stream, FlightFile *parser, std::shared_ptr<Metadata> metadata,
+                const std::vector<std::pair<int, long>> *flightDataCounts, std::streamoff headerSize);
 
     [[nodiscard]] FlightIterator begin() const;
     [[nodiscard]] FlightIterator end() const;
 
   private:
-    std::istream* m_stream;
-    FlightFile* m_parser;
+    std::istream *m_stream;
+    FlightFile *m_parser;
     std::shared_ptr<Metadata> m_metadata;
-    const std::vector<std::pair<int, long>>* m_flightDataCounts;
+    const std::vector<std::pair<int, long>> *m_flightDataCounts;
     std::streamoff m_headerSize;
 };
 

@@ -14,6 +14,7 @@
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -80,21 +81,19 @@ inline float getMetric(const std::map<MetricId, float> &metrics, MetricId id, fl
 void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
 {
     outStream << std::fixed << std::setprecision(0);
-    /*
-        outStream << rec->m_metrics.at(EGT11) << ",";
-        outStream << rec->m_metrics.at(EGT12) << ",";
-        outStream << rec->m_metrics.at(EGT13) << ",";
-        outStream << rec->m_metrics.at(EGT14) << ",";
-        outStream << rec->m_metrics.at(EGT15) << ",";
-        outStream << rec->m_metrics.at(EGT16) << ",";
+    outStream << rec->m_metrics.at(EGT11) << ",";
+    outStream << rec->m_metrics.at(EGT12) << ",";
+    outStream << rec->m_metrics.at(EGT13) << ",";
+    outStream << rec->m_metrics.at(EGT14) << ",";
+    outStream << rec->m_metrics.at(EGT15) << ",";
+    outStream << rec->m_metrics.at(EGT16) << ",";
 
-        outStream << rec->m_metrics.at(CHT11) << ",";
-        outStream << rec->m_metrics.at(CHT12) << ",";
-        outStream << rec->m_metrics.at(CHT13) << ",";
-        outStream << rec->m_metrics.at(CHT14) << ",";
-        outStream << rec->m_metrics.at(CHT15) << ",";
-        outStream << rec->m_metrics.at(CHT16) << ",";
-    */
+    outStream << rec->m_metrics.at(CHT11) << ",";
+    outStream << rec->m_metrics.at(CHT12) << ",";
+    outStream << rec->m_metrics.at(CHT13) << ",";
+    outStream << rec->m_metrics.at(CHT14) << ",";
+    outStream << rec->m_metrics.at(CHT15) << ",";
+    outStream << rec->m_metrics.at(CHT16) << ",";
 
     outStream << getMetric(rec->m_metrics, TIT11) << ",";
     outStream << getMetric(rec->m_metrics, TIT12) << ",";
@@ -115,12 +114,15 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
 
     outStream << getMetric(rec->m_metrics, OILT1) << ",";
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD11) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, RMAIN) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD12, -1.0f) << "," << std::setprecision(0);
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, LMAIN) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, RMAIN) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, LAUX) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, RAUX) << "," << std::setprecision(0);
 
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, HRS1) << "," << std::setprecision(0);
-    outStream << getMetric(rec->m_metrics, SPD) << ",";
-    outStream << getMetric(rec->m_metrics, ALT) << ",";
+    outStream << getMetric(rec->m_metrics, SPD, -1.0f) << ",";
+    outStream << getMetric(rec->m_metrics, ALT, -1.0f) << ",";
 
     printLatLng(static_cast<int>(getMetric(rec->m_metrics, LAT)), outStream);
     printLatLng(static_cast<int>(getMetric(rec->m_metrics, LNG)), outStream);
@@ -177,7 +179,7 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
 
             outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
                       << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
-                      << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
+                      << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
         });
 
     ff.setFlightRecordCompletionCb(
@@ -194,13 +196,10 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
 
             std::tm timeinfo = *std::gmtime(&recordTime);
 
-            timeinfo.tm_year = TEST_YEAR - TM_YEAR_BASE;
-            timeinfo.tm_mon = TEST_MONTH;
-            timeinfo.tm_mday = TEST_DAY;
-
             // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
             // crash)
-            outStream << rec->m_recordSeq - 1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+            outStream << rec->m_recordSeq - 1 << "," << std::setfill('0') << std::setw(2) << (timeinfo.tm_mon + 1)
+                      << '/' << std::setfill('0') << std::setw(2) << timeinfo.tm_mday << '/'
                       << (timeinfo.tm_year + TM_YEAR_BASE) << "," << std::put_time(&timeinfo, "%T") << ",";
             printFlightMetricsRecord(rec, outStream);
 
@@ -304,8 +303,8 @@ int main(int argc, char *argv[])
                 size_t idx = 0;
                 int flightNum = std::stoi(optarg, &idx);
                 if (idx != strlen(optarg)) {
-                    std::cerr << "Error: Invalid flight number format (contains non-numeric characters): "
-                              << optarg << std::endl;
+                    std::cerr << "Error: Invalid flight number format (contains non-numeric characters): " << optarg
+                              << std::endl;
                     return 1;
                 }
                 if (flightNum < 0) {
@@ -313,10 +312,10 @@ int main(int argc, char *argv[])
                     return 1;
                 }
                 flightId = flightNum;
-            } catch (const std::invalid_argument&) {
+            } catch (const std::invalid_argument &) {
                 std::cerr << "Error: Flight number must be a valid integer: " << optarg << std::endl;
                 return 1;
-            } catch (const std::out_of_range&) {
+            } catch (const std::out_of_range &) {
                 std::cerr << "Error: Flight number out of range: " << optarg << std::endl;
                 return 1;
             }

@@ -44,6 +44,8 @@ class Metric
     enum ScaleFactor { NONE, TEN, TEN_IF_GPH };
 
     enum InitialValue {
+        NEGATIVE_TEN = -10,
+        NEGATIVE_ONE = -1,
         ZERO = 0x00,
         DEFAULT = 0xF0,
     };

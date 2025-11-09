@@ -68,8 +68,8 @@ const std::vector<Metric> Metrics::m_metrics = {
     Metric(V1|V2|V3|V4|V5,   3,  51, IDSTR(EGT14), "engine[1].exhaust_gas_temperature[4]"),
     Metric(V1|V2|V3|V4|V5,   4,  52, IDSTR(EGT15), "engine[1].exhaust_gas_temperature[5]"),
     Metric(V1|V2|V3|V4|V5,   5,  53, IDSTR(EGT16), "engine[1].exhaust_gas_temperature[6]"),
-    Metric(V1|V2|V3|V4|V5,   6,  54, IDSTR(TIT11), "engine[1].turbine_inlet_temperature[1]"),
-    Metric(V1|V2|V3|V4|V5,   7,  55, IDSTR(TIT12), "engine[1].turbine_inlet_temperature[2]"),
+    Metric(V1|V2|V3|V4|V5,   6,  54, IDSTR(TIT11), "engine[1].turbine_inlet_temperature[1]", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
+    Metric(V1|V2|V3|V4|V5,   7,  55, IDSTR(TIT12), "engine[1].turbine_inlet_temperature[2]", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
 
     // byte 1
     Metric(V1|V2|V3|V4|V5,   8,      IDSTR(CHT11), "engine[1].cylinder_head_temperature[1]"),
@@ -105,7 +105,7 @@ const std::vector<Metric> Metrics::m_metrics = {
     Metric(   V2      |V5,  28,  60, IDSTR(EGT25), "engine[2].exhaust_gas_temperature[5]"),
     Metric(V1   |V3|V4   ,  29,      IDSTR(CHT19), "engine[1].cylinder_head_temperature[9]"),
     Metric(   V2      |V5,  29,  61, IDSTR(EGT26), "engine[2].exhaust_gas_temperature[6]"),
-    Metric(V1   |V3|V4   ,  30,      IDSTR(HP1),   "engine[1].horsepower"),
+    Metric(V1   |V3|V4   ,  30,      IDSTR(HP1),   "engine[1].horsepower", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
     Metric(   V2      |V5,  30,  62, IDSTR(TIT21), "engine[2].turbine_inlet_temperature[1]", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
     Metric(   V2      |V5,  31,  63, IDSTR(TIT22), "engine[2].turbine_inlet_temperature[2]", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
 
@@ -128,7 +128,7 @@ const std::vector<Metric> Metrics::m_metrics = {
     Metric(         V4   ,  45,      IDSTR(HYDP11),"engine[1].hydraulic_pressure[1]"),
     Metric(   V2      |V5,  46,      IDSTR(FUSD21),"engine[2].fuel_used[1]", Metric::ScaleFactor::TEN_IF_GPH),
     Metric(         V4   ,  46,      IDSTR(FF12),  "engine[1].fuel_flow[2]", Metric::ScaleFactor::TEN_IF_GPH),
-    Metric(         V4   ,  47,      IDSTR(FUSD12),"engine[1].fuel_used[2]", Metric::ScaleFactor::TEN_IF_GPH),
+    Metric(         V4   ,  47,      IDSTR(FUSD12),"engine[1].fuel_used[2]", Metric::ScaleFactor::TEN_IF_GPH, Metric::InitialValue::NEGATIVE_TEN),
     Metric(   V2      |V5,  47,      IDSTR(FF21),  "engine[2].fuel_flow[1]", Metric::ScaleFactor::TEN_IF_GPH),
 
     // bytes 6 & 7 are all high bytes for earlier values
@@ -142,7 +142,7 @@ const std::vector<Metric> Metrics::m_metrics = {
     Metric(      V3|V4   ,  68,      IDSTR(LMAIN), "left_main.fuel_level", Metric::ScaleFactor::TEN_IF_GPH),
     Metric(            V5,  68,      IDSTR(FLVL12),"engine[1].fuel_level[2]", Metric::ScaleFactor::TEN_IF_GPH),
     Metric(      V3|V4|V5,  69,      IDSTR(FP1),   "engine[1].fuel_pressure", Metric::ScaleFactor::TEN),
-    Metric(            V5,  70,      IDSTR(HP1),   "engine[1].horsepower"),
+    Metric(            V5,  70,      IDSTR(HP1),   "engine[1].horsepower", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
     Metric(         V4   ,  71,      IDSTR(LAUX),  "left_aux.fuel_level", Metric::ScaleFactor::TEN_IF_GPH),
     Metric(            V5,  71,      IDSTR(FLVL13),"engine[1].fuel_level[3]", Metric::ScaleFactor::TEN_IF_GPH),
 
@@ -154,9 +154,9 @@ const std::vector<Metric> Metrics::m_metrics = {
     Metric(         V4|V5,  78,  79, IDSTR(HRS1), "engine[1].hours", Metric::ScaleFactor::TEN),
 
     // byte 10
-    Metric(         V4|V5,  83,      IDSTR(ALT), "altitude"), // in feet
+    Metric(         V4|V5,  83,      IDSTR(ALT), "altitude", Metric::ScaleFactor::NONE, Metric::InitialValue::NEGATIVE_ONE), // in feet
     Metric(         V4   ,  84,      IDSTR(RAUX),"right_aux.fuel_level", Metric::ScaleFactor::TEN_IF_GPH),
-    Metric(         V4|V5,  85,      IDSTR(SPD), "airspeed"), // in knots
+    Metric(         V4|V5,  85,      IDSTR(SPD), "airspeed", Metric::ScaleFactor::NONE, Metric::InitialValue::NEGATIVE_ONE), // in knots
     Metric(         V4|V5,  86,      IDSTR(LAT), "latitude", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
     Metric(         V4|V5,  87,      IDSTR(LNG), "longitude", Metric::ScaleFactor::NONE, Metric::InitialValue::ZERO),
 

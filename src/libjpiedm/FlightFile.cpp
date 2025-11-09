@@ -157,7 +157,7 @@ void FlightFile::validateHeaderChecksum(int lineno, const char *line)
             throw std::invalid_argument{msg.str()};
         }
         testval = static_cast<uint16_t>(parsed);
-    } catch (const std::exception&) {
+    } catch (const std::exception &) {
         std::stringstream msg;
         msg << "invalid header checksum format: line " << lineno;
         throw std::invalid_argument{msg.str()};
@@ -302,8 +302,8 @@ bool FlightFile::validateBinaryChecksum(std::istream &stream, std::iostream::off
 
     if (!stream || stream.gcount() != len) {
         std::stringstream msg;
-        msg << "Failed to read " << len << " bytes for checksum validation. "
-            << "Read " << stream.gcount() << " bytes instead.";
+        msg << "Failed to read " << len << " bytes for checksum validation. " << "Read " << stream.gcount()
+            << " bytes instead.";
         throw std::runtime_error(msg.str());
     }
 
@@ -683,8 +683,8 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
             stream.read(reinterpret_cast<char *>(&byte), 1);
             if (!stream || stream.gcount() != 1) {
                 std::stringstream msg;
-                msg << "Failed to read metric value byte at index " << metricIdx
-                    << " in flight data record " << flight->m_recordSeq;
+                msg << "Failed to read metric value byte at index " << metricIdx << " in flight data record "
+                    << flight->m_recordSeq;
                 throw std::runtime_error(msg.str());
             }
             int val = byte; // promote to int
@@ -781,8 +781,8 @@ void FlightFile::parseFlights(std::istream &stream)
         const std::streamoff MAX_FLIGHT_RECORDS = 1000000; // 1 million records max
         if (flightDataCount.second < 1 || flightDataCount.second > MAX_FLIGHT_RECORDS) {
             std::stringstream msg;
-            msg << "Invalid flight data count: " << flightDataCount.second
-                << " (must be between 1 and " << MAX_FLIGHT_RECORDS << ")";
+            msg << "Invalid flight data count: " << flightDataCount.second << " (must be between 1 and "
+                << MAX_FLIGHT_RECORDS << ")";
             throw std::runtime_error(msg.str());
         }
 
@@ -813,7 +813,8 @@ void FlightFile::parseFlights(std::istream &stream)
 #ifdef DEBUG_PARSE
             auto bytesRead = stream.tellg() - startOff;
             std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex << stream.tellg()
-                      << std::dec << "    totalBytes: " << totalBytes << "\n" << std::flush;
+                      << std::dec << "    totalBytes: " << totalBytes << "\n"
+                      << std::flush;
 #endif
         }
 
@@ -867,8 +868,7 @@ std::vector<FlightFile::FlightInfo> FlightFile::detectFlights(std::istream &stre
     return detectFlights(stream, metadata);
 }
 
-std::vector<FlightFile::FlightInfo> FlightFile::detectFlights(std::istream &stream,
-                                                               std::shared_ptr<Metadata> &metadata)
+std::vector<FlightFile::FlightInfo> FlightFile::detectFlights(std::istream &stream, std::shared_ptr<Metadata> &metadata)
 {
     // Parse file headers to extract $D records
     stream.seekg(0);
@@ -881,7 +881,7 @@ std::vector<FlightFile::FlightInfo> FlightFile::detectFlights(std::istream &stre
     std::vector<FlightInfo> flightInfos;
     flightInfos.reserve(m_flightDataCounts.size());
 
-    for (const auto& [flightNum, recordCount] : m_flightDataCounts) {
+    for (const auto &[flightNum, recordCount] : m_flightDataCounts) {
         FlightInfo info;
         info.flightNumber = flightNum;
         info.recordCount = recordCount;
