@@ -176,7 +176,7 @@ void FlightFile::validateHeaderChecksum(int lineno, const char *line)
     }
 }
 
-void FlightFile::parseFileHeaders(std::istream &stream)
+void FlightFile::parseFileHeaders(std::istream &stream, bool strictChecksums)
 {
     int lineno = 0;
     bool end_of_headers = false;
@@ -208,7 +208,15 @@ void FlightFile::parseFileHeaders(std::istream &stream)
             *newEnd = '\0';
         }
 
-        validateHeaderChecksum(lineno, line);
+        if (strictChecksums) {
+            validateHeaderChecksum(lineno, line);
+        } else {
+            try {
+                validateHeaderChecksum(lineno, line);
+            } catch (const std::exception &ex) {
+                std::cerr << "Warning: " << ex.what() << " (ignored)\n";
+            }
+        }
 
         // check to see if the line starts with '$'
         if (line[0] != '$') {
@@ -1056,7 +1064,13 @@ void FlightFile::parse(std::istream &stream)
 {
     stream.seekg(0);
 
-    parseFileHeaders(stream);
+    try {
+        parseFileHeaders(stream);
+    } catch (const std::invalid_argument &) {
+        stream.clear();
+        stream.seekg(0);
+        parseFileHeaders(stream, false);
+    }
     parseFlights(stream);
     parseFileFooters(stream);
 }
@@ -1065,7 +1079,13 @@ void FlightFile::parse(std::istream &stream, int flightId)
 {
     stream.seekg(0);
 
-    parseFileHeaders(stream);
+    try {
+        parseFileHeaders(stream);
+    } catch (const std::invalid_argument &) {
+        stream.clear();
+        stream.seekg(0);
+        parseFileHeaders(stream, false);
+    }
     parseFlights(stream, flightId);
     parseFileFooters(stream);
 }
@@ -1078,7 +1098,13 @@ FlightRange FlightFile::flights(std::istream &stream)
 {
     // Parse file headers to get metadata and flight counts
     stream.seekg(0);
-    parseFileHeaders(stream);
+    try {
+        parseFileHeaders(stream);
+    } catch (const std::invalid_argument &) {
+        stream.clear();
+        stream.seekg(0);
+        parseFileHeaders(stream, false);
+    }
 
     // If there are no flights, return an empty range
     if (m_flightDataCounts.empty()) {
@@ -1107,7 +1133,13 @@ std::vector<FlightFile::FlightInfo> FlightFile::detectFlights(std::istream &stre
 {
     // Parse file headers to extract $D records
     stream.seekg(0);
-    parseFileHeaders(stream);
+    try {
+        parseFileHeaders(stream);
+    } catch (const std::invalid_argument &) {
+        stream.clear();
+        stream.seekg(0);
+        parseFileHeaders(stream, false);
+    }
 
     // Return metadata to caller
     metadata = m_metadata;

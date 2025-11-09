@@ -254,7 +254,16 @@ void printFlightList(std::istream &stream, std::ostream &outStream)
         });
 
         // Parse all flights
-        ff.processFile(stream);
+        try {
+            ff.processFile(stream);
+        } catch (const std::exception &ex) {
+            std::cerr << "Warning: Failed to parse flights with full detail (" << ex.what()
+                      << "). Falling back to header-only listing.\n";
+            for (const auto &flight : flights) {
+                outStream << "Flt #" << flight.flightNumber << " - approx " << flight.recordCount
+                          << " records (details unavailable)\n";
+            }
+        }
 
     } catch (const std::exception &ex) {
         std::cerr << "Error listing flights: " << ex.what() << "\n";
