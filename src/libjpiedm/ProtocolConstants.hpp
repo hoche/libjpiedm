@@ -54,8 +54,8 @@ constexpr unsigned long PROTO_HEADER_THRESHOLD = 1;
 /// Build version threshold for HEADER_V4 format (build > 2010)
 constexpr unsigned long BUILD_VERSION_HEADER_V4_THRESHOLD = 2010;
 
-/// Build version threshold for HEADER_V3 format (build > 880)
-constexpr unsigned long BUILD_VERSION_HEADER_V3_THRESHOLD = 880;
+/// Build version threshold for HEADER_V3 format (build > 999)
+constexpr unsigned long BUILD_VERSION_HEADER_V3_THRESHOLD = 999;
 
 // ============================================================================
 // File Header Record Field Counts

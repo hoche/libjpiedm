@@ -137,7 +137,7 @@ const uint32_t F_MARK = 0x00000001; // 1 bit always seems to exist
 
 void ConfigInfo::dump(std::ostream &outStream) const
 {
-    outStream << "ConfigInfo:" << "\n    edm_model: " << edm_model << "\n    flags: " << flags << " 0x" << std::hex
+    outStream << "ConfigInfo:" << "\n    EDM Model: " << edm_model << "\n    flags: " << flags << " 0x" << std::hex
               << flags << std::dec << " b" << std::bitset<32>(flags) << "\n    firmware_version: " << firmware_version
               << "\n    build: " << build_maj << "." << build_min << "\n";
     outStream << "Temperatures for CHT, EGT, and TIT are in " << (flags & F_TEMP_IN_F ? "F" : "C") << "\n";
@@ -161,9 +161,9 @@ void FuelLimits::apply(const std::vector<unsigned long> &values)
 
 void FuelLimits::dump(std::ostream &outStream) const
 {
-    outStream << "FuelLimits:" << "\n    units: " << (units ? "LPH" : "GPH")
+    outStream << "FuelLimits:" << "\n    units: " << units << " (" << (units ? "LPH" : "GPH") << ")"
               << "\n    main_tank_size: " << main_tank_size << "\n    aux_tank_size: " << aux_tank_size
-              << "\n    k_factor_2: " << k_factor_1 << "\n    k_factor_1: " << k_factor_2 << "\n";
+              << "\n    k_factor_1: " << k_factor_1 << "\n    k_factor_2: " << k_factor_2 << "\n";
 }
 
 /**

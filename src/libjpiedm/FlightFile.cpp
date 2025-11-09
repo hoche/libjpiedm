@@ -87,6 +87,12 @@ void FlightFile::setFlightCompletionCb(std::function<void(unsigned long, unsigne
 
 void FlightFile::setFileFooterCompletionCb(std::function<void(void)> cb) { m_fileFooterCompletionCb = cb; }
 
+namespace {
+struct HeaderChecksumError : public std::invalid_argument {
+    using std::invalid_argument::invalid_argument;
+};
+} // namespace
+
 /**
  * @brief split_header_line
  *
@@ -175,7 +181,7 @@ void FlightFile::validateHeaderChecksum(int lineno, const char *line)
     if (testval != cs) {
         std::stringstream msg;
         msg << "header checksum failed: line " << lineno;
-        throw std::invalid_argument{msg.str()};
+        throw HeaderChecksumError{msg.str()};
     }
 }
 
@@ -211,8 +217,18 @@ void FlightFile::parseFileHeaders(std::istream &stream, bool strictChecksums)
             *newEnd = '\0';
         }
 
+        if (line[0] == '\0') {
+            std::stringstream msg;
+            msg << "invalid header: empty line " << lineno;
+            throw std::invalid_argument{msg.str()};
+        }
+
         if (strictChecksums) {
-            validateHeaderChecksum(lineno, line);
+            try {
+                validateHeaderChecksum(lineno, line);
+            } catch (const std::invalid_argument &ex) {
+                throw;
+            }
         } else {
             try {
                 validateHeaderChecksum(lineno, line);
@@ -224,8 +240,8 @@ void FlightFile::parseFileHeaders(std::istream &stream, bool strictChecksums)
         // check to see if the line starts with '$'
         if (line[0] != '$') {
             std::stringstream msg;
-            msg << "Invalid file format: Was expecting a header line: line " << lineno;
-            throw std::runtime_error{msg.str()};
+            msg << "invalid header: line " << lineno;
+            throw std::invalid_argument{msg.str()};
         }
 
         switch (line[1]) {
@@ -1067,13 +1083,7 @@ void FlightFile::parse(std::istream &stream)
 {
     stream.seekg(0);
 
-    try {
-        parseFileHeaders(stream);
-    } catch (const std::invalid_argument &) {
-        stream.clear();
-        stream.seekg(0);
-        parseFileHeaders(stream, false);
-    }
+    parseFileHeaders(stream);
     parseFlights(stream);
     parseFileFooters(stream);
 }
@@ -1082,13 +1092,7 @@ void FlightFile::parse(std::istream &stream, int flightId)
 {
     stream.seekg(0);
 
-    try {
-        parseFileHeaders(stream);
-    } catch (const std::invalid_argument &) {
-        stream.clear();
-        stream.seekg(0);
-        parseFileHeaders(stream, false);
-    }
+    parseFileHeaders(stream);
     parseFlights(stream, flightId);
     parseFileFooters(stream);
 }
@@ -1101,13 +1105,7 @@ FlightRange FlightFile::flights(std::istream &stream)
 {
     // Parse file headers to get metadata and flight counts
     stream.seekg(0);
-    try {
-        parseFileHeaders(stream);
-    } catch (const std::invalid_argument &) {
-        stream.clear();
-        stream.seekg(0);
-        parseFileHeaders(stream, false);
-    }
+    parseFileHeaders(stream);
 
     // If there are no flights, return an empty range
     if (m_flightDataCounts.empty()) {
@@ -1136,13 +1134,7 @@ std::vector<FlightFile::FlightInfo> FlightFile::detectFlights(std::istream &stre
 {
     // Parse file headers to extract $D records
     stream.seekg(0);
-    try {
-        parseFileHeaders(stream);
-    } catch (const std::invalid_argument &) {
-        stream.clear();
-        stream.seekg(0);
-        parseFileHeaders(stream, false);
-    }
+    parseFileHeaders(stream);
 
     // Return metadata to caller
     metadata = m_metadata;
