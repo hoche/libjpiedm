@@ -8,6 +8,7 @@
  * This is just an example.
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -148,6 +149,29 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
     jpi_edm::FlightFile ff;
     std::shared_ptr<jpi_edm::FlightHeader> hdr;
     time_t recordTime;
+
+    if (flightId.has_value()) {
+        try {
+            jpi_edm::FlightFile flightDetector;
+            auto flights = flightDetector.detectFlights(stream);
+            bool found = std::any_of(flights.begin(), flights.end(),
+                                     [&](const auto &info) { return info.flightNumber == flightId.value(); });
+            stream.clear();
+            stream.seekg(0);
+            if (!found) {
+                outStream << "Flight #" << flightId.value() << " not found in file" << std::endl;
+                return;
+            }
+        } catch (const std::exception &ex) {
+            stream.clear();
+            stream.seekg(0);
+            std::cerr << "Error detecting flights: " << ex.what() << std::endl;
+            return;
+        }
+    } else {
+        stream.clear();
+        stream.seekg(0);
+    }
 
     if (g_verbose) {
         ff.setMetadataCompletionCb([&outStream](std::shared_ptr<jpi_edm::Metadata> md) { md->dump(outStream); });

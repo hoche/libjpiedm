@@ -183,6 +183,10 @@ void FlightFile::parseFileHeaders(std::istream &stream)
     unsigned long theLHeaderVal = 0;
     Metadata metadata;
 
+    // Ensure header parsing starts with a clean slate when the same FlightFile
+    // instance is reused (e.g. detectFlights() followed by processFile()).
+    m_flightDataCounts.clear();
+
     // line is terminated with CRLF (\r\n)
     // read to the LF (\n) (getline won't include the LF in the return)
     std::unique_ptr<char[]> buffer(new char[HEADER_BUFFER_SIZE]);
@@ -944,7 +948,7 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
             std::streamoff estimatedDataRemaining = estimatedTotalBytes - bytesAlreadyRead;
 
             // Skip most of the data, leaving a search window
-            const std::streamoff SEARCH_WINDOW = 50; // bytes to search
+            const std::streamoff SEARCH_WINDOW = 64; // bytes to search
             std::streamoff skipAmount = estimatedDataRemaining - SEARCH_WINDOW;
 
             if (skipAmount > 0) {
@@ -958,10 +962,13 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
 
             // Read a search window to find the next flight number
             auto searchStartPos = stream.tellg();
-            const size_t SEARCH_BUFFER_SIZE = SEARCH_WINDOW + 20;
+            size_t headerBytes = static_cast<size_t>(headerSize);
+            const size_t SEARCH_BUFFER_SIZE =
+                static_cast<size_t>(std::max<std::streamoff>(SEARCH_WINDOW, 0)) + headerBytes + 1;
             std::vector<char> searchBuf(SEARCH_BUFFER_SIZE);
             stream.read(searchBuf.data(), SEARCH_BUFFER_SIZE);
             std::streamsize bytesRead = stream.gcount();
+            auto afterBufferPos = stream.tellg();
 
             if (bytesRead >= 2) {
                 // Look for next flight number in the search window
@@ -977,6 +984,27 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
                     std::memcpy(&candidate, searchBuf.data() + offset, sizeof(uint16_t));
 
                     if (candidate == targetFlightNum) {
+                        auto candidatePos = searchStartPos + offset;
+                        auto restorePos = afterBufferPos;
+                        unsigned char checksumByte = 0;
+
+                        stream.clear();
+                        stream.seekg(candidatePos + headerSize, std::ios_base::beg);
+                        if (stream.good()) {
+                            stream.read(reinterpret_cast<char *>(&checksumByte), 1);
+                        }
+
+                        bool checksumValid =
+                            stream.good() && stream.gcount() == 1 &&
+                            validateBinaryChecksum(stream, candidatePos, candidatePos + headerSize, checksumByte);
+
+                        stream.clear();
+                        stream.seekg(restorePos, std::ios_base::beg);
+
+                        if (!checksumValid) {
+                            continue;
+                        }
+
                         found = true;
                         foundOffset = offset;
 #ifdef DEBUG_FLIGHT_HEADERS
@@ -991,14 +1019,17 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
                     // Position stream at the found flight number
                     stream.seekg(searchStartPos + foundOffset, std::ios_base::beg);
                 } else {
-                    // Fallback: couldn't find next flight number
-                    // Use the estimate and hope for the best
-                    std::streamoff fallbackPos = searchStartPos + SEARCH_WINDOW;
-                    stream.seekg(fallbackPos, std::ios_base::beg);
-#ifdef DEBUG_FLIGHT_HEADERS
-                    std::cerr << "Warning: Could not find flight " << nextFlightNumber
-                              << " in search window, using estimate\n";
-#endif
+                    // Fallback: couldn't validate next flight number - parse sequentially to stay in sync
+                    auto flight = std::make_shared<Flight>(m_metadata);
+                    flight->m_flightHeader = flightHeader;
+
+                    while ((stream.tellg() - startOff) < estimatedTotalBytes) {
+                        if (!stream.good()) {
+                            throw std::runtime_error("Stream error while reading flight data during fallback parsing");
+                        }
+                        parseFlightDataRec(stream, flight);
+                    }
+                    continue;
                 }
             } else {
                 // Not enough bytes read - just position at end of what we read
