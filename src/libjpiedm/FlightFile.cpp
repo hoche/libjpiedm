@@ -20,6 +20,9 @@
 #include <vector>
 
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <winsock2.h>
 #define sscanf sscanf_s
 #else
