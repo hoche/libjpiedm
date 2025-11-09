@@ -15,8 +15,8 @@
  *   ./callback_example <path_to_edm_file>
  */
 
-#include "FlightFile.hpp"
 #include "Flight.hpp"
+#include "FlightFile.hpp"
 #include "Metadata.hpp"
 
 #include <fstream>
@@ -69,10 +69,8 @@ void onFlightHeaderComplete(std::shared_ptr<FlightHeader> header)
     std::cout << "Flags: 0x" << std::hex << header->flags << std::dec << "\n";
 
     if (header->startLat != 0 || header->startLng != 0) {
-        std::cout << "Starting Position: "
-                  << std::fixed << std::setprecision(6)
-                  << (header->startLat / 10000000.0) << ", "
-                  << (header->startLng / 10000000.0) << "\n";
+        std::cout << "Starting Position: " << std::fixed << std::setprecision(6) << (header->startLat / 10000000.0)
+                  << ", " << (header->startLng / 10000000.0) << "\n";
     }
 
     // Display start date/time
@@ -91,15 +89,13 @@ void onFlightRecordComplete(std::shared_ptr<FlightMetricsRecord> record)
     const int MAX_RECORDS_TO_SHOW = 5;
 
     if (stats.recordsInCurrentFlight <= MAX_RECORDS_TO_SHOW) {
-        std::cout << "  Record " << record->m_recordSeq
-                  << " (" << (record->m_isFast ? "fast" : "standard") << ")"
+        std::cout << "  Record " << record->m_recordSeq << " (" << (record->m_isFast ? "fast" : "standard") << ")"
                   << " - " << record->m_metrics.size() << " metrics";
 
         // Show a sample metric if available
         if (!record->m_metrics.empty()) {
             auto it = record->m_metrics.begin();
-            std::cout << " [first: " << static_cast<int>(it->first)
-                      << " = " << it->second << "]";
+            std::cout << " [first: " << static_cast<int>(it->first) << " = " << it->second << "]";
         }
         std::cout << "\n";
     } else if (stats.recordsInCurrentFlight == MAX_RECORDS_TO_SHOW + 1) {
@@ -128,14 +124,14 @@ void onFileFooterComplete()
     std::cout << "==========================================\n";
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <edm_file>\n";
         return 1;
     }
 
-    const char* filename = argv[1];
+    const char *filename = argv[1];
 
     try {
         // Open the EDM file
@@ -173,7 +169,7 @@ int main(int argc, char* argv[])
             std::cout << "Note: File contains no flight data (headers only)\n";
         }
 
-    } catch (const std::exception& ex) {
+    } catch (const std::exception &ex) {
         std::cerr << "Error: " << ex.what() << "\n";
         return 1;
     }

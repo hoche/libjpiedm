@@ -24,14 +24,14 @@
 
 using namespace jpi_edm;
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <edm_file>\n";
         return 1;
     }
 
-    const char* filename = argv[1];
+    const char *filename = argv[1];
 
     try {
         // Open the EDM file
@@ -57,10 +57,10 @@ int main(int argc, char* argv[])
         int flightCount = 0;
 
         // Range-based for loop - each flight is parsed on-demand
-        for (const auto& flight : flightRange) {
+        for (const auto &flight : flightRange) {
             ++flightCount;
 
-            const auto& header = flight.getHeader();
+            const auto &header = flight.getHeader();
 
             std::cout << "Flight #" << header.flight_num << "\n";
             std::cout << "  Interval: " << header.interval << " seconds\n";
@@ -75,14 +75,13 @@ int main(int argc, char* argv[])
 
             std::cout << "  First " << MAX_RECORDS_TO_SHOW << " records:\n";
 
-            for (const auto& record : flight) {
+            for (const auto &record : flight) {
                 if (recordCount >= MAX_RECORDS_TO_SHOW) {
                     break;
                 }
 
-                std::cout << "    Record " << record->m_recordSeq
-                          << " (" << (record->m_isFast ? "fast" : "standard") << ")"
-                          << " - " << record->m_metrics.size() << " metrics\n";
+                std::cout << "    Record " << record->m_recordSeq << " (" << (record->m_isFast ? "fast" : "standard")
+                          << ")" << " - " << record->m_metrics.size() << " metrics\n";
 
                 ++recordCount;
             }
@@ -99,7 +98,7 @@ int main(int argc, char* argv[])
             std::cout << "Note: File contains no flight data (headers only)\n";
         }
 
-    } catch (const std::exception& ex) {
+    } catch (const std::exception &ex) {
         std::cerr << "Error: " << ex.what() << "\n";
         return 1;
     }

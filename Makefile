@@ -13,7 +13,8 @@ clean: ## clean the local system
 format: ## run clang-format
 	clang-format -i src/libjpiedm/*.cpp \
 			src/libjpiedm/*.hpp \
-			src/parseedmlog/*.cpp
+			src/parseedmlog/*.cpp \
+		        examples/*.cpp
 .PHONY: format
 
 test: ## run tests
