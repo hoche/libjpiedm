@@ -5,6 +5,7 @@
  * Unit tests for FlightFile class
  */
 
+#include <algorithm>
 #include <gtest/gtest.h>
 #include <FlightFile.hpp>
 #include <Metadata.hpp>

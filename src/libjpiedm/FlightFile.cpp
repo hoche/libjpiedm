@@ -1042,7 +1042,7 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
             } else {
                 // Not enough bytes read - just position at end of what we read
                 stream.clear();
-                stream.seekg(searchStartPos + bytesRead, std::ios_base::beg);
+                stream.seekg(searchStartPos + static_cast<std::streamoff>(bytesRead), std::ios_base::beg);
             }
 
             if (!stream.good()) {
