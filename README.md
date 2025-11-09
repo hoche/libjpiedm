@@ -61,9 +61,31 @@ bunch of the fields by cross-indexing with EZTrends, but there're still a bunch 
 At the moment, the best way to see how this works is to look at the sample app provided.
 It's not very pretty, but should serve as a starting point.
 
-Note: because of the way JPI structures their file, it's difficult to jump directly to a
-particular flight. The $D records in the header give approximate locations, but they're not
-always correct and I haven't figured out a reliable way to use them to jump.
+### Parsing a Specific Flight
+
+The library now supports jumping directly to a specific flight by ID, without parsing all
+previous flights. This is useful for large files with many flights:
+
+```cpp
+FlightFile parser;
+// Set up callbacks...
+std::ifstream stream("data.jpi", std::ios::binary);
+parser.processFile(stream, flightId);  // Parse only the specified flight
+```
+
+To discover which flights are available in a file without parsing the flight data:
+
+```cpp
+FlightFile parser;
+std::ifstream stream("data.jpi", std::ios::binary);
+auto flights = parser.detectFlights(stream);
+for (const auto& flight : flights) {
+    std::cout << "Flight ID: " << flight.flightNumber 
+              << " Records: " << flight.recordCount << "\n";
+}
+```
+
+See `examples/single_flight_example.cpp` for a complete example.
 
 ## Platforms
 
@@ -79,6 +101,11 @@ change is submitted. These are currently set up to run on Linux, Windows, and OS
 * The multiengine values are just guesses.
 
 ## Latest Updates
+
+November 2025
+* Added ability to jump directly to a specific flight by ID without parsing the entire file.
+* `processFile()` now accepts an optional flight ID parameter.
+* New `detectFlights()` method for lightweight flight enumeration.
 
 July 2025
 * Figured out a number of the remaining parameters and documented them.

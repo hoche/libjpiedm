@@ -828,6 +828,133 @@ void FlightFile::parseFlights(std::istream &stream)
     }
 }
 
+void FlightFile::parseFlights(std::istream &stream, int flightId)
+{
+    // If there are no flights to parse, return early
+    if (m_flightDataCounts.empty()) {
+        throw std::runtime_error("No flights found in file");
+    }
+
+    // First, detect the flight header size (we need to parse at least the first flight's position)
+    auto headerSizeOpt = detectFlightHeaderSize(stream);
+
+    if (!headerSizeOpt.has_value()) {
+        throw std::runtime_error("Failed to detect flight header size - invalid file format");
+    }
+
+    std::streamoff headerSize = headerSizeOpt.value();
+
+#ifdef DEBUG_FLIGHT_HEADERS
+    std::cout << "Detected flight header size: " << headerSize << std::endl;
+#endif
+
+    // Find the target flight in the list and calculate its offset
+    std::streamoff flightOffset = 0;
+    int targetFlightIndex = -1;
+
+    for (size_t i = 0; i < m_flightDataCounts.size(); ++i) {
+        if (m_flightDataCounts[i].first == flightId) {
+            targetFlightIndex = static_cast<int>(i);
+            break;
+        }
+
+        // Accumulate the size of this flight to calculate offset to next flight
+        // Each flight consists of:
+        // - header (headerSize bytes)
+        // - header checksum (1 byte)
+        // - data records ((recordCount - 1) * 2 bytes)
+        std::streamoff recordCount = m_flightDataCounts[i].second - 1L;
+        std::streamoff totalBytes = recordCount * 2;
+        flightOffset += headerSize + 1 + totalBytes;
+    }
+
+    if (targetFlightIndex == -1) {
+        std::stringstream msg;
+        msg << "Flight ID " << flightId << " not found in file";
+        throw std::runtime_error(msg.str());
+    }
+
+    // Get current position (should be at the start of the first flight)
+    auto firstFlightPos = stream.tellg();
+    if (firstFlightPos == -1) {
+        throw std::runtime_error("Failed to get stream position");
+    }
+
+    // Seek to the target flight
+    stream.seekg(firstFlightPos + flightOffset, std::ios_base::beg);
+    if (!stream.good()) {
+        std::stringstream msg;
+        msg << "Failed to seek to flight " << flightId << " at offset " << flightOffset;
+        throw std::runtime_error(msg.str());
+    }
+
+#ifdef DEBUG_FLIGHT_HEADERS
+    std::cout << "Jumping to flight " << flightId << " at offset " << std::hex << (firstFlightPos + flightOffset)
+              << std::dec << std::endl;
+#endif
+
+    // Parse only the target flight
+    auto &flightDataCount = m_flightDataCounts[targetFlightIndex];
+
+    auto startOff{stream.tellg()};
+    if (startOff == -1) {
+        throw std::runtime_error("Failed to get stream position before reading flight data");
+    }
+
+#ifdef DEBUG_PARSE
+    std::cout << "======== startOff: " << std::hex << startOff << std::dec << "\n";
+#endif
+
+    // Validate flight data count is reasonable (prevent integer overflow)
+    const std::streamoff MAX_FLIGHT_RECORDS = 1000000; // 1 million records max
+    if (flightDataCount.second < 1 || flightDataCount.second > MAX_FLIGHT_RECORDS) {
+        std::stringstream msg;
+        msg << "Invalid flight data count: " << flightDataCount.second << " (must be between 1 and "
+            << MAX_FLIGHT_RECORDS << ")";
+        throw std::runtime_error(msg.str());
+    }
+
+    // Calculate total bytes to read with overflow checking
+    std::streamoff recordCount = flightDataCount.second - 1L;
+    std::streamoff totalBytes;
+    if (recordCount > std::numeric_limits<std::streamoff>::max() / 2) {
+        throw std::runtime_error("Flight data count too large - would cause integer overflow");
+    }
+    totalBytes = recordCount * 2;
+
+    auto flight = std::make_shared<Flight>(m_metadata);
+    flight->m_flightHeader = parseFlightHeader(stream, flightDataCount.first, headerSize);
+
+    if (!stream.good()) {
+        throw std::runtime_error("Stream error after reading flight header");
+    }
+
+    while ((stream.tellg() - startOff) < totalBytes) {
+        if (!stream.good()) {
+            std::stringstream msg;
+            msg << "Stream error while reading flight data records at position " << stream.tellg();
+            throw std::runtime_error(msg.str());
+        }
+
+        parseFlightDataRec(stream, flight);
+
+#ifdef DEBUG_PARSE
+        auto bytesRead = stream.tellg() - startOff;
+        std::cout << "---> " << std::dec << bytesRead << "    streamnext: " << std::hex << stream.tellg() << std::dec
+                  << "    totalBytes: " << totalBytes << "\n"
+                  << std::flush;
+#endif
+    }
+
+    if (!stream.good()) {
+        throw std::runtime_error("Stream error after reading flight data");
+    }
+
+    if (m_flightCompletionCb) {
+        m_flightCompletionCb(flight->m_stdRecCount, flight->m_fastRecCount);
+    }
+}
+
 void FlightFile::parse(std::istream &stream)
 {
     stream.seekg(0);
@@ -837,7 +964,18 @@ void FlightFile::parse(std::istream &stream)
     parseFileFooters(stream);
 }
 
+void FlightFile::parse(std::istream &stream, int flightId)
+{
+    stream.seekg(0);
+
+    parseFileHeaders(stream);
+    parseFlights(stream, flightId);
+    parseFileFooters(stream);
+}
+
 void FlightFile::processFile(std::istream &stream) { parse(stream); }
+
+void FlightFile::processFile(std::istream &stream, int flightId) { parse(stream, flightId); }
 
 FlightRange FlightFile::flights(std::istream &stream)
 {

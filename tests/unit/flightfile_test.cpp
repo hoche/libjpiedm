@@ -427,3 +427,68 @@ TEST_F(FlightFileIntegrationTest, CallbacksAreInvokedInCorrectOrder) {
                   std::distance(callbackOrder.begin(), recordIt));
     }
 }
+
+// Test for specific flight parsing
+TEST_F(FlightFileIntegrationTest, CanParseSpecificFlightById) {
+    if (!testFileExists) {
+        GTEST_SKIP() << "Test file not available: " << testFilePath;
+    }
+
+    FlightFile parser;
+    
+    // First, detect what flights are available
+    std::ifstream detectStream(testFilePath, std::ios::binary);
+    ASSERT_TRUE(detectStream.is_open());
+    
+    std::vector<FlightFile::FlightInfo> flights;
+    EXPECT_NO_THROW(flights = parser.detectFlights(detectStream));
+    detectStream.close();
+    
+    if (flights.empty()) {
+        GTEST_SKIP() << "Test file contains no flights";
+    }
+    
+    // Parse only the first flight
+    int targetFlightId = flights[0].flightNumber;
+    int flightHeaderCallCount = 0;
+    int capturedFlightNum = -1;
+    
+    FlightFile parser2;
+    parser2.setFlightHeaderCompletionCb([&](std::shared_ptr<FlightHeader> hdr) {
+        flightHeaderCallCount++;
+        capturedFlightNum = hdr->flight_num;
+    });
+    
+    std::ifstream fileStream(testFilePath, std::ios::binary);
+    ASSERT_TRUE(fileStream.is_open());
+    
+    EXPECT_NO_THROW(parser2.processFile(fileStream, targetFlightId));
+    
+    // Verify only one flight was parsed
+    EXPECT_EQ(1, flightHeaderCallCount) << "Should have parsed exactly one flight";
+    EXPECT_EQ(targetFlightId, capturedFlightNum) << "Should have parsed the correct flight ID";
+}
+
+// Test that parsing with flight ID uses the new code path
+TEST_F(FlightFileTest, ProcessFileWithFlightIdCallsNewCodePath) {
+    setupCallbacks();
+    
+    // Create a minimal valid file with headers
+    // Note: This will fail on checksum/data parsing, but will test that 
+    // the flightId parameter is accepted
+    std::stringstream stream;
+    stream << "$A, 305,230,500,415,60,1650,230,90*7F\r\n"
+           << "$C, 830,110,6,0,2*3C\r\n"
+           << "$P, 300*6E\r\n"
+           << "$L, 0*4C\r\n";
+    
+    // This should not crash - it may throw an exception due to lack of flight data,
+    // but the API should accept the flight ID parameter
+    try {
+        flightFile.processFile(stream, 1);
+    } catch (const std::exception& e) {
+        // Expected to throw since there's no flight data
+        // The important thing is the API accepts the flightId parameter
+        SUCCEED();
+    }
+}

@@ -46,6 +46,7 @@ class FlightFile
     virtual void setFileFooterCompletionCb(std::function<void(void)> cb);
 
     virtual void processFile(std::istream &stream);
+    virtual void processFile(std::istream &stream, int flightId);
 
     // =========================================================================
     // Iterator-based API (modern C++ interface with lazy evaluation)
@@ -180,12 +181,14 @@ class FlightFile
     [[nodiscard]] std::optional<std::streamoff> detectFlightHeaderSize(std::istream &stream);
 
     void parse(std::istream &stream);
+    void parse(std::istream &stream, int flightId);
 
     void parseFileHeaders(std::istream &stream);
     [[nodiscard]] std::shared_ptr<FlightHeader> parseFlightHeader(std::istream &stream, int flightId,
                                                                   std::streamoff headerSize);
     void parseFlightDataRec(std::istream &stream, const std::shared_ptr<Flight> &flight);
     void parseFlights(std::istream &stream);
+    void parseFlights(std::istream &stream, int flightId);
     void parseFileFooters(std::istream &stream);
 
   private:
