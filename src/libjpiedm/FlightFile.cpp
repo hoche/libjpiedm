@@ -992,7 +992,7 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
                     std::memcpy(&candidate, searchBuf.data() + offset, sizeof(uint16_t));
 
                     if (candidate == targetFlightNum) {
-                        auto candidatePos = searchStartPos + offset;
+                        auto candidatePos = searchStartPos + static_cast<std::streamoff>(offset);
                         auto restorePos = afterBufferPos;
                         unsigned char checksumByte = 0;
 
