@@ -87,15 +87,14 @@ class FlightView
     FlightView() = default;
 
     FlightView(std::istream *stream, FlightFile *parser, std::shared_ptr<FlightHeader> header,
-               std::shared_ptr<Flight> flight, std::streamoff startOffset, std::streamoff totalBytes,
-               unsigned long stdRecCount, unsigned long fastRecCount);
+               std::shared_ptr<Flight> flight, std::streamoff startOffset, std::streamoff totalBytes);
 
     // Access to flight metadata
     [[nodiscard]] const FlightHeader &getHeader() const { return *m_header; }
     [[nodiscard]] std::shared_ptr<FlightHeader> getHeaderPtr() const { return m_header; }
-    [[nodiscard]] unsigned long getStandardRecordCount() const { return m_stdRecCount; }
-    [[nodiscard]] unsigned long getFastRecordCount() const { return m_fastRecCount; }
-    [[nodiscard]] unsigned long getTotalRecordCount() const { return m_stdRecCount + m_fastRecCount; }
+    [[nodiscard]] unsigned long getStandardRecordCount() const { return (m_flight) ? m_flight->m_stdRecCount : 0UL; }
+    [[nodiscard]] unsigned long getFastRecordCount() const { return (m_flight) ? m_flight->m_fastRecCount : 0UL; }
+    [[nodiscard]] unsigned long getTotalRecordCount() const { return getStandardRecordCount() + getFastRecordCount(); }
 
     // Iterator interface for records (lazy parsing)
     [[nodiscard]] RecordIterator begin() const;
@@ -108,8 +107,6 @@ class FlightView
     std::shared_ptr<Flight> m_flight;
     std::streamoff m_startOffset{0};
     std::streamoff m_totalBytes{0};
-    unsigned long m_stdRecCount{0};
-    unsigned long m_fastRecCount{0};
 };
 
 /**

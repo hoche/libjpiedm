@@ -747,6 +747,12 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
 
     flight->updateMetrics(values);
 
+    if (flight->m_fastFlag) {
+        ++flight->m_fastRecCount;
+    } else {
+        ++flight->m_stdRecCount;
+    }
+
     auto endOff{stream.tellg()};
     if (endOff == -1) {
         throw std::runtime_error("Failed to get stream position after reading flight data values");

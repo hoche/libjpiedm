@@ -118,10 +118,9 @@ bool FlightView::RecordIterator::operator!=(const RecordIterator &other) const {
 // =============================================================================
 
 FlightView::FlightView(std::istream *stream, FlightFile *parser, std::shared_ptr<FlightHeader> header,
-                       std::shared_ptr<Flight> flight, std::streamoff startOffset, std::streamoff totalBytes,
-                       unsigned long stdRecCount, unsigned long fastRecCount)
+                       std::shared_ptr<Flight> flight, std::streamoff startOffset, std::streamoff totalBytes)
     : m_stream(stream), m_parser(parser), m_header(header), m_flight(flight), m_startOffset(startOffset),
-      m_totalBytes(totalBytes), m_stdRecCount(stdRecCount), m_fastRecCount(fastRecCount)
+      m_totalBytes(totalBytes)
 {
     if (!m_header) {
         throw std::invalid_argument("FlightView: header cannot be null");
@@ -217,8 +216,7 @@ void FlightIterator::advance()
         }
 
         // Create FlightView (records will be parsed lazily)
-        m_currentFlight = FlightView(m_stream, m_parser, flightHeader, flight, dataStartOff, totalBytes,
-                                     flight->m_stdRecCount, flight->m_fastRecCount);
+        m_currentFlight = FlightView(m_stream, m_parser, flightHeader, flight, dataStartOff, totalBytes);
 
         // Skip to end of this flight's data for next iteration
         m_stream->clear();
