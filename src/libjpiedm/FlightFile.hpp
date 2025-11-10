@@ -200,6 +200,8 @@ class FlightFile
     std::function<void(std::shared_ptr<FlightMetricsRecord>)> m_flightRecCompletionCb;
     std::function<void(unsigned long, unsigned long)> m_flightCompletionCb;
     std::function<void(void)> m_fileFooterCompletionCb;
+
+    bool m_isLegacyModel{false};
 };
 
 } // namespace jpi_edm

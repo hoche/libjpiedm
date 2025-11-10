@@ -1,5 +1,4 @@
 set(PARSEEDM_CASES
-    700_4cyl
     830_6cyl
     930_6cyl
     930_6cyl_turbo

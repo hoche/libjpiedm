@@ -7,6 +7,7 @@
  */
 
 #include <algorithm>
+#include <cctype>
 #include <bitset>
 #include <cstring>
 #include <iomanip>
@@ -191,6 +192,7 @@ void FlightFile::parseFileHeaders(std::istream &stream, bool strictChecksums)
     bool end_of_headers = false;
     unsigned long theLHeaderVal = 0;
     Metadata metadata;
+    m_isLegacyModel = false;
 
     // Ensure header parsing starts with a clean slate when the same FlightFile
     // instance is reused (e.g. detectFlights() followed by processFile()).
@@ -223,7 +225,13 @@ void FlightFile::parseFileHeaders(std::istream &stream, bool strictChecksums)
             throw std::invalid_argument{msg.str()};
         }
 
-        if (strictChecksums) {
+        char headerType = (line[0] == '$' && line[1] != '\0') ? line[1] : '\0';
+        bool enforceStrictChecksum = strictChecksums;
+        if (m_isLegacyModel && headerType == 'D') {
+            enforceStrictChecksum = false;
+        }
+
+        if (enforceStrictChecksum) {
             try {
                 validateHeaderChecksum(lineno, line);
             } catch (const std::invalid_argument &ex) {
@@ -250,13 +258,23 @@ void FlightFile::parseFileHeaders(std::istream &stream, bool strictChecksums)
             break;
         case 'C': // config info
             metadata.m_configInfo.apply(split_header_line(lineno, line));
+            if (metadata.m_configInfo.edm_model > 0 &&
+                metadata.m_configInfo.edm_model < 800) {
+                m_isLegacyModel = true;
+            }
             break;
         case 'D': // this repeats and gives the ID and bytes for a flight (but
                   // have to multiply bytes by 2)
         {
-            auto flightDataCount = split_header_line(lineno, line);
-            if (flightDataCount.size() > 1) {
-                m_flightDataCounts.push_back(std::pair<int, long>{flightDataCount[0], flightDataCount[1]});
+            try {
+                auto flightDataCount = split_header_line(lineno, line);
+                if (flightDataCount.size() > 1) {
+                    m_flightDataCounts.push_back(std::pair<int, long>{flightDataCount[0], flightDataCount[1]});
+                }
+            } catch (const std::exception &) {
+                if (!m_isLegacyModel) {
+                    throw;
+                }
             }
         } break;
         case 'F': // fuel limits?
@@ -424,7 +442,7 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
     }
     flightHeader->flight_num = ntohs(flightHeader->flight_num);
 
-    if (flightHeader->flight_num != flightId) {
+    if (!m_isLegacyModel && flightHeader->flight_num != flightId) {
         std::stringstream msg;
         msg << "Flight IDs don't match. Offset: " << std::hex << (stream.tellg() - static_cast<std::streamoff>(4L));
 #ifdef DEBUG_FLIGHT_HEADERS
@@ -549,12 +567,16 @@ std::shared_ptr<FlightHeader> FlightFile::parseFlightHeader(std::istream &stream
         throw std::runtime_error("Failed to read checksum from flight header");
     }
     if (!validateBinaryChecksum(stream, startOff, endOff, checksum)) {
-        std::stringstream msg;
-        msg << "checksum failure in flight header ";
+        if (!m_isLegacyModel) {
+            std::stringstream msg;
+            msg << "checksum failure in flight header ";
 #ifdef DEBUG_FLIGHTS
-        std::cout << msg.str() << std::endl;
+            std::cout << msg.str() << std::endl;
 #endif
-        throw std::runtime_error{msg.str()};
+            throw std::runtime_error{msg.str()};
+        } else {
+            std::cerr << "Warning: checksum failure in flight header (ignored for legacy model)\n";
+        }
     }
 
     if (m_flightHeaderCompletionCb) {
@@ -795,7 +817,11 @@ void FlightFile::parseFlights(std::istream &stream)
     auto headerSizeOpt = detectFlightHeaderSize(stream);
 
     if (!headerSizeOpt.has_value()) {
-        throw std::runtime_error("Failed to detect flight header size - invalid file format");
+        if (m_isLegacyModel) {
+            headerSizeOpt = MIN_FLIGHT_HEADER_SIZE;
+        } else {
+            throw std::runtime_error("Failed to detect flight header size - invalid file format");
+        }
     }
 
     std::streamoff headerSize = headerSizeOpt.value();
@@ -876,7 +902,11 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
     auto headerSizeOpt = detectFlightHeaderSize(stream);
 
     if (!headerSizeOpt.has_value()) {
-        throw std::runtime_error("Failed to detect flight header size - invalid file format");
+        if (m_isLegacyModel) {
+            headerSizeOpt = MIN_FLIGHT_HEADER_SIZE;
+        } else {
+            throw std::runtime_error("Failed to detect flight header size - invalid file format");
+        }
     }
 
     std::streamoff headerSize = headerSizeOpt.value();
@@ -974,6 +1004,18 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
             m_flightCompletionCb = savedFlightCompletionCb;
             return;
         } else if (!isLastFlight) {
+            if (m_isLegacyModel) {
+                auto flight = std::make_shared<Flight>(m_metadata);
+                flight->m_flightHeader = flightHeader;
+
+                while ((stream.tellg() - startOff) < estimatedTotalBytes) {
+                    if (!stream.good()) {
+                        throw std::runtime_error("Stream error while reading flight data during legacy parsing");
+                    }
+                    parseFlightDataRec(stream, flight);
+                }
+                continue;
+            }
             // Non-target flight - skip data efficiently with neighborhood search
             // We've already read headerSize + 1 bytes (header + checksum)
             // Calculate how much data remains
