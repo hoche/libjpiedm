@@ -1,0 +1,138 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 10,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build-${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug Build",
+      "description": "Standard debug build without sanitizers",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build"
+    },
+    {
+      "name": "asan",
+      "displayName": "AddressSanitizer",
+      "description": "Build with AddressSanitizer (detects memory errors)",
+      "inherits": "base",
+      "cacheVariables": {
+        "USE_ASAN": "ON"
+      }
+    },
+    {
+      "name": "tsan",
+      "displayName": "ThreadSanitizer",
+      "description": "Build with ThreadSanitizer (detects data races)",
+      "inherits": "base",
+      "cacheVariables": {
+        "USE_TSAN": "ON"
+      }
+    },
+    {
+      "name": "ubsan",
+      "displayName": "UndefinedBehaviorSanitizer",
+      "description": "Build with UndefinedBehaviorSanitizer",
+      "inherits": "base",
+      "cacheVariables": {
+        "USE_UBSAN": "ON"
+      }
+    },
+    {
+      "name": "lsan",
+      "displayName": "LeakSanitizer",
+      "description": "Build with LeakSanitizer (detects memory leaks)",
+      "inherits": "base",
+      "cacheVariables": {
+        "USE_LSAN": "ON"
+      }
+    },
+    {
+      "name": "msan",
+      "displayName": "MemorySanitizer",
+      "description": "Build with MemorySanitizer (clang only)",
+      "inherits": "base",
+      "cacheVariables": {
+        "USE_MSAN": "ON"
+      }
+    },
+    {
+      "name": "asan-ubsan",
+      "displayName": "ASan + UBSan",
+      "description": "Build with AddressSanitizer and UndefinedBehaviorSanitizer",
+      "inherits": "base",
+      "cacheVariables": {
+        "USE_ASAN": "ON",
+        "USE_UBSAN": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan"
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan"
+    },
+    {
+      "name": "ubsan",
+      "configurePreset": "ubsan"
+    },
+    {
+      "name": "lsan",
+      "configurePreset": "lsan"
+    },
+    {
+      "name": "msan",
+      "configurePreset": "msan"
+    },
+    {
+      "name": "asan-ubsan",
+      "configurePreset": "asan-ubsan"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "default",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan"
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan"
+    },
+    {
+      "name": "ubsan",
+      "configurePreset": "ubsan"
+    },
+    {
+      "name": "lsan",
+      "configurePreset": "lsan"
+    },
+    {
+      "name": "msan",
+      "configurePreset": "msan"
+    }
+  ]
+}

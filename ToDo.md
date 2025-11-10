@@ -20,10 +20,6 @@
     - ~~fix main data record parser~~
     - figure out why NineCyl sample isn't reading right
 - ~~handle protocol version~~
-- Skip function - had a hard time with this, but should be able to
-  figure it out by jumping to flightWordsx2 or flightWordsx2 + 1 and then
-  looking for the flight number.
-- fix callbacks - should use std::shared_ptr, not just send the value
 - refactor
     - File header parser can be separate from FileStream object
     - Flight parser, which is composed of:
@@ -39,6 +35,13 @@
         i.e. low/high bytes combined together, things that need multiplying
         by 10 done, etc. Conversion from C to F (or vice versa) should not
         be done here.
+- Skip function - had a hard time with this, but should be able to
+  figure it out by jumping to flightWordsx2 or flightWordsx2 + 1 and then
+  looking for the flight number.
+- Error handling
+    - bad file syntax, make sure it doesn't crash
+    - other errors - throw exceptions? have parse log?
+- fix callbacks - should use std::shared_ptr, not just send the value
 - sanity check results
     - graph in excel just to look
 - Finish figuring out GPS coords

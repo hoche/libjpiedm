@@ -41,9 +41,13 @@ Fields: VoltsHi\*10,VoltsLo\*10,DIF,CHT,CLD,TIT,OilHi,OilLo
 
 #### $F - Fuel flow config and limits.
 
-Fields: empty,main_tank_size,aux_tank_size,kfactor,kfactor
+Fields: units,fuel_onboard,fuel_warning_level,kfactor,kfactor
 
-The K-factor is the number of pulses expected for every one volumetric unit of
+units: 0 = GPH, 1 = LPH (Not sure on this.)
+fuel_aboard: self explanatory
+fuel_warning_level: the remaining-fuel level at which to issue a warning
+
+A K-factor is the number of pulses expected for every one volumetric unit of
 fluid passing through a given flow meter.
 
     $F,0,999,  0,2950,2950*53

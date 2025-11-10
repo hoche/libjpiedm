@@ -8,12 +8,17 @@
  * This is just an example.
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <sstream>
 #include <vector>
 
@@ -23,97 +28,116 @@
 #include <unistd.h>
 #endif
 
-#include "EDMFileHeaders.hpp"
-#include "EDMFlight.hpp"
-#include "EDMFlightFile.hpp"
+#include "FileHeaders.hpp"
+#include "Flight.hpp"
+#include "FlightFile.hpp"
+#include "MetricId.hpp"
+#include "ProtocolConstants.hpp"
 
-using jpi_edm::EDMFlightRecord;
+using namespace jpi_edm;
 
 static bool g_verbose = false;
 
-void printFlightInfo(jpi_edm::EDMFlightHeader &hdr, unsigned long stdReqs, unsigned long fastReqs,
+void printFlightInfo(std::shared_ptr<jpi_edm::FlightHeader> &hdr, unsigned long stdReqs, unsigned long fastReqs,
                      std::ostream &outStream)
 {
     std::tm local;
 #ifdef _WIN32
-    time_t flightStartTime = _mkgmtime(&hdr.startDate);
+    time_t flightStartTime = _mkgmtime(&hdr->startDate);
     gmtime_s(&local, &flightStartTime);
 #else
-    time_t flightStartTime = timegm(&hdr.startDate);
-    local = *gmtime(&flightStartTime);
+    time_t flightStartTime = timegm(&hdr->startDate);
+    gmtime_r(&flightStartTime, &local);
 #endif
 
-    auto min = (fastReqs / 60) + (stdReqs * hdr.interval) / 60;
-    auto hrs = 0.01 + static_cast<float>(min) / 60;
+    auto min = (fastReqs / MINUTES_PER_HOUR) + (stdReqs * hdr->interval) / MINUTES_PER_HOUR;
+    auto hrs = HOURS_ROUNDING_OFFSET + static_cast<float>(min) / MINUTES_PER_HOUR;
     // min = min % 60;
 
-    outStream << "Flt #" << hdr.flight_num << " - ";
+    outStream << "Flt #" << hdr->flight_num << " - ";
     // outStream << hrs << ":" << std::setfill('0') << std::setw(2) << min << " Hours";
     outStream << std::fixed << std::setprecision(2) << hrs << " Hours";
-    outStream << " @ " << hdr.interval << " sec";
+    outStream << " @ " << hdr->interval << " sec";
     outStream << " " << std::put_time(&local, "%m/%d/%Y") << " " << std::put_time(&local, "%T");
     outStream << std::endl;
 }
 
 void printLatLng(int measurement, std::ostream &outStream)
 {
-    int hrs = measurement / 6000;
-    float min = float(abs(measurement) % 6000) / 100;
-    outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(3) << min << ",";
+    // Comment out for now
+    outStream << "00.00,";
+    // int hrs = measurement / GPS_COORD_SCALE_DENOMINATOR;
+    // float min = float(abs(measurement) % GPS_COORD_SCALE_DENOMINATOR) / GPS_MINUTES_DECIMAL_DIVISOR;
+    // outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(2) << min <<
+    // ",";
 }
 
-// Ugh. these should all be a macro or an inline that range checks.
-void printFlightDataRecord(const jpi_edm::EDMFlightRecord &rec, std::ostream &outStream)
+// Safe metric accessor with default value
+inline float getMetric(const std::map<MetricId, float> &metrics, MetricId id, float defaultValue = 0.0f)
 {
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT1) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT2) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT3) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT4) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT5) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::EGT6) << ", ";
+    auto it = metrics.find(id);
+    return (it != metrics.end()) ? it->second : defaultValue;
+}
 
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT1) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT2) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT3) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT4) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT5) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CHT6) << ", ";
+void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
+{
+    outStream << std::fixed << std::setprecision(0);
 
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::TIT1) << ", ";
+    outStream << getMetric(rec->m_metrics, EGT11) << ",";
+    outStream << getMetric(rec->m_metrics, EGT12) << ",";
+    outStream << getMetric(rec->m_metrics, EGT13) << ",";
+    outStream << getMetric(rec->m_metrics, EGT14) << ",";
+    outStream << getMetric(rec->m_metrics, EGT15) << ",";
+    outStream << getMetric(rec->m_metrics, EGT16) << ",";
 
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::OAT) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::DIF) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::CLD) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::MAP)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::RPM) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::HP) << ",";
+    outStream << getMetric(rec->m_metrics, CHT11) << ",";
+    outStream << getMetric(rec->m_metrics, CHT12) << ",";
+    outStream << getMetric(rec->m_metrics, CHT13) << ",";
+    outStream << getMetric(rec->m_metrics, CHT14) << ",";
+    outStream << getMetric(rec->m_metrics, CHT15) << ",";
+    outStream << getMetric(rec->m_metrics, CHT16) << ",";
 
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::FF)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::FP)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::OILP) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::VLT)) / 10.0) << ", ";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::AMPS) << ", ";
+    outStream << getMetric(rec->m_metrics, TIT11) << ",";
+    outStream << getMetric(rec->m_metrics, TIT12) << ",";
 
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::OILT) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::FUSD)) / 10.0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::RFL)) / 10,0) << ",";
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::LFL)) / 10.0) << ",";
+    outStream << getMetric(rec->m_metrics, OAT) << ",";
+    outStream << getMetric(rec->m_metrics, DIF1) << ",";
+    outStream << getMetric(rec->m_metrics, CLD1) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, MAP1) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, RPM1) << ",";
+    outStream << getMetric(rec->m_metrics, HP1) << ",";
 
-    outStream << std::fixed << std::setprecision(1) << (static_cast<float>(rec.m_dataMap.at(EDMFlightRecord::Measurement::HRS)) / 10.0) << ",";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::SPD) << ",";
-    outStream << rec.m_dataMap.at(EDMFlightRecord::Measurement::ALT) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FF11) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FF12) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FP1) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, OILP1) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, VOLT1) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, AMP1) << ",";
 
-    printLatLng(rec.m_dataMap.at(EDMFlightRecord::Measurement::LAT), outStream);
-    printLatLng(rec.m_dataMap.at(EDMFlightRecord::Measurement::LNG), outStream);
+    outStream << getMetric(rec->m_metrics, OILT1) << ",";
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD11) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD12, -1.0f) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, LMAIN) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, RMAIN) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, LAUX) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, RAUX) << "," << std::setprecision(0);
 
-    switch (rec.m_dataMap.at(EDMFlightRecord::Measurement::MARK)) {
-    case 0x02:
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, HRS1) << "," << std::setprecision(0);
+    outStream << getMetric(rec->m_metrics, SPD, -1.0f) << ",";
+    outStream << getMetric(rec->m_metrics, ALT, -1.0f) << ",";
+
+    printLatLng(static_cast<int>(getMetric(rec->m_metrics, LAT)), outStream);
+    printLatLng(static_cast<int>(getMetric(rec->m_metrics, LNG)), outStream);
+
+    int markVal = static_cast<int>(getMetric(rec->m_metrics, MARK));
+    switch (markVal) {
+    case MARK_START:
         outStream << "[";
         break;
-    case 0x03:
+    case MARK_END:
         outStream << "]";
         break;
-    case 0x04:
+    case MARK_UNKNOWN:
         outStream << "<";
         break;
     }
@@ -121,85 +145,139 @@ void printFlightDataRecord(const jpi_edm::EDMFlightRecord &rec, std::ostream &ou
     outStream << "\n";
 }
 
-void printFlightData(std::istream &stream, int flightId, std::ostream &outStream)
+void printFlightData(std::istream &stream, std::optional<int> flightId, std::ostream &outStream)
 {
-    jpi_edm::EDMFlightFile ff;
-    jpi_edm::EDMFlightHeader hdr;
+    jpi_edm::FlightFile ff;
+    std::shared_ptr<jpi_edm::FlightHeader> hdr;
     time_t recordTime;
 
-    if (g_verbose) {
-        ff.setMetaDataCompletionCb([&outStream](jpi_edm::EDMMetaData md) { md.dump(outStream); });
-    }
-
-    ff.setFlightHeaderCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::EDMFlightHeader fh) {
-        hdr = fh;
-
-        if (flightId != -1 && hdr.flight_num != flightId) {
+    if (flightId.has_value()) {
+        try {
+            jpi_edm::FlightFile flightDetector;
+            auto flights = flightDetector.detectFlights(stream);
+            bool found = std::any_of(flights.begin(), flights.end(),
+                                     [&](const auto &info) { return info.flightNumber == flightId.value(); });
+            stream.clear();
+            stream.seekg(0);
+            if (!found) {
+                outStream << "Flight #" << flightId.value() << " not found in file" << std::endl;
+                return;
+            }
+        } catch (const std::exception &ex) {
+            stream.clear();
+            stream.seekg(0);
+            std::cerr << "Error detecting flights: " << ex.what() << std::endl;
             return;
         }
+    } else {
+        stream.clear();
+        stream.seekg(0);
+    }
+
+    if (g_verbose) {
+        ff.setMetadataCompletionCb([&outStream](std::shared_ptr<jpi_edm::Metadata> md) { md->dump(outStream); });
+    }
+
+    ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
+        hdr = fh;
 
         std::tm local;
 #ifdef _WIN32
-        recordTime = _mkgmtime(&hdr.startDate);
+        recordTime = _mkgmtime(&hdr->startDate);
         gmtime_s(&local, &recordTime);
 #else
-        recordTime = timegm(&hdr.startDate);
-        local = *gmtime(&recordTime);
+        recordTime = timegm(&hdr->startDate);
+        gmtime_r(&recordTime, &local);
 #endif
 
         if (g_verbose) {
-            outStream << "Flt #" << hdr.flight_num << "\n";
-            outStream << "Interval: " << hdr.interval << " sec\n";
-            outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " " << std::put_time(&local, "%T")
-                    << "\n";
+            outStream << "Flt #" << hdr->flight_num << "\n";
+            outStream << "Interval: " << hdr->interval << " sec\n";
+            outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
+                      << std::put_time(&local, "%T") << "\n";
         }
 
         outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
-                  << ",T1,OAT,DIF,CLD,MAP,RPM,HP,FF,FP,OILP,BAT,AMP,OILT"
-                  << ",USD,RFL,LFL,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
+                  << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
+                  << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
     });
-    
 
-    ff.setFlightRecordCompletionCb([&flightId, &hdr, &recordTime, &outStream](jpi_edm::EDMFlightRecord rec) {
-        if (flightId != -1 && hdr.flight_num != flightId) {
+    ff.setFlightRecordCompletionCb([&hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
+        // Check if hdr is valid before dereferencing
+        if (!hdr) {
+            std::cerr << "Warning: Flight record callback invoked without flight header" << std::endl;
             return;
         }
 
-        std::tm timeinfo = *std::gmtime(&recordTime);
+        std::tm timeinfo;
+#ifdef _WIN32
+        gmtime_s(&timeinfo, &recordTime);
+#else
+        gmtime_r(&recordTime, &timeinfo);
+#endif
 
-        timeinfo.tm_year = 2025 - 1900;
-        timeinfo.tm_mon = 5;
-        timeinfo.tm_mday = 1;
+        // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
+        // crash)
+        outStream << rec->m_recordSeq - 1 << "," << std::setfill('0') << std::setw(2) << (timeinfo.tm_mon + 1) << '/'
+                  << std::setfill('0') << std::setw(2) << timeinfo.tm_mday << '/' << (timeinfo.tm_year + TM_YEAR_BASE)
+                  << "," << std::put_time(&timeinfo, "%T") << ",";
+        printFlightMetricsRecord(rec, outStream);
 
-        // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but crash)
-        outStream << rec.m_recordSeq << ","
-                << (timeinfo.tm_mon + 1) << '/'
-                << timeinfo.tm_mday << '/'
-                << (timeinfo.tm_year + 1900) << ","
-                << std::put_time(&timeinfo, "%T")
-                << ", ";
-        printFlightDataRecord(rec, outStream);
-
-        rec.m_isFast ? ++recordTime : recordTime += hdr.interval;
+        rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
     });
 
-    // Now do the work
-    ff.processFile(stream);
+    // Now do the work - use the new single-flight API if a specific flight is requested
+    if (flightId.has_value()) {
+        ff.processFile(stream, flightId.value());
+    } else {
+        ff.processFile(stream);
+    }
 }
 
 void printFlightList(std::istream &stream, std::ostream &outStream)
 {
-    jpi_edm::EDMFlightFile ff;
-    jpi_edm::EDMFlightHeader hdr;
+    jpi_edm::FlightFile ff;
 
-    ff.setFlightHeaderCompletionCb([&hdr](jpi_edm::EDMFlightHeader fh) { hdr = fh; });
-    ff.setFlightCompletionCb([&hdr, &outStream](unsigned long stdReqs, unsigned long fastReqs) {
-        printFlightInfo(hdr, stdReqs, fastReqs, outStream);
-    });
-    ff.processFile(stream);
+    try {
+        // Use the efficient detectFlights() to get flight information without parsing flight data
+        std::shared_ptr<jpi_edm::Metadata> metadata;
+        auto flights = ff.detectFlights(stream, metadata);
+
+        if (flights.empty()) {
+            outStream << "No flights found in file\n";
+            return;
+        }
+
+        // For each detected flight, we need to parse it to get full details for printFlightInfo
+        // Reset the stream to process flights one by one
+        stream.clear();
+        stream.seekg(0);
+
+        std::shared_ptr<jpi_edm::FlightHeader> hdr;
+        ff.setFlightHeaderCompletionCb([&hdr](std::shared_ptr<jpi_edm::FlightHeader> fh) { hdr = fh; });
+        ff.setFlightCompletionCb([&hdr, &outStream](unsigned long stdReqs, unsigned long fastReqs) {
+            printFlightInfo(hdr, stdReqs, fastReqs, outStream);
+        });
+
+        // Parse all flights
+        try {
+            ff.processFile(stream);
+        } catch (const std::exception &ex) {
+            std::cerr << "Warning: Failed to parse flights with full detail (" << ex.what()
+                      << "). Falling back to header-only listing.\n";
+            for (const auto &flight : flights) {
+                outStream << "Flt #" << flight.flightNumber << " - approx " << flight.recordCount
+                          << " records (details unavailable)\n";
+            }
+        }
+
+    } catch (const std::exception &ex) {
+        std::cerr << "Error listing flights: " << ex.what() << "\n";
+    }
 }
 
-void processFiles(std::vector<std::string> &filelist, int flightId, bool onlyListFlights, std::string &outputFile)
+void processFiles(std::vector<std::string> &filelist, std::optional<int> flightId, bool onlyListFlights,
+                  std::string &outputFile)
 {
     for (auto &&filename : filelist) {
         if (filelist.size() > 1) {
@@ -259,36 +337,44 @@ int main(int argc, char *argv[])
     bool onlyListFlights{false};
     std::vector<std::string> filelist{};
     std::string outputFile{};
-    int flightId{-1};
+    std::optional<int> flightId; // std::nullopt means all flights
 
     int c;
     while ((c = getopt(argc, argv, "hf:lo:v")) != -1) {
         switch (c) {
         case 'h':
-            if (optarg) {
-                showHelp(argv[0]);
-                return 0;
-            }
-            break;
+	    showHelp(argv[0]);
+            return 0;
         case 'f':
             if (!optarg) {
                 showHelp(argv[0]);
                 return 0;
             }
-            flightId = atoi(optarg);
+            try {
+                size_t idx = 0;
+                int flightNum = std::stoi(optarg, &idx);
+                if (idx != strlen(optarg)) {
+                    std::cerr << "Error: Invalid flight number format (contains non-numeric characters): " << optarg
+                              << std::endl;
+                    return 1;
+                }
+                if (flightNum < 0) {
+                    std::cerr << "Error: Flight number must be non-negative" << std::endl;
+                    return 1;
+                }
+                flightId = flightNum;
+            } catch (const std::invalid_argument &) {
+                std::cerr << "Error: Flight number must be a valid integer: " << optarg << std::endl;
+                return 1;
+            } catch (const std::out_of_range &) {
+                std::cerr << "Error: Flight number out of range: " << optarg << std::endl;
+                return 1;
+            }
             break;
         case 'l':
-            if (optarg) {
-                showHelp(argv[0]);
-                return 0;
-            }
             onlyListFlights = true;
             break;
         case 'o':
-            if (!optarg) {
-                showHelp(argv[0]);
-                return 0;
-            }
             outputFile = optarg;
             break;
         case 'v':

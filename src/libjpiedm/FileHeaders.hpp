@@ -1,0 +1,225 @@
+/**
+ * Copyright @ 2024 Michel Hoche-Mong
+ * SPDX-License-Identifier: CC-BY-4.0
+ *
+ * @brief Various objects created from the text headers of an EDM flight file.
+ * These have no data about a specific flight, just the generic data that was
+ * created when the file was created, i.e. the date, whether temps are in C or
+ * F, maximum values recorded, etc.
+ *
+ * Included are:
+ *
+ * ConfigLimits
+ *      Maximum values recorded.
+ *
+ * ConfigInfo
+ *       Model, firmware version, etc. Also contains a flags field which was
+ * used to indicate which kinds of measurement were captured, but may be
+ * obsolete with the new format (it only is 32-bits and the new format supports
+ * up to 128 different measurements).
+ *
+ * FuelLimits
+ *      Fueltank sizes and fuel flow scaling rates (K-factors)
+ *
+ * FuelRate
+ *      Maximum rate of fuel flow? Not sure.
+ *
+ * TimeStamp
+ *      The date and time the file was created for downloading from the EDM.
+ */
+
+#pragma once
+
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <tuple>
+#include <vector>
+
+namespace jpi_edm {
+
+/**
+ * Base class for all the FileHeader classes
+ */
+class FileHeader
+{
+  public:
+    FileHeader() = default;
+    virtual ~FileHeader() = default;
+
+    // Explicitly handle copy and move operations
+    FileHeader(const FileHeader &) = default;
+    FileHeader &operator=(const FileHeader &) = default;
+    FileHeader(FileHeader &&) = default;
+    FileHeader &operator=(FileHeader &&) = default;
+
+    /* Throws an exception if an insufficient number of arguments
+     * are in the vector.
+     */
+    virtual void apply(const std::vector<unsigned long> &values) = 0;
+    virtual void dump(std::ostream &outStream) const = 0;
+};
+
+/**
+ * $A record, configured limits
+ *
+ * Format:
+ * VoltsHi*10,VoltsLo*10,DIF,CHT,CLD,TIT,OilHi,OilLo
+ *
+ * Example:
+ * $A, 305,230,500,415,60,1650,230,90*7F
+ */
+class ConfigLimits : public FileHeader
+{
+  public:
+    ConfigLimits() = default;
+    virtual ~ConfigLimits() = default;
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
+
+  public:
+    // These are all alarm values
+    unsigned long volts_hi{0};
+    unsigned long volts_lo{0};
+    unsigned long egt_diff{0};
+    unsigned long cht_temp_hi{0};
+    unsigned long shock_cooling_cld{0};
+    unsigned long turbo_inlet_temp_hi{0};
+    unsigned long oil_temp_hi{0};
+    unsigned long oil_temp_lo{0};
+};
+
+/**
+ * $C record, config info (only partially known)
+ *
+ * Format:
+ * model#, feature flags lo, feature flags hi, unknown flags, firmware version
+ *
+ * Feature flags is a 32-bit set of flags.
+ * -m-d fpai r2to eeee eeee eccc cccc cc-b
+ *
+ * e = egt (up to 9 cyls)
+ * c = cht (up to 9 cyls)
+ * d = probably cld, or maybe engine temps unit (1=F)
+ * b = bat
+ * o = oil
+ * t = tit1
+ * 2 = tit2
+ * a = OAT
+ * f = fuel flow
+ * r = CDT (also CARB - not distinguished in the CSV output)
+ * i = IAT
+ * m = MAP
+ * p = RPM
+ * *** e and c may be swapped (but always exist in tandem)
+ * *** d and b may be swapped (but seem to exist in tandem)
+ * *** m, p and i may be swapped among themselves, haven't seen
+ *     enough independent examples to know for sure.
+ *
+ * Example:
+ * $C,700,63741, 6193, 1552, 292*58
+ */
+class ConfigInfo : public FileHeader
+{
+  public:
+    ConfigInfo() = default;
+    virtual ~ConfigInfo() = default;
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
+
+    static constexpr int MAX_CYLS = 9; // up to 9 cyls possible
+
+  public:
+    unsigned long edm_model{0};
+    uint32_t flags{0};
+    unsigned long unk1{0};
+    unsigned long unk2{0};
+    unsigned long unk3{0};
+    unsigned long firmware_version{0}; // n.nn * 100
+    unsigned long build_maj{0};
+    unsigned long build_min{0};
+
+    // derived values
+    bool isTwin{false};
+    int numCylinders{4};
+};
+
+/**
+ * $F = Fuel flow config and limits.
+ *
+ * Format:
+ * units,full,warning,kfactor,kfactor
+ *
+ * units: 0 = GPH, 1 = LPH?
+ * full: max fuel onboard
+ * warning: low fuel warning level
+ * K factor is the number of pulses expected for every one volumetric unit of
+ * fluid passing through a given flow meter.
+ *
+ * Example:
+ * $F,0,999,  0,2950,2950*53
+ */
+class FuelLimits : public FileHeader
+{
+  public:
+    FuelLimits() = default;
+    virtual ~FuelLimits() = default;
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
+
+  public:
+    unsigned long units{0};
+    unsigned long main_tank_size{0};
+    unsigned long aux_tank_size{0};
+    unsigned long k_factor_1{0};
+    unsigned long k_factor_2{0};
+};
+
+/**
+ * $P = Unknown
+ *
+ * Format:
+ * single value
+ *
+ * Example:
+ * $P, 2*6E
+ */
+class ProtoHeader : public FileHeader
+{
+  public:
+    ProtoHeader() = default;
+    virtual ~ProtoHeader() = default;
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
+
+  public:
+    unsigned long value{0};
+};
+
+/**
+ * $T = timestamp of download, fielded (Times are UTC)
+ *
+ * Format:
+ * MM,DD,YY,hh,mm,?? maybe some kind of seq num but not strictly sequential?
+ *
+ * Example:
+ *   $T, 5,13, 5,23, 2, 2222*65
+ */
+class TimeStamp : public FileHeader
+{
+  public:
+    TimeStamp() = default;
+    virtual ~TimeStamp() = default;
+    virtual void apply(const std::vector<unsigned long> &values);
+    virtual void dump(std::ostream &outStream) const;
+
+  public:
+    unsigned long mon{0};
+    unsigned long day{0};
+    unsigned long yr{0};
+    unsigned long hh{0};
+    unsigned long mm{0};
+    unsigned long flight_num{0};
+};
+
+} // namespace jpi_edm
