@@ -50,6 +50,8 @@ namespace jpi_edm {
 #define DEBUG_FLIGHT_HEADERS
 #endif
 
+static const int MARK_IDX = 16; // bit index for fast/slow recording mode
+
 // Use constant from ProtocolConstants.hpp
 const int maxheaderlen = MAX_HEADER_LINE_LENGTH;
 
