@@ -47,7 +47,7 @@ void printFlightInfo(std::shared_ptr<jpi_edm::FlightHeader> &hdr, unsigned long 
     gmtime_s(&local, &flightStartTime);
 #else
     time_t flightStartTime = timegm(&hdr->startDate);
-    local = *gmtime(&flightStartTime);
+    gmtime_r(&flightStartTime, &local);
 #endif
 
     auto min = (fastReqs / MINUTES_PER_HOUR) + (stdReqs * hdr->interval) / MINUTES_PER_HOUR;
@@ -187,7 +187,7 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
         gmtime_s(&local, &recordTime);
 #else
         recordTime = timegm(&hdr->startDate);
-        local = *gmtime(&recordTime);
+        gmtime_r(&recordTime, &local);
 #endif
 
         if (g_verbose) {
@@ -209,7 +209,12 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
             return;
         }
 
-        std::tm timeinfo = *std::gmtime(&recordTime);
+        std::tm timeinfo;
+#ifdef _WIN32
+        gmtime_s(&timeinfo, &recordTime);
+#else
+        gmtime_r(&recordTime, &timeinfo);
+#endif
 
         // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
         // crash)
@@ -338,11 +343,8 @@ int main(int argc, char *argv[])
     while ((c = getopt(argc, argv, "hf:lo:v")) != -1) {
         switch (c) {
         case 'h':
-            if (optarg) {
-                showHelp(argv[0]);
-                return 0;
-            }
-            break;
+	    showHelp(argv[0]);
+            return 0;
         case 'f':
             if (!optarg) {
                 showHelp(argv[0]);
@@ -370,17 +372,9 @@ int main(int argc, char *argv[])
             }
             break;
         case 'l':
-            if (optarg) {
-                showHelp(argv[0]);
-                return 0;
-            }
             onlyListFlights = true;
             break;
         case 'o':
-            if (!optarg) {
-                showHelp(argv[0]);
-                return 0;
-            }
             outputFile = optarg;
             break;
         case 'v':
