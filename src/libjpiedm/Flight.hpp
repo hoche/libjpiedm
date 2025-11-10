@@ -44,7 +44,7 @@ class FlightHeader
         gmtime_s(&local, &recordTime);
 #else
         time_t recordTime = timegm(&dateCopy);
-        local = *gmtime(&recordTime);
+        gmtime_r(&recordTime, &local);
 #endif
         outStream << "Flight Header:" << "\n    flight_num: " << flight_num << "\n    flags: " << flags << " 0x"
                   << std::hex << flags << std::dec << " b" << std::bitset<32>(flags) << "\n    interval: " << interval
