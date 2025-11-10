@@ -82,19 +82,20 @@ inline float getMetric(const std::map<MetricId, float> &metrics, MetricId id, fl
 void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
 {
     outStream << std::fixed << std::setprecision(0);
-    outStream << rec->m_metrics.at(EGT11) << ",";
-    outStream << rec->m_metrics.at(EGT12) << ",";
-    outStream << rec->m_metrics.at(EGT13) << ",";
-    outStream << rec->m_metrics.at(EGT14) << ",";
-    outStream << rec->m_metrics.at(EGT15) << ",";
-    outStream << rec->m_metrics.at(EGT16) << ",";
 
-    outStream << rec->m_metrics.at(CHT11) << ",";
-    outStream << rec->m_metrics.at(CHT12) << ",";
-    outStream << rec->m_metrics.at(CHT13) << ",";
-    outStream << rec->m_metrics.at(CHT14) << ",";
-    outStream << rec->m_metrics.at(CHT15) << ",";
-    outStream << rec->m_metrics.at(CHT16) << ",";
+    outStream << getMetric(rec->m_metrics, EGT11) << ",";
+    outStream << getMetric(rec->m_metrics, EGT12) << ",";
+    outStream << getMetric(rec->m_metrics, EGT13) << ",";
+    outStream << getMetric(rec->m_metrics, EGT14) << ",";
+    outStream << getMetric(rec->m_metrics, EGT15) << ",";
+    outStream << getMetric(rec->m_metrics, EGT16) << ",";
+
+    outStream << getMetric(rec->m_metrics, CHT11) << ",";
+    outStream << getMetric(rec->m_metrics, CHT12) << ",";
+    outStream << getMetric(rec->m_metrics, CHT13) << ",";
+    outStream << getMetric(rec->m_metrics, CHT14) << ",";
+    outStream << getMetric(rec->m_metrics, CHT15) << ",";
+    outStream << getMetric(rec->m_metrics, CHT16) << ",";
 
     outStream << getMetric(rec->m_metrics, TIT11) << ",";
     outStream << getMetric(rec->m_metrics, TIT12) << ",";
