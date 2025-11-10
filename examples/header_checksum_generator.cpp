@@ -15,7 +15,7 @@ unsigned int calculateChecksum(const std::string &payload)
     }
     return cs & 0xFF;
 }
-}
+} // namespace
 
 int main(int argc, char **argv)
 {
