@@ -1,22 +1,20 @@
-add_test(NAME 830_6cyl-run
-    COMMAND parseedmlog -o 830_6cyl.out
-    ${CMAKE_CURRENT_SOURCE_DIR}/830_6cyl.jpi)
+set(PARSEEDM_CASES
+    700_4cyl
+    830_6cyl
+    930_6cyl
+    930_6cyl_turbo
+    960_4cyl_twin
+)
 
-
-add_test(830_6cyl-cmp
-    ${CMAKE_COMMAND} -E compare_files
-    830_6cyl.out
-    ${CMAKE_CURRENT_SOURCE_DIR}/830_6cyl.expected)
-
-add_test(NAME 930_6cyl-run
-    COMMAND parseedmlog -o 930_6cyl.out
-    ${CMAKE_CURRENT_SOURCE_DIR}/930_6cyl.jpi)
-
-
-add_test(930_6cyl-cmp
-    ${CMAKE_COMMAND} -E compare_files
-    930_6cyl.out
-    ${CMAKE_CURRENT_SOURCE_DIR}/930_6cyl.expected)
+foreach(case ${PARSEEDM_CASES})
+    add_test(NAME ${case}
+        COMMAND ${CMAKE_COMMAND}
+            -DROOTNAME=${case}
+            -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+            -DBINARY_DIR=${CMAKE_CURRENT_BINARY_DIR}
+            -DPARSEEDMLOG_EXECUTABLE=$<TARGET_FILE:parseedmlog>
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/run_parse_and_compare.cmake)
+endforeach()
 
 
 add_test(tool_build
@@ -28,16 +26,7 @@ add_test(tool_build
 set_tests_properties(tool_build
     PROPERTIES FIXTURES_SETUP tool_fixture)
 
-set_tests_properties(930_6cyl-run
-    PROPERTIES FIXTURES_REQUIRED tool_fixture)
-set_tests_properties(930_6cyl-run
-    PROPERTIES FIXTURES_SETUP 930_6cyl_fixture)
-set_tests_properties(930_6cyl-cmp
-    PROPERTIES FIXTURES_REQUIRED 930_6cyl_fixture)
-
-set_tests_properties(830_6cyl-run
-    PROPERTIES FIXTURES_REQUIRED tool_fixture)
-set_tests_properties(830_6cyl-run
-    PROPERTIES FIXTURES_SETUP 930_6cyl_fixture)
-set_tests_properties(830_6cyl-cmp
-    PROPERTIES FIXTURES_REQUIRED 830_6cyl_fixture)
+foreach(case ${PARSEEDM_CASES})
+    set_tests_properties(${case}
+        PROPERTIES FIXTURES_REQUIRED tool_fixture)
+endforeach()
