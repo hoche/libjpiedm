@@ -234,7 +234,7 @@ void FlightFile::parseFileHeaders(std::istream &stream, bool strictChecksums)
         if (enforceStrictChecksum) {
             try {
                 validateHeaderChecksum(lineno, line);
-            } catch (const std::invalid_argument &ex) {
+            } catch (const std::invalid_argument &) {
                 throw;
             }
         } else {

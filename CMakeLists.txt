@@ -73,6 +73,9 @@ if(DEBUG_VERBOSE)
   target_compile_definitions(jpiedm PUBLIC DEBUG_FLIGHTS=1 DEBUG_FLIGHT_HEADERS=1 DEBUG_FLIGHT_RECORD=1)
 endif()
 
+if(WIN32)
+    target_link_libraries(jpiedm PUBLIC Ws2_32.lib)
+endif()
 
 target_include_directories(jpiedm
     PUBLIC src/libjpiedm
