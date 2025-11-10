@@ -94,8 +94,10 @@ void ConfigInfo::apply(const std::vector<unsigned long> &values)
 
     uint32_t mask = CYLINDER_FLAG_START_MASK;
     unsigned n = 0;
-    while (n < MAX_CYLS && (flags & mask)) {
-        n++;
+    for (unsigned cyl = 0; cyl < MAX_CYLS; ++cyl) {
+        if (flags & mask) {
+            ++n;
+        }
         mask <<= 1;
     }
     numCylinders = n;

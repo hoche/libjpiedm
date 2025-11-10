@@ -69,6 +69,17 @@ TEST_F(ConfigInfoTest, ApplyWithValidValues) {
     EXPECT_EQ(292, configInfo.firmware_version);
 }
 
+TEST_F(ConfigInfoTest, CountsNonConsecutiveCylinderFlags) {
+    // Select flags where cylinder bits are not contiguous
+    constexpr unsigned long cylinderFlags =
+        (1UL << 2) | (1UL << 3) | (1UL << 4) | (1UL << 6); // skip bit 5
+    std::vector<unsigned long> values = {700, cylinderFlags, 0, 0, 292};
+
+    configInfo.apply(values);
+
+    EXPECT_EQ(4, configInfo.numCylinders);
+}
+
 TEST_F(ConfigInfoTest, ApplyThrowsWithInsufficientValues) {
     std::vector<unsigned long> values = {700, 63741}; // Only 2 values
 
