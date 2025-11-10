@@ -33,7 +33,7 @@
 #include "MetricId.hpp"
 #include "Metrics.hpp"
 
-#define DEBUG_METRICS 1
+//#define DEBUG_METRICS 1
 
 namespace jpi_edm {
 
