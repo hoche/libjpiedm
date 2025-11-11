@@ -72,13 +72,14 @@ class FlightMetricsRecord
 {
   public:
     FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &metricMap)
-        : FlightMetricsRecord(isFast, recordSeq, metricMap, std::set<MetricId>{})
+        : FlightMetricsRecord(isFast, recordSeq, metricMap, std::set<MetricId>{}, std::set<MetricId>{})
     {
     }
 
     FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &metricMap,
-                        const std::set<MetricId> &updatedMetrics)
-        : m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(metricMap), m_updatedMetrics(updatedMetrics)
+                        const std::set<MetricId> &updatedMetrics, const std::set<MetricId> &supportedMetrics)
+        : m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(metricMap), m_updatedMetrics(updatedMetrics),
+          m_supportedMetrics(supportedMetrics)
     {
     }
     virtual ~FlightMetricsRecord() = default;
@@ -94,6 +95,7 @@ class FlightMetricsRecord
     unsigned long m_recordSeq{0};
     std::map<MetricId, float> m_metrics;
     std::set<MetricId> m_updatedMetrics;
+    std::set<MetricId> m_supportedMetrics;
 };
 
 class Flight
@@ -114,6 +116,7 @@ class Flight
     void updateMetrics(const std::map<int, int> &values);
 
     [[nodiscard]] std::shared_ptr<FlightMetricsRecord> getFlightMetricsRecord();
+    [[nodiscard]] bool isMetricSupported(MetricId metricId) const { return m_supportedMetrics.count(metricId) > 0; }
 
   public:
     unsigned long m_recordSeq{0};
@@ -138,6 +141,7 @@ class Flight
     std::map<MetricId, float> m_metricValues;
     std::set<MetricId> m_lastUpdatedMetrics;
     std::map<MetricId, float> m_rawGpsValues;
+    std::set<MetricId> m_supportedMetrics;
 };
 
 } // namespace jpi_edm

@@ -141,6 +141,8 @@ class ConfigInfo : public FileHeader
 
     // derived values
     bool isTwin{false};
+    bool hasTurbo1{false};
+    bool hasTurbo2{false};
     int numCylinders{4};
 };
 

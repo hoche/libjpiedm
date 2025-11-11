@@ -7,8 +7,8 @@
  */
 
 #include <algorithm>
-#include <cctype>
 #include <bitset>
+#include <cctype>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -260,8 +260,7 @@ void FlightFile::parseFileHeaders(std::istream &stream, bool strictChecksums)
             break;
         case 'C': // config info
             metadata.m_configInfo.apply(split_header_line(lineno, line));
-            if (metadata.m_configInfo.edm_model > 0 &&
-                metadata.m_configInfo.edm_model < 800) {
+            if (metadata.m_configInfo.edm_model > 0 && metadata.m_configInfo.edm_model < 800) {
                 m_isLegacyModel = true;
             }
             break;

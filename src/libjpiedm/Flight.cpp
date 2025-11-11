@@ -6,8 +6,8 @@
  */
 
 #include <algorithm>
-#include <iostream>
 #include <cmath>
+#include <iostream>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -24,6 +24,14 @@ namespace jpi_edm {
 Flight::Flight(const std::shared_ptr<Metadata> &metadata) : m_metadata(metadata)
 {
     m_bit2MetricMap = Metrics::getBitToMetricMap(m_metadata->ProtoVersion());
+
+#ifdef DEBUG_FLIGHT_RECORD
+    std::cout << "Using map for proto " << m_metadata->ProtoVersion() << "\n";
+#endif
+
+    for (const auto &[bitIdx, metric] : m_bit2MetricMap) {
+        m_supportedMetrics.insert(metric.getMetricId());
+    }
 
 #ifdef DEBUG_FLIGHT_RECORD
     std::cout << "Using map for proto " << m_metadata->ProtoVersion() << "\n";
@@ -120,8 +128,7 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 
             float combined = 0.0f;
             if (m_flightHeader) {
-                int32_t startCoordinate =
-                    (metricId == LAT) ? m_flightHeader->startLat : m_flightHeader->startLng;
+                int32_t startCoordinate = (metricId == LAT) ? m_flightHeader->startLat : m_flightHeader->startLng;
                 if (startCoordinate != 0) {
                     int combinedInt = startCoordinate - static_cast<int>(std::lround(rawAccum));
                     combined = static_cast<float>(combinedInt);
@@ -193,7 +200,8 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 std::shared_ptr<FlightMetricsRecord> Flight::getFlightMetricsRecord()
 {
     // This is just a copy of the m_metricValues map, with some additional info like fastFlag and seqno
-    return std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq, m_metricValues, m_lastUpdatedMetrics);
+    return std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq, m_metricValues, m_lastUpdatedMetrics,
+                                                 m_supportedMetrics);
 }
 
 } // namespace jpi_edm

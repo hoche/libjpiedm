@@ -70,39 +70,6 @@ void ConfigLimits::dump(std::ostream &outStream) const
               << "\n    oil_temp_lo: " << oil_temp_lo << "\n";
 }
 
-void ConfigInfo::apply(const std::vector<unsigned long> &values)
-{
-    bool short_header{false};
-
-    if (values.size() < CONFIG_INFO_MIN_FIELD_COUNT) {
-        throw std::invalid_argument{"Incorrect number of arguments in $C line"};
-    }
-
-    edm_model = values[0];
-    flags = (values[2] << 16) | (values[1] & CONFIG_FLAGS_LOWER_16_BITS_MASK);
-    unk1 = values[3];
-
-    // iterate backwards from end
-    auto rit = values.rbegin();
-    if (values.size() > 8) {
-        build_min = *rit++;
-        build_maj = *rit++;
-    }
-    firmware_version = *rit++;
-
-    isTwin = (edm_model == EDM_MODEL_760_TWIN || edm_model == EDM_MODEL_960_TWIN);
-
-    uint32_t mask = CYLINDER_FLAG_START_MASK;
-    unsigned n = 0;
-    for (unsigned cyl = 0; cyl < MAX_CYLS; ++cyl) {
-        if (flags & mask) {
-            ++n;
-        }
-        mask <<= 1;
-    }
-    numCylinders = n;
-}
-
 const uint32_t F_BAT = 0x00000001;
 const uint32_t F_C1 = 0x00000004;
 const uint32_t F_C2 = 0x00000008;
@@ -136,6 +103,42 @@ const uint32_t F_MAP = 0x40000000;
 const uint32_t F_DIF = F_E1 | F_E2; // DIF exists if there's more than one EGT
 const uint32_t F_HP = F_RPM | F_MAP | F_FF;
 const uint32_t F_MARK = 0x00000001; // 1 bit always seems to exist
+
+void ConfigInfo::apply(const std::vector<unsigned long> &values)
+{
+    bool short_header{false};
+
+    if (values.size() < CONFIG_INFO_MIN_FIELD_COUNT) {
+        throw std::invalid_argument{"Incorrect number of arguments in $C line"};
+    }
+
+    edm_model = values[0];
+    flags = (values[2] << 16) | (values[1] & CONFIG_FLAGS_LOWER_16_BITS_MASK);
+    unk1 = values[3];
+
+    // iterate backwards from end
+    auto rit = values.rbegin();
+    if (values.size() > 8) {
+        build_min = *rit++;
+        build_maj = *rit++;
+    }
+    firmware_version = *rit++;
+
+    isTwin = (edm_model == EDM_MODEL_760_TWIN || edm_model == EDM_MODEL_960_TWIN);
+
+    hasTurbo1 = ((flags & F_T1) != 0);
+    hasTurbo2 = ((flags & F_T2) != 0);
+
+    uint32_t mask = CYLINDER_FLAG_START_MASK;
+    unsigned n = 0;
+    for (unsigned cyl = 0; cyl < MAX_CYLS; ++cyl) {
+        if (flags & mask) {
+            ++n;
+        }
+        mask <<= 1;
+    }
+    numCylinders = n;
+}
 
 void ConfigInfo::dump(std::ostream &outStream) const
 {

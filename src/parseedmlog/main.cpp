@@ -79,9 +79,8 @@ void printLatLng(float measurement, bool isLatitude, std::ostream &outStream)
     int minutes = remainder / GPS_MINUTES_DECIMAL_DIVISOR;
     int hundredths = remainder % GPS_MINUTES_DECIMAL_DIVISOR;
 
-    outStream << hemisphere << degrees << "."
-              << std::setfill('0') << std::setw(2) << minutes << "."
-              << std::setw(2) << hundredths << ",";
+    outStream << hemisphere << degrees << "." << std::setfill('0') << std::setw(2) << minutes << "." << std::setw(2)
+              << hundredths << ",";
 
     outStream << std::setfill(' ');
 }
@@ -93,7 +92,8 @@ inline float getMetric(const std::map<MetricId, float> &metrics, MetricId id, fl
     return (it != metrics.end()) ? it->second : defaultValue;
 }
 
-void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, std::ostream &outStream)
+void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, bool includeTit1,
+                              bool includeTit2, std::ostream &outStream)
 {
     outStream << std::fixed << std::setprecision(0);
 
@@ -111,8 +111,12 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
     outStream << getMetric(rec->m_metrics, CHT15) << ",";
     outStream << getMetric(rec->m_metrics, CHT16) << ",";
 
-    outStream << getMetric(rec->m_metrics, TIT11) << ",";
-    outStream << getMetric(rec->m_metrics, TIT12) << ",";
+    if (includeTit1) {
+        outStream << getMetric(rec->m_metrics, TIT11) << ",";
+    }
+    if (includeTit2) {
+        outStream << getMetric(rec->m_metrics, TIT12) << ",";
+    }
 
     outStream << getMetric(rec->m_metrics, OAT) << ",";
     outStream << getMetric(rec->m_metrics, DIF1) << ",";
@@ -194,7 +198,11 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
 {
     jpi_edm::FlightFile ff;
     std::shared_ptr<jpi_edm::FlightHeader> hdr;
+    std::shared_ptr<jpi_edm::Metadata> metadata;
     time_t recordTime;
+    bool headerPrinted = false;
+    bool includeTit1 = false;
+    bool includeTit2 = false;
 
     if (flightId.has_value()) {
         try {
@@ -219,9 +227,12 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
         stream.seekg(0);
     }
 
-    if (g_verbose) {
-        ff.setMetadataCompletionCb([&outStream](std::shared_ptr<jpi_edm::Metadata> md) { md->dump(outStream); });
-    }
+    ff.setMetadataCompletionCb([&](std::shared_ptr<jpi_edm::Metadata> md) {
+        metadata = md;
+        if (g_verbose) {
+            md->dump(outStream);
+        }
+    });
 
     ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
         hdr = fh;
@@ -241,13 +252,9 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
             outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
                       << std::put_time(&local, "%T") << "\n";
         }
-
-        outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6"
-                  << ",TIT1,TIT2,OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
-                  << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
     });
 
-    ff.setFlightRecordCompletionCb([&hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
+    ff.setFlightRecordCompletionCb([&](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
         // Check if hdr is valid before dereferencing
         if (!hdr) {
             std::cerr << "Warning: Flight record callback invoked without flight header" << std::endl;
@@ -263,9 +270,25 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
 
         // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
         // crash)
+        if (!headerPrinted) {
+            includeTit1 = (metadata && metadata->m_configInfo.hasTurbo1);
+            includeTit2 = (metadata && metadata->m_configInfo.hasTurbo2);
+
+            outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6";
+            if (includeTit1) {
+                outStream << ",TIT1";
+            }
+            if (includeTit2) {
+                outStream << ",TIT2";
+            }
+            outStream << ",OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
+                      << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
+            headerPrinted = true;
+        }
+
         outStream << rec->m_recordSeq - 1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
                   << (timeinfo.tm_year + TM_YEAR_BASE) << "," << std::put_time(&timeinfo, "%T") << ",";
-        printFlightMetricsRecord(rec, outStream);
+        printFlightMetricsRecord(rec, includeTit1, includeTit2, outStream);
 
         rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
     });
@@ -387,7 +410,7 @@ int main(int argc, char *argv[])
     while ((c = getopt(argc, argv, "hf:lo:v")) != -1) {
         switch (c) {
         case 'h':
-	    showHelp(argv[0]);
+            showHelp(argv[0]);
             return 0;
         case 'f':
             if (!optarg) {
