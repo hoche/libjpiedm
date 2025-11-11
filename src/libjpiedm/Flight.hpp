@@ -16,6 +16,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <set>
 
 #include "Metadata.hpp"
 #include "Metrics.hpp"
@@ -70,8 +71,14 @@ class FlightHeader
 class FlightMetricsRecord
 {
   public:
-    FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &m_metricMap)
-        : m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(m_metricMap)
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &metricMap)
+        : FlightMetricsRecord(isFast, recordSeq, metricMap, std::set<MetricId>{})
+    {
+    }
+
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &metricMap,
+                        const std::set<MetricId> &updatedMetrics)
+        : m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(metricMap), m_updatedMetrics(updatedMetrics)
     {
     }
     virtual ~FlightMetricsRecord() = default;
@@ -86,6 +93,7 @@ class FlightMetricsRecord
     bool m_isFast{false};
     unsigned long m_recordSeq{0};
     std::map<MetricId, float> m_metrics;
+    std::set<MetricId> m_updatedMetrics;
 };
 
 class Flight
@@ -128,6 +136,8 @@ class Flight
     // - Scaled according to Metric.ScaleFactor,
     // - and derived data is calculated (Min/Max elements, for example)
     std::map<MetricId, float> m_metricValues;
+    std::set<MetricId> m_lastUpdatedMetrics;
+    std::map<MetricId, float> m_rawGpsValues;
 };
 
 } // namespace jpi_edm

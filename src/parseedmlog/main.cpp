@@ -9,6 +9,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -62,14 +63,27 @@ void printFlightInfo(std::shared_ptr<jpi_edm::FlightHeader> &hdr, unsigned long 
     outStream << std::endl;
 }
 
-void printLatLng(int measurement, std::ostream &outStream)
+void printLatLng(float measurement, bool isLatitude, std::ostream &outStream)
 {
-    // Comment out for now
-    outStream << "00.00,";
-    // int hrs = measurement / GPS_COORD_SCALE_DENOMINATOR;
-    // float min = float(abs(measurement) % GPS_COORD_SCALE_DENOMINATOR) / GPS_MINUTES_DECIMAL_DIVISOR;
-    // outStream << std::setfill('0') << std::setw(2) << hrs << "." << std::setw(2) << std::setprecision(2) << min <<
-    // ",";
+    if (std::fabs(measurement) < 0.5f) {
+        outStream << "NA,";
+        return;
+    }
+
+    int scaledMeasurement = static_cast<int>(std::lround(measurement));
+    char hemisphere = isLatitude ? (scaledMeasurement >= 0 ? 'N' : 'S') : (scaledMeasurement >= 0 ? 'E' : 'W');
+
+    int absCoordinate = std::abs(scaledMeasurement);
+    int degrees = absCoordinate / GPS_COORD_SCALE_DENOMINATOR;
+    int remainder = absCoordinate % GPS_COORD_SCALE_DENOMINATOR;
+    int minutes = remainder / GPS_MINUTES_DECIMAL_DIVISOR;
+    int hundredths = remainder % GPS_MINUTES_DECIMAL_DIVISOR;
+
+    outStream << hemisphere << degrees << "."
+              << std::setfill('0') << std::setw(2) << minutes << "."
+              << std::setw(2) << hundredths << ",";
+
+    outStream << std::setfill(' ');
 }
 
 // Safe metric accessor with default value
@@ -115,8 +129,25 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
     outStream << getMetric(rec->m_metrics, AMP1) << ",";
 
     outStream << getMetric(rec->m_metrics, OILT1) << ",";
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD11) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD12, -1.0f) << "," << std::setprecision(0);
+    {
+        auto usd = getMetric(rec->m_metrics, FUSD11, -1.0f);
+        if (usd < 0.0f) {
+            outStream << "NA,";
+        } else {
+            outStream << std::setprecision(1) << usd << ",";
+        }
+        outStream << std::setprecision(0);
+    }
+
+    {
+        auto usd = getMetric(rec->m_metrics, FUSD12, -1.0f);
+        if (usd < 0.0f) {
+            outStream << "NA,";
+        } else {
+            outStream << std::setprecision(1) << usd << ",";
+        }
+        outStream << std::setprecision(0);
+    }
 
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, RMAIN) << "," << std::setprecision(0);
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, LMAIN) << "," << std::setprecision(0);
@@ -127,19 +158,21 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
 
     constexpr float kGpsOffset = 241.0f;
     auto spd = getMetric(rec->m_metrics, SPD, -1.0f);
-    if (spd != -1.0f) {
-        spd += kGpsOffset;
+    if (spd == -1.0f) {
+        outStream << "NA,";
+    } else {
+        outStream << (spd + kGpsOffset) << ",";
     }
-    outStream << spd << ",";
 
     auto alt = getMetric(rec->m_metrics, ALT, -1.0f);
-    if (alt != -1.0f) {
-        alt += kGpsOffset;
+    if (alt == -1.0f) {
+        outStream << "NA,";
+    } else {
+        outStream << (alt + kGpsOffset) << ",";
     }
-    outStream << alt << ",";
 
-    printLatLng(static_cast<int>(getMetric(rec->m_metrics, LAT)), outStream);
-    printLatLng(static_cast<int>(getMetric(rec->m_metrics, LNG)), outStream);
+    printLatLng(getMetric(rec->m_metrics, LAT), true, outStream);
+    printLatLng(getMetric(rec->m_metrics, LNG), false, outStream);
 
     int markVal = static_cast<int>(getMetric(rec->m_metrics, MARK));
     switch (markVal) {

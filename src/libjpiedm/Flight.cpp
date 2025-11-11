@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <cmath>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -57,6 +58,7 @@ Flight::Flight(const std::shared_ptr<Metadata> &metadata) : m_metadata(metadata)
 // We also calculate any derived values.
 void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 {
+    m_lastUpdatedMetrics.clear();
     bool isGPH = m_metadata->IsGPH();
     for (const auto &[bitIdx, bitValue] : valuesMap) {
         auto it = m_bit2MetricMap.find(bitIdx);
@@ -110,7 +112,26 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
         std::cout << ", [" << it->second.getShortName() << "] -> " << m_metricValues[it->second.getMetricId()] << " + "
                   << scaledValue << " == ";
 #endif
-        m_metricValues[it->second.getMetricId()] += scaledValue;
+        auto metricId = it->second.getMetricId();
+        if (metricId == LAT || metricId == LNG) {
+            float rawAccum = m_rawGpsValues[metricId];
+            rawAccum += scaledValue;
+            m_rawGpsValues[metricId] = rawAccum;
+
+            float combined = 0.0f;
+            if (m_flightHeader) {
+                int32_t startCoordinate =
+                    (metricId == LAT) ? m_flightHeader->startLat : m_flightHeader->startLng;
+                if (startCoordinate != 0) {
+                    int combinedInt = startCoordinate - static_cast<int>(std::lround(rawAccum));
+                    combined = static_cast<float>(combinedInt);
+                }
+            }
+            m_metricValues[metricId] = combined;
+        } else {
+            m_metricValues[metricId] += scaledValue;
+        }
+        m_lastUpdatedMetrics.insert(metricId);
 #ifdef DEBUG_FLIGHT_RECORD
         std::cout << m_metricValues[it->second.getMetricId()] << "\n";
 #endif
@@ -172,7 +193,7 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 std::shared_ptr<FlightMetricsRecord> Flight::getFlightMetricsRecord()
 {
     // This is just a copy of the m_metricValues map, with some additional info like fastFlag and seqno
-    return std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq, m_metricValues);
+    return std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq, m_metricValues, m_lastUpdatedMetrics);
 }
 
 } // namespace jpi_edm
