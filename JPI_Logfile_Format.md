@@ -1,5 +1,4 @@
 # General notes on the format of EDM .JPI or .DAT files
-
 The format of the .JPI or .DAT files is slightly ridiculous, consisting of a 
 number textual header records (broken into lines with CRLF ('\r\n'), followed
 by binary data dumping each flight's data, and then returning to the text
@@ -158,8 +157,11 @@ This is always "$E,4\*5D".
 
 #### JPI> data
 
-After the first $E marker is more data beginning with "JPI>". The meaning is unknown.
+After the first $E marker is more data beginning with "JPI>". The meaning is unknown, but
+it is likely that it is a configuration payload. See appendix A.
+
 It is terminated with a second $E marker.
+
 
 #### $V - version
 
@@ -564,4 +566,228 @@ At the end of each record there is a checksum. This has one of two forms:
 
 - in very old EDMs, this is an XOR of all the bytes in the record
 - in most EDMs, this is the sum of every byte in the record. The sum is then negated.
+
+
+## Appendix 1 - JPI> data
+
+After the first $E,4\*5D marker, there’s a long run of >-delimited records with quoted
+“fields” and numeric or symbol payloads, terminated by -< sentinels. The tokens stay
+consistent amongst various 930 variants, and reappear in 960 (twin) variants as well
+(e.g. necweg, vecweg, GFO, CWZ, PGO, …), but the numeric data change — exactly what
+you’d expect for different sensor setups. The strings themselves decrypt cleanly with
+a simple Caesar‑style shift (for example CWZ → AUX, GFO → EDM), which fits JPI’s known
+habit of lightly obfuscating their configuration tables.
+
+So my best guess is that this block is the EDM-930/900’s channel configuration: per-input metadata,
+calibration constants, alarm limits, and similar device settings that the unit needs when
+it renders EGT/CHT bars, AUX inputs, fuel flow, etc. 
+
+Caesar-shifting the printable characters in the $E…$V payload by –2 (wrap within the 95
+printable ASCII slots) from several JPI files yields the following distinct identifiers:
+
+ALT
+AMP
+AMPO
+AUX
+AUXR
+BLS
+BUEL
+CAL
+CPH
+DEC
+DIB
+ECT
+EDM
+EJD
+Eot
+HNG
+HNT
+IJHC
+KAT
+KIL
+KILP
+KXY
+LAT
+LBT
+LJC
+Lebt
+MAIJ
+MAJIBKLD
+MAP
+MPH
+NAD
+NEBL
+NEBT
+NEM
+NEO
+NEQ
+NHT
+NPM
+Nicht
+OPD
+PIPEN
+PNEOO
+POI
+RKLTO
+TIK
+TIT
+TSIJ
+UOD
+UOED
+_al
+_an
+_bc
+_haj
+_hajjel
+_hajjelo
+_ht
+_jt
+_kjot
+_kjotajt
+_kkled
+_klkn
+_klkno
+_km
+_neated
+_nuioe
+_uot
+_uotkmived
+_ylijdeno
+adf
+adfuot
+ain_nabt
+ajcle
+ajd
+ajdo
+alanm
+alanmo
+amp
+ampo
+ancnaph
+arc
+aud
+autk
+aux
+ba_tkn
+bdn
+bilten
+blaco
+bna_tikjo
+buel
+cauce
+cauceo
+cpo
+cuandiaj
+dau
+debault
+delta
+dial
+dicital
+diop
+dkto
+ebd
+ect
+ecto
+edm
+ej_kdijc
+eja
+ejc
+ejcije
+ejd
+ejtnieo
+eta
+ijbk
+ijput
+jame
+jum
+kat
+kem
+kilp
+knic
+kut
+l_d
+lbt
+lcauce
+led
+lkp
+lrlo
+mafkn
+maij
+maog
+map
+max
+mbc
+mij
+mijkn
+mkde
+mkdibied
+nate
+nba_tkn
+ndc
+ne_knd
+nedlije
+nedlijeo
+nemijden
+nemkte
+neoyj_
+nht
+npm
+o_aj
+o_ale
+o_aleo
+oare
+oejokn
+oejokno
+oenial
+ohaned
+ohks
+ohujt
+oimple
+oive
+omant
+op_
+otant
+otyle
+oyj_
+oyotem
+pant
+pnebenej_eo
+pni
+pnimany
+pnkdu_t
+qty
+ral
+ralid
+ralue
+rejdkn
+reniby
+renoikj
+sanj
+sanjijc
+sanjijco
+saten
+tailjk
+tajg
+tcauce
+temp
+tempo
+ti_
+time
+timekut
+tit
+title
+tkp
+tktaliven
+tnip
+typ
+type
+uild
+ujito
+uneted
+uod
+uoe
+uoen
+utb
+uttkj
+xml
 
