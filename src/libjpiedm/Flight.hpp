@@ -141,6 +141,7 @@ class Flight
     std::map<MetricId, float> m_metricValues;
     std::set<MetricId> m_lastUpdatedMetrics;
     std::map<MetricId, float> m_rawGpsValues;
+    std::map<MetricId, int> m_gpsBaselineOffsets;
     std::set<MetricId> m_supportedMetrics;
 };
 

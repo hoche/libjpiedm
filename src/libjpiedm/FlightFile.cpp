@@ -47,7 +47,7 @@ namespace jpi_edm {
 //  #define DEBUG_PARSE
 
 #if defined(DEBUG_FLIGHTS) && !defined(DEBUG_FLIGHT_HEADERS)
-#define DEBUG_FLIGHT_HEADERS
+// #define DEBUG_FLIGHT_HEADERS
 #endif
 
 static const int MARK_IDX = 16; // bit index for fast/slow recording mode

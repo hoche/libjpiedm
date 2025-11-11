@@ -123,15 +123,25 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
         auto metricId = it->second.getMetricId();
         if (metricId == LAT || metricId == LNG) {
             float rawAccum = m_rawGpsValues[metricId];
-            rawAccum += scaledValue;
-            m_rawGpsValues[metricId] = rawAccum;
+            int delta = static_cast<int>(std::lround(scaledValue));
+            int baselineOffset = m_gpsBaselineOffsets[metricId];
+            bool baselineSet = baselineOffset != 0;
+            bool atBaseline = std::fabs(rawAccum) < 0.5f;
+            bool isHandshake = !baselineSet && atBaseline && (delta == 100 || delta == -100);
 
-            float combined = 0.0f;
+            if (isHandshake) {
+                baselineOffset += delta;
+                m_gpsBaselineOffsets[metricId] = baselineOffset;
+            } else {
+                rawAccum += scaledValue;
+                m_rawGpsValues[metricId] = rawAccum;
+            }
+
+            float combined = rawAccum;
             if (m_flightHeader) {
                 int32_t startCoordinate = (metricId == LAT) ? m_flightHeader->startLat : m_flightHeader->startLng;
                 if (startCoordinate != 0) {
-                    int combinedInt = startCoordinate - static_cast<int>(std::lround(rawAccum));
-                    combined = static_cast<float>(combinedInt);
+                    combined = static_cast<float>(startCoordinate + m_gpsBaselineOffsets[metricId]) + rawAccum;
                 }
             }
             m_metricValues[metricId] = combined;
