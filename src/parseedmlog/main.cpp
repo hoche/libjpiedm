@@ -117,14 +117,26 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
     outStream << getMetric(rec->m_metrics, OILT1) << ",";
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD11) << "," << std::setprecision(0);
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, FUSD12, -1.0f) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, LMAIN) << "," << std::setprecision(0);
+
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, RMAIN) << "," << std::setprecision(0);
+    outStream << std::setprecision(1) << getMetric(rec->m_metrics, LMAIN) << "," << std::setprecision(0);
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, LAUX) << "," << std::setprecision(0);
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, RAUX) << "," << std::setprecision(0);
 
     outStream << std::setprecision(1) << getMetric(rec->m_metrics, HRS1) << "," << std::setprecision(0);
-    outStream << getMetric(rec->m_metrics, SPD, -1.0f) << ",";
-    outStream << getMetric(rec->m_metrics, ALT, -1.0f) << ",";
+
+    constexpr float kGpsOffset = 241.0f;
+    auto spd = getMetric(rec->m_metrics, SPD, -1.0f);
+    if (spd != -1.0f) {
+        spd += kGpsOffset;
+    }
+    outStream << spd << ",";
+
+    auto alt = getMetric(rec->m_metrics, ALT, -1.0f);
+    if (alt != -1.0f) {
+        alt += kGpsOffset;
+    }
+    outStream << alt << ",";
 
     printLatLng(static_cast<int>(getMetric(rec->m_metrics, LAT)), outStream);
     printLatLng(static_cast<int>(getMetric(rec->m_metrics, LNG)), outStream);
@@ -218,9 +230,8 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
 
         // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
         // crash)
-        outStream << rec->m_recordSeq - 1 << "," << std::setfill('0') << std::setw(2) << (timeinfo.tm_mon + 1) << '/'
-                  << std::setfill('0') << std::setw(2) << timeinfo.tm_mday << '/' << (timeinfo.tm_year + TM_YEAR_BASE)
-                  << "," << std::put_time(&timeinfo, "%T") << ",";
+        outStream << rec->m_recordSeq - 1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+                  << (timeinfo.tm_year + TM_YEAR_BASE) << "," << std::put_time(&timeinfo, "%T") << ",";
         printFlightMetricsRecord(rec, outStream);
 
         rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
