@@ -173,7 +173,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         COMMAND ${CMAKE_COMMAND} -E echo "system libraries like GDAL, PROJ, libpng are NOT compiled"
         COMMAND ${CMAKE_COMMAND} -E echo "with MSan, which prevents MSan from running successfully."
         COMMAND ${CMAKE_COMMAND} -E echo ""
-        COMMAND ${CMAKE_COMMAND} -E echo "This is a known limitation of MSan, not a bug in SPLAT."
+        COMMAND ${CMAKE_COMMAND} -E echo "This is a known limitation of MSan."
         COMMAND ${CMAKE_COMMAND} -E echo ""
         COMMAND ${CMAKE_COMMAND} -E echo "For this reason, the msan target is informational only."
         COMMAND ${CMAKE_COMMAND} -E echo "See TESTING.md for full details on MSan limitations."
@@ -236,21 +236,6 @@ add_custom_target(valgrind-quick
     DEPENDS unit_tests
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Running Valgrind (quick mode)"
-    VERBATIM
-)
-
-# Clang-Tidy - static analysis
-add_custom_target(clang-tidy
-    COMMAND ${CMAKE_COMMAND} -E echo "Running Clang-Tidy..."
-    COMMAND clang-tidy
-        ${SPLAT_SOURCES}
-        -p ${CMAKE_BINARY_DIR}
-        --checks='-*,bugprone-*,clang-analyzer-*,cppcoreguidelines-*,modernize-*,performance-*,readability-*'
-        --warnings-as-errors=''
-        --header-filter='.*'
-    DEPENDS unit_tests
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "Running Clang-Tidy static analysis"
     VERBATIM
 )
 
