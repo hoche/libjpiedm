@@ -129,9 +129,13 @@ change is submitted. These are currently set up to run on Linux, Windows, and OS
 ## Latest Updates
 
 November 2025
+* Bunch of bug fixes.
 * Added ability to jump directly to a specific flight by ID without parsing the entire file.
 * `processFile()` now accepts an optional flight ID parameter.
 * New `detectFlights()` method for lightweight flight enumeration.
+* Added iterator API
+* parseedmlog output nearly mirrors EZTrends output, except for twins. More work to be done there.
+* More work on the Lat/Long calculations. Still not quite right, so don't use them.
 
 July 2025
 * Figured out a number of the remaining parameters and documented them.
