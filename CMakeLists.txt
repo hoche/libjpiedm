@@ -85,10 +85,11 @@ target_include_directories(jpiedm
 # parseedmlog executable
 add_executable(parseedmlog
     src/parseedmlog/main.cpp
+    src/parseedmlog/KmlExporter.cpp
 )
 
 target_include_directories(parseedmlog
-    PUBLIC src/libjpiedm src/parseedmlog
+    PUBLIC src src/libjpiedm src/parseedmlog
 )
 
 if(WIN32)
