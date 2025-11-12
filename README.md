@@ -135,7 +135,7 @@ November 2025
 * New `detectFlights()` method for lightweight flight enumeration.
 * Added iterator API
 * parseedmlog output nearly mirrors EZTrends output, except for twins. More work to be done there.
-* More work on the Lat/Long calculations. Still not quite right, so don't use them.
+* Got the GPS lat/lng calculations working!
 
 July 2025
 * Figured out a number of the remaining parameters and documented them.
