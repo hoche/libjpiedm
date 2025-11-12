@@ -846,7 +846,7 @@ void showHelp(char *progName)
     std::cout << "    -f <flightno>   only output a specific flight number" << std::endl;
     std::cout << "    -l              list flights" << std::endl;
     std::cout << "    -o <filename>   output to a file" << std::endl;
-    // std::cout << "    -k <filename>   export flight path to KML or KMZ (requires -f)" << std::endl;
+    std::cout << "    -k <filename>   export flight path to KML or KMZ (requires -f)" << std::endl;
     std::cout << "    -v              verbose output of the flight header" << std::endl;
 }
 
@@ -859,9 +859,7 @@ int main(int argc, char *argv[])
     std::optional<int> flightId; // std::nullopt means all flights
 
     int c;
-    // k option is not ready for prime time.
-    // while ((c = getopt(argc, argv, "hf:lo:vk:")) != -1) {
-    while ((c = getopt(argc, argv, "hf:lo:v")) != -1) {
+    while ((c = getopt(argc, argv, "hf:lo:vk:")) != -1) {
         switch (c) {
         case 'h':
             showHelp(argv[0]);
