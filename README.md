@@ -2,8 +2,10 @@
 
 libjpiedm is a C++ library for parsing data files from JPI EDM Engine Monitors.
 
-It is released under the Creative Commons "CC BY" license (except where otherwise
+It is released under the Creative Commons "CC BY-NC" license (except where otherwise
 noted).
+
+If you need a commercial license for this, please contact me.
 
 ## Building
 

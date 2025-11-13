@@ -1,3 +1,8 @@
+/**
+ * Copyright @ 2024 Michel Hoche-Mong
+ * SPDX-License-Identifier: CC-BY-NC-4.0
+ */
+
 #pragma once
 
 namespace jpi_edm {

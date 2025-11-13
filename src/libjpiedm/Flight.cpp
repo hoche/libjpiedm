@@ -1,4 +1,6 @@
-/** * Copyright @ 2024 Michel Hoche-Mong * SPDX-License-Identifier: CC-BY-4.0
+/**
+ * Copyright @ 2024 Michel Hoche-Mong
+ * SPDX-License-Identifier: CC-BY-NC-4.0
  *
  * @brief Classes for representing individual flights from a JPI EDM flight
  * file.

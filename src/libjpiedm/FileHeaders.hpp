@@ -1,6 +1,6 @@
 /**
  * Copyright @ 2024 Michel Hoche-Mong
- * SPDX-License-Identifier: CC-BY-4.0
+ * SPDX-License-Identifier: CC-BY-NC-4.0
  *
  * @brief Various objects created from the text headers of an EDM flight file.
  * These have no data about a specific flight, just the generic data that was

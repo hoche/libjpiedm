@@ -1,6 +1,6 @@
 /*
  * Copyright @ 2024 Michel Hoche-Mong
- * SPDX-License-Identifier: CC-BY-4.0
+ * SPDX-License-Identifier: CC-BY-NC-4.0
  */
 
 #pragma once

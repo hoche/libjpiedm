@@ -6,7 +6,7 @@
  *
  * Original copyright below. Modifications copyright Michel Hoche-Mong,
  * under the Creative Commons CC-BY-4.0 license.
- * SPDX-License-Identifier: CC-BY-4.0
+ * SPDX-License-Identifier: CC-BY-NC-4.0
  */
 
 /**

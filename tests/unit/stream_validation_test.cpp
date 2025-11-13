@@ -1,4 +1,7 @@
 /**
+ * Copyright @ 2024 Michel Hoche-Mong
+ * SPDX-License-Identifier: CC-BY-NC-4.0
+ *
  * @brief Comprehensive tests for stream validation and error handling
  *
  * Tests the critical stream operations added to ensure robustness:
