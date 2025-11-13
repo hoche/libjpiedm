@@ -465,7 +465,7 @@ void printTwinFlightRecord(const FlightRenderRecord &entry, int cylinderCount, s
         break;
     }
 
-    outStream << "\r\n";
+    outStream << "\n";
 
     outStream.precision(previousPrecision);
     outStream.flags(previousFlags);
