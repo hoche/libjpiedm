@@ -505,18 +505,18 @@ void printTwinFlight(const std::vector<FlightRenderRecord> &records, const std::
         for (int i = 0; i < cylinderCount; ++i) {
             outStream << ",RC" << (i + 1);
         }
-        outStream << ",RDIF,RCLD,RMAP,RRPM,RHP,RFF,RFF2,RFP,ROILP,ROILT,RUSD,RHRS,SPD,ALT,LAT,LNG,MARK" << "\r\n";
+        outStream << ",RDIF,RCLD,RMAP,RRPM,RHP,RFF,RFF2,RFP,ROILP,ROILT,RUSD,RHRS,SPD,ALT,LAT,LNG,MARK" << "\n";
         headerPrinted = true;
     }
 
     outStream << std::setprecision(1);
     if (!std::isnan(leftTachStart) && !std::isnan(leftTachEnd)) {
         outStream << "Left Engine - Tach Start = " << leftTachStart << ",Tach End = " << leftTachEnd
-                  << ",Tach Duration = " << (leftTachEnd - leftTachStart) << "\r\n";
+                  << ",Tach Duration = " << (leftTachEnd - leftTachStart) << "\n";
     }
     if (!std::isnan(rightTachStart) && !std::isnan(rightTachEnd)) {
         outStream << "Right Engine - Tach Start = " << rightTachStart << " ,Tach End = " << rightTachEnd
-                  << ",Tach Duration = " << (rightTachEnd - rightTachStart) << "\r\n";
+                  << ",Tach Duration = " << (rightTachEnd - rightTachStart) << "\n";
     }
     outStream << std::setprecision(0);
 
