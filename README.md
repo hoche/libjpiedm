@@ -161,7 +161,7 @@ November 2025
 * `processFile()` now accepts an optional flight ID parameter.
 * New `detectFlights()` method for lightweight flight enumeration.
 * Added iterator API
-* parseedmlog output nearly mirrors EZTrends output, except for twins. More work to be done there.
+* parseedmlog output nearly mirrors EZTrends output.
 * Got the GPS lat/lng calculations working!
 * Twin engine parsing seems to work.
 
