@@ -152,7 +152,6 @@ change is submitted. These are currently set up to run on Linux, Windows, and OS
 ## Known Issues
 
 * It doesn't parse the old-style file formats.
-* The multiengine values are just guesses, and the multiengine output from parseedmlog isn't complete.
 
 ## Latest Updates
 
@@ -164,6 +163,7 @@ November 2025
 * Added iterator API
 * parseedmlog output nearly mirrors EZTrends output, except for twins. More work to be done there.
 * Got the GPS lat/lng calculations working!
+* Twin engine parsing seems to work.
 
 July 2025
 * Figured out a number of the remaining parameters and documented them.
