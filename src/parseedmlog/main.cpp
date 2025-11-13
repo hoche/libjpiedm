@@ -17,6 +17,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -31,11 +32,11 @@
 #include <unistd.h>
 #endif
 
+#include "KmlExporter.hpp"
+#include "MetricUtils.hpp"
 #include "libjpiedm/FlightFile.hpp"
 #include "libjpiedm/MetricId.hpp"
 #include "libjpiedm/ProtocolConstants.hpp"
-#include "KmlExporter.hpp"
-#include "MetricUtils.hpp"
 
 using namespace jpi_edm;
 using parseedmlog::getMetric;
@@ -89,87 +90,157 @@ void printLatLng(float measurement, bool isLatitude, std::ostream &outStream)
     outStream << std::setfill(' ');
 }
 
-// Safe metric accessor with default value
-void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, bool includeTit1,
-                              bool includeTit2, std::ostream &outStream)
+struct FlightRenderRecord {
+    std::shared_ptr<jpi_edm::FlightMetricsRecord> record;
+    std::tm timestamp{};
+};
+
+bool isMetricSupported(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, jpi_edm::MetricId id)
 {
-    outStream << std::fixed << std::setprecision(0);
+    return rec && rec->m_supportedMetrics.count(id) > 0;
+}
 
-    outStream << getMetric(rec->m_metrics, EGT11) << ",";
-    outStream << getMetric(rec->m_metrics, EGT12) << ",";
-    outStream << getMetric(rec->m_metrics, EGT13) << ",";
-    outStream << getMetric(rec->m_metrics, EGT14) << ",";
-    outStream << getMetric(rec->m_metrics, EGT15) << ",";
-    outStream << getMetric(rec->m_metrics, EGT16) << ",";
+void writeSeparatedInt(std::ostream &outStream, float value, bool includeSpace = true)
+{
+    outStream << (includeSpace ? ", " : ",") << static_cast<int>(std::lround(value));
+}
 
-    outStream << getMetric(rec->m_metrics, CHT11) << ",";
-    outStream << getMetric(rec->m_metrics, CHT12) << ",";
-    outStream << getMetric(rec->m_metrics, CHT13) << ",";
-    outStream << getMetric(rec->m_metrics, CHT14) << ",";
-    outStream << getMetric(rec->m_metrics, CHT15) << ",";
-    outStream << getMetric(rec->m_metrics, CHT16) << ",";
+void writeSeparatedFloat(std::ostream &outStream, float value, int precision = 1, bool includeLeadingSpace = false)
+{
+    auto previousPrecision = outStream.precision();
+    outStream << (includeLeadingSpace ? ", " : ",");
+    outStream << std::fixed << std::setprecision(precision) << value;
+    outStream << std::setprecision(previousPrecision);
+}
+
+void writeNAField(std::ostream &outStream) { outStream << ",NA"; }
+
+void writeSeparatedFuelUsed(std::ostream &outStream, float value)
+{
+    if (value < 0.0f) {
+        writeNAField(outStream);
+        return;
+    }
+    writeSeparatedFloat(outStream, value, 1);
+}
+
+float normalizeHorsepower(float rawValue)
+{
+    if (rawValue < 0.0f) {
+        return rawValue + 240.0f;
+    }
+    return rawValue;
+}
+
+void printSingleEngineFlightRecord(const FlightRenderRecord &entry, bool includeTit1, bool includeTit2,
+                                   std::ostream &outStream)
+{
+    static constexpr jpi_edm::MetricId kEgtIds[] = {jpi_edm::EGT11, jpi_edm::EGT12, jpi_edm::EGT13,
+                                                    jpi_edm::EGT14, jpi_edm::EGT15, jpi_edm::EGT16};
+    static constexpr jpi_edm::MetricId kChtIds[] = {jpi_edm::CHT11, jpi_edm::CHT12, jpi_edm::CHT13,
+                                                    jpi_edm::CHT14, jpi_edm::CHT15, jpi_edm::CHT16};
+
+    const auto &rec = entry.record;
+    const auto &timeinfo = entry.timestamp;
+
+    auto previousPrecision = outStream.precision();
+    auto previousFlags = outStream.flags();
+
+    outStream.setf(std::ios::fixed, std::ios::floatfield);
+    outStream << std::setprecision(0);
+
+    outStream << rec->m_recordSeq - 1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+              << (timeinfo.tm_year + TM_YEAR_BASE) << "," << std::put_time(&timeinfo, "%T");
+
+    for (auto id : kEgtIds) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, id), false);
+    }
+
+    for (auto id : kChtIds) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, id), false);
+    }
 
     if (includeTit1) {
-        outStream << getMetric(rec->m_metrics, TIT11) << ",";
+        if (isMetricSupported(rec, jpi_edm::TIT11)) {
+            writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::TIT11), false);
+        } else {
+            writeNAField(outStream);
+        }
     }
+
     if (includeTit2) {
-        outStream << getMetric(rec->m_metrics, TIT12) << ",";
-    }
-
-    outStream << getMetric(rec->m_metrics, OAT) << ",";
-    outStream << getMetric(rec->m_metrics, DIF1) << ",";
-    outStream << getMetric(rec->m_metrics, CLD1) << ",";
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, MAP1) << "," << std::setprecision(0);
-    outStream << getMetric(rec->m_metrics, RPM1) << ",";
-    outStream << getMetric(rec->m_metrics, HP1) << ",";
-
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FF11) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FF12) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, FP1) << "," << std::setprecision(0);
-    outStream << getMetric(rec->m_metrics, OILP1) << ",";
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, VOLT1) << "," << std::setprecision(0);
-    outStream << getMetric(rec->m_metrics, AMP1) << ",";
-
-    outStream << getMetric(rec->m_metrics, OILT1) << ",";
-    {
-        auto usd = getMetric(rec->m_metrics, FUSD11, -1.0f);
-        if (usd < 0.0f) {
-            outStream << "NA,";
+        if (isMetricSupported(rec, jpi_edm::TIT12)) {
+            writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::TIT12), false);
         } else {
-            outStream << std::setprecision(1) << usd << ",";
+            writeNAField(outStream);
         }
-        outStream << std::setprecision(0);
     }
 
-    {
-        auto usd = getMetric(rec->m_metrics, FUSD12, -1.0f);
-        if (usd < 0.0f) {
-            outStream << "NA,";
-        } else {
-            outStream << std::setprecision(1) << usd << ",";
-        }
-        outStream << std::setprecision(0);
+    if (isMetricSupported(rec, jpi_edm::OAT)) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::OAT), false);
+    } else {
+        writeNAField(outStream);
     }
 
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, RMAIN) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, LMAIN) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, LAUX) << "," << std::setprecision(0);
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, RAUX) << "," << std::setprecision(0);
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::DIF1), false);
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::CLD1), false);
 
-    outStream << std::setprecision(1) << getMetric(rec->m_metrics, HRS1) << "," << std::setprecision(0);
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::MAP1), 1);
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::RPM1), false);
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::HP1), false);
 
-    auto spd = getMetric(rec->m_metrics, SPD, -1.0f);
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FF11), 1);
+    if (isMetricSupported(rec, jpi_edm::FF12)) {
+        writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FF12), 1);
+    } else {
+        writeNAField(outStream);
+    }
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FP1), 1);
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::OILP1), false);
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::VOLT1), 1);
+
+    if (isMetricSupported(rec, jpi_edm::AMP1)) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::AMP1), false);
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::OILT1)) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::OILT1), false);
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::FUSD11)) {
+        writeSeparatedFuelUsed(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FUSD11, -1.0f));
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::FUSD12)) {
+        writeSeparatedFuelUsed(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FUSD12, -1.0f));
+    } else {
+        writeNAField(outStream);
+    }
+
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::RMAIN), 1);
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::LMAIN), 1);
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::LAUX), 1);
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::RAUX), 1);
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::HRS1), 1);
+
+    auto spd = parseedmlog::getMetric(rec->m_metrics, jpi_edm::SPD, -1.0f);
     if (spd == -1.0f) {
-        outStream << "NA,";
+        outStream << ",NA";
     } else {
-        outStream << (spd + kGpsOffset) << ",";
+        outStream << "," << (spd + kGpsOffset);
     }
 
-    auto alt = getMetric(rec->m_metrics, ALT, -1.0f);
+    auto alt = parseedmlog::getMetric(rec->m_metrics, jpi_edm::ALT, -1.0f);
     if (alt == -1.0f) {
-        outStream << "NA,";
+        outStream << ",NA,";
     } else {
-        outStream << (alt + kGpsOffset) << ",";
+        outStream << "," << (alt + kGpsOffset) << ",";
     }
 
     printLatLng(getMetric(rec->m_metrics, LAT), true, outStream);
@@ -189,6 +260,272 @@ void printFlightMetricsRecord(const std::shared_ptr<jpi_edm::FlightMetricsRecord
     }
 
     outStream << "\n";
+
+    outStream.precision(previousPrecision);
+    outStream.flags(previousFlags);
+}
+
+void printSingleEngineFlight(const std::vector<FlightRenderRecord> &records,
+                             const std::shared_ptr<jpi_edm::Metadata> &metadata, std::ostream &outStream,
+                             bool &headerPrinted)
+{
+    if (records.empty()) {
+        return;
+    }
+
+    bool includeTit1 = metadata && metadata->m_configInfo.hasTurbo1;
+    bool includeTit2 = metadata && metadata->m_configInfo.hasTurbo2;
+
+    if (!headerPrinted) {
+        outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6";
+        if (includeTit1) {
+            outStream << ",TIT1";
+        }
+        if (includeTit2) {
+            outStream << ",TIT2";
+        }
+        outStream << ",OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
+                  << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
+        headerPrinted = true;
+    }
+
+    for (const auto &entry : records) {
+        const auto &rec = entry.record;
+        const auto &timeinfo = entry.timestamp;
+
+        printSingleEngineFlightRecord(entry, includeTit1, includeTit2, outStream);
+    }
+}
+
+void printTwinFlightRecord(const FlightRenderRecord &entry, int cylinderCount, std::ostream &outStream)
+{
+    static constexpr jpi_edm::MetricId kLeftEgtIds[] = {jpi_edm::EGT11, jpi_edm::EGT12, jpi_edm::EGT13,
+                                                        jpi_edm::EGT14, jpi_edm::EGT15, jpi_edm::EGT16,
+                                                        jpi_edm::EGT17, jpi_edm::EGT18, jpi_edm::EGT19};
+    static constexpr jpi_edm::MetricId kLeftChtIds[] = {jpi_edm::CHT11, jpi_edm::CHT12, jpi_edm::CHT13,
+                                                        jpi_edm::CHT14, jpi_edm::CHT15, jpi_edm::CHT16,
+                                                        jpi_edm::CHT17, jpi_edm::CHT18, jpi_edm::CHT19};
+    static constexpr jpi_edm::MetricId kRightEgtIds[] = {jpi_edm::EGT21, jpi_edm::EGT22, jpi_edm::EGT23,
+                                                         jpi_edm::EGT24, jpi_edm::EGT25, jpi_edm::EGT26,
+                                                         jpi_edm::EGT27, jpi_edm::EGT28, jpi_edm::EGT29};
+    static constexpr jpi_edm::MetricId kRightChtIds[] = {jpi_edm::CHT21, jpi_edm::CHT22, jpi_edm::CHT23,
+                                                         jpi_edm::CHT24, jpi_edm::CHT25, jpi_edm::CHT26,
+                                                         jpi_edm::CHT27, jpi_edm::CHT28, jpi_edm::CHT29};
+
+    const auto &rec = entry.record;
+    const auto &timeinfo = entry.timestamp;
+
+    auto previousPrecision = outStream.precision();
+    auto previousFlags = outStream.flags();
+
+    outStream.setf(std::ios::fixed, std::ios::floatfield);
+    outStream << std::setprecision(0);
+
+    outStream << rec->m_recordSeq - 1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
+              << (timeinfo.tm_year + TM_YEAR_BASE) << "," << std::put_time(&timeinfo, "%T");
+
+    int leftEgtCount = std::min(cylinderCount, static_cast<int>(sizeof(kLeftEgtIds) / sizeof(kLeftEgtIds[0])));
+    for (int i = 0; i < leftEgtCount; ++i) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, kLeftEgtIds[i]));
+    }
+
+    int leftChtCount = std::min(cylinderCount, static_cast<int>(sizeof(kLeftChtIds) / sizeof(kLeftChtIds[0])));
+    for (int i = 0; i < leftChtCount; ++i) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, kLeftChtIds[i]));
+    }
+
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::OAT));
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::DIF1));
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::CLD1));
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::MAP1), 1);
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::RPM1));
+    writeSeparatedInt(outStream, normalizeHorsepower(parseedmlog::getMetric(rec->m_metrics, jpi_edm::HP1)));
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FF11), 1);
+
+    if (isMetricSupported(rec, jpi_edm::FF12)) {
+        writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FF12), 1);
+    } else {
+        writeNAField(outStream);
+    }
+
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FP1), 1);
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::OILP1));
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::VOLT1), 1);
+
+    writeNAField(outStream);
+
+    if (isMetricSupported(rec, jpi_edm::AMP1)) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::AMP1));
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::AMP2)) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::AMP2));
+    } else {
+        writeNAField(outStream);
+    }
+
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::OILT1));
+    writeSeparatedFuelUsed(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FUSD11, -1.0f));
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::HRS1), 1);
+
+    int rightEgtCount = std::min(cylinderCount, static_cast<int>(sizeof(kRightEgtIds) / sizeof(kRightEgtIds[0])));
+    for (int i = 0; i < rightEgtCount; ++i) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, kRightEgtIds[i]));
+    }
+
+    int rightChtCount = std::min(cylinderCount, static_cast<int>(sizeof(kRightChtIds) / sizeof(kRightChtIds[0])));
+    for (int i = 0; i < rightChtCount; ++i) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, kRightChtIds[i]));
+    }
+
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::DIF2));
+    writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::CLD2));
+    writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::MAP2), 1);
+
+    if (isMetricSupported(rec, jpi_edm::RPM2)) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::RPM2));
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::HP2)) {
+        writeSeparatedInt(outStream, normalizeHorsepower(parseedmlog::getMetric(rec->m_metrics, jpi_edm::HP2)));
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::FF21)) {
+        writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FF21), 1);
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::FF22)) {
+        writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FF22), 1);
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::FP2)) {
+        writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FP2), 1);
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::OILP2)) {
+        writeSeparatedInt(outStream, 10.0f * parseedmlog::getMetric(rec->m_metrics, jpi_edm::OILP2));
+    } else {
+        writeNAField(outStream);
+    }
+
+    if (isMetricSupported(rec, jpi_edm::OILT2)) {
+        writeSeparatedInt(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::OILT2));
+    } else {
+        writeNAField(outStream);
+    }
+
+    writeSeparatedFuelUsed(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::FUSD21, -1.0f));
+
+    if (isMetricSupported(rec, jpi_edm::HRS2)) {
+        writeSeparatedFloat(outStream, parseedmlog::getMetric(rec->m_metrics, jpi_edm::HRS2), 1);
+    } else {
+        writeNAField(outStream);
+    }
+
+    auto spd = parseedmlog::getMetric(rec->m_metrics, jpi_edm::SPD, -1.0f);
+    if (spd == -1.0f) {
+        writeNAField(outStream);
+    } else {
+        outStream << "," << (spd + kGpsOffset);
+    }
+
+    auto alt = parseedmlog::getMetric(rec->m_metrics, jpi_edm::ALT, -1.0f);
+    if (alt == -1.0f) {
+        outStream << ",NA";
+    } else {
+        outStream << "," << (alt + kGpsOffset);
+    }
+    outStream << ",NA,NA,";
+
+    int markVal = static_cast<int>(parseedmlog::getMetric(rec->m_metrics, jpi_edm::MARK));
+    switch (markVal) {
+    case MARK_START:
+        outStream << "[";
+        break;
+    case MARK_END:
+        outStream << "]";
+        break;
+    case MARK_UNKNOWN:
+        outStream << "<";
+        break;
+    default:
+        outStream << "";
+        break;
+    }
+
+    outStream << "\r\n";
+
+    outStream.precision(previousPrecision);
+    outStream.flags(previousFlags);
+}
+
+void printTwinFlight(const std::vector<FlightRenderRecord> &records, const std::shared_ptr<jpi_edm::Metadata> &metadata,
+                     float leftTachStart, float leftTachEnd, float rightTachStart, float rightTachEnd,
+                     std::ostream &outStream, bool &headerPrinted)
+{
+    if (records.empty()) {
+        return;
+    }
+
+    auto previousPrecision = outStream.precision();
+    auto previousFlags = outStream.flags();
+
+    outStream.setf(std::ios::fixed, std::ios::floatfield);
+
+    int cylinderCount = metadata ? metadata->NumCylinders() : jpi_edm::SINGLE_ENGINE_CYLINDER_COUNT;
+    if (cylinderCount <= 0) {
+        cylinderCount = jpi_edm::SINGLE_ENGINE_CYLINDER_COUNT;
+    }
+    cylinderCount = std::min(cylinderCount, 9);
+
+    if (!headerPrinted) {
+        outStream << "INDEX,DATE,TIME";
+        for (int i = 0; i < cylinderCount; ++i) {
+            outStream << ",LE" << (i + 1);
+        }
+        for (int i = 0; i < cylinderCount; ++i) {
+            outStream << ",LC" << (i + 1);
+        }
+        outStream << ",OAT,LDIF,LCLD,LMAP,LRPM,LHP,LFF,LFF2,LFP,LOILP,BAT,BAT2,AMP,AMP2,LOILT,LUSD,LHRS";
+        for (int i = 0; i < cylinderCount; ++i) {
+            outStream << ",RE" << (i + 1);
+        }
+        for (int i = 0; i < cylinderCount; ++i) {
+            outStream << ",RC" << (i + 1);
+        }
+        outStream << ",RDIF,RCLD,RMAP,RRPM,RHP,RFF,RFF2,RFP,ROILP,ROILT,RUSD,RHRS,SPD,ALT,LAT,LNG,MARK" << "\r\n";
+        headerPrinted = true;
+    }
+
+    outStream << std::setprecision(1);
+    if (!std::isnan(leftTachStart) && !std::isnan(leftTachEnd)) {
+        outStream << "Left Engine - Tach Start = " << leftTachStart << ",Tach End = " << leftTachEnd
+                  << ",Tach Duration = " << (leftTachEnd - leftTachStart) << "\r\n";
+    }
+    if (!std::isnan(rightTachStart) && !std::isnan(rightTachEnd)) {
+        outStream << "Right Engine - Tach Start = " << rightTachStart << " ,Tach End = " << rightTachEnd
+                  << ",Tach Duration = " << (rightTachEnd - rightTachStart) << "\r\n";
+    }
+    outStream << std::setprecision(0);
+
+    for (const auto &entry : records) {
+        printTwinFlightRecord(entry, cylinderCount, outStream);
+    }
+
+    outStream.precision(previousPrecision);
+    outStream.flags(previousFlags);
 }
 
 void printFlightData(std::istream &stream, std::optional<int> flightId, std::ostream &outStream)
@@ -196,10 +533,13 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
     jpi_edm::FlightFile ff;
     std::shared_ptr<jpi_edm::FlightHeader> hdr;
     std::shared_ptr<jpi_edm::Metadata> metadata;
-    time_t recordTime;
+    time_t recordTime{};
+    std::vector<FlightRenderRecord> currentFlightRecords;
+    float leftTachStart = std::numeric_limits<float>::quiet_NaN();
+    float leftTachEnd = std::numeric_limits<float>::quiet_NaN();
+    float rightTachStart = std::numeric_limits<float>::quiet_NaN();
+    float rightTachEnd = std::numeric_limits<float>::quiet_NaN();
     bool headerPrinted = false;
-    bool includeTit1 = false;
-    bool includeTit2 = false;
 
     if (flightId.has_value()) {
         try {
@@ -231,7 +571,8 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
         }
     });
 
-    ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream](std::shared_ptr<jpi_edm::FlightHeader> fh) {
+    ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream, &currentFlightRecords, &leftTachStart, &leftTachEnd,
+                                    &rightTachStart, &rightTachEnd](std::shared_ptr<jpi_edm::FlightHeader> fh) {
         hdr = fh;
 
         std::tm local;
@@ -243,6 +584,10 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
         gmtime_r(&recordTime, &local);
 #endif
 
+        currentFlightRecords.clear();
+        leftTachStart = leftTachEnd = std::numeric_limits<float>::quiet_NaN();
+        rightTachStart = rightTachEnd = std::numeric_limits<float>::quiet_NaN();
+
         if (g_verbose) {
             outStream << "Flt #" << hdr->flight_num << "\n";
             outStream << "Interval: " << hdr->interval << " sec\n";
@@ -252,7 +597,6 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
     });
 
     ff.setFlightRecordCompletionCb([&](std::shared_ptr<jpi_edm::FlightMetricsRecord> rec) {
-        // Check if hdr is valid before dereferencing
         if (!hdr) {
             std::cerr << "Warning: Flight record callback invoked without flight header" << std::endl;
             return;
@@ -265,29 +609,40 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
         gmtime_r(&recordTime, &timeinfo);
 #endif
 
-        // would be nice to use std::put_time here, but Windows doesn't support "%-m" and "%-d" (it'll compile, but
-        // crash)
-        if (!headerPrinted) {
-            includeTit1 = (metadata && metadata->m_configInfo.hasTurbo1);
-            includeTit2 = (metadata && metadata->m_configInfo.hasTurbo2);
+        currentFlightRecords.push_back(FlightRenderRecord{rec, timeinfo});
 
-            outStream << "INDEX,DATE,TIME,E1,E2,E3,E4,E5,E6,C1,C2,C3,C4,C5,C6";
-            if (includeTit1) {
-                outStream << ",TIT1";
+        if (isMetricSupported(rec, jpi_edm::HRS1)) {
+            float leftHrs = parseedmlog::getMetric(rec->m_metrics, jpi_edm::HRS1);
+            if (std::isnan(leftTachStart)) {
+                leftTachStart = leftHrs;
             }
-            if (includeTit2) {
-                outStream << ",TIT2";
-            }
-            outStream << ",OAT,DIF,CLD,MAP,RPM,HP,FF,FF2,FP,OILP,BAT,AMP,OILT"
-                      << ",USD,USD2,RFL,LFL,LAUX,RAUX,HRS,SPD,ALT,LAT,LNG,MARK" << "\n";
-            headerPrinted = true;
+            leftTachEnd = leftHrs;
         }
 
-        outStream << rec->m_recordSeq - 1 << "," << (timeinfo.tm_mon + 1) << '/' << timeinfo.tm_mday << '/'
-                  << (timeinfo.tm_year + TM_YEAR_BASE) << "," << std::put_time(&timeinfo, "%T") << ",";
-        printFlightMetricsRecord(rec, includeTit1, includeTit2, outStream);
+        if (isMetricSupported(rec, jpi_edm::HRS2)) {
+            float rightHrs = parseedmlog::getMetric(rec->m_metrics, jpi_edm::HRS2);
+            if (std::isnan(rightTachStart)) {
+                rightTachStart = rightHrs;
+            }
+            rightTachEnd = rightHrs;
+        }
 
         rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
+    });
+
+    ff.setFlightCompletionCb([&](unsigned long /*stdReqs*/, unsigned long /*fastReqs*/) {
+        if (currentFlightRecords.empty()) {
+            return;
+        }
+
+        if (metadata && metadata->IsTwin()) {
+            printTwinFlight(currentFlightRecords, metadata, leftTachStart, leftTachEnd, rightTachStart, rightTachEnd,
+                            outStream, headerPrinted);
+        } else {
+            printSingleEngineFlight(currentFlightRecords, metadata, outStream, headerPrinted);
+        }
+
+        currentFlightRecords.clear();
     });
 
     // Now do the work - use the new single-flight API if a specific flight is requested

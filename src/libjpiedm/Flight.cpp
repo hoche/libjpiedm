@@ -15,6 +15,55 @@
 #include "Flight.hpp"
 #include "ProtocolConstants.hpp"
 
+namespace {
+
+bool isSecondEngineMetric(jpi_edm::MetricId metricId)
+{
+    using namespace jpi_edm;
+    switch (metricId) {
+    case EGT21:
+    case EGT22:
+    case EGT23:
+    case EGT24:
+    case EGT25:
+    case EGT26:
+    case EGT27:
+    case EGT28:
+    case EGT29:
+    case CHT21:
+    case CHT22:
+    case CHT23:
+    case CHT24:
+    case CHT25:
+    case CHT26:
+    case CHT27:
+    case CHT28:
+    case CHT29:
+    case CLD2:
+    case TIT21:
+    case TIT22:
+    case OILT2:
+    case OILP2:
+    case CRB2:
+    case IAT2:
+    case MAP2:
+    case FF21:
+    case FF22:
+    case FUSD21:
+    case FUSD22:
+    case FP2:
+    case HP2:
+    case RPM2:
+    case HRS2:
+    case TORQ2:
+        return true;
+    default:
+        return false;
+    }
+}
+
+} // namespace
+
 namespace jpi_edm {
 
 // #define DEBUG_FLIGHT_RECORD
@@ -152,6 +201,10 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
 #ifdef DEBUG_FLIGHT_RECORD
         std::cout << m_metricValues[it->second.getMetricId()] << "\n";
 #endif
+
+        if (m_metadata && !m_metadata->m_configInfo.isTwin && isSecondEngineMetric(metricId)) {
+            m_metadata->m_configInfo.isTwin = true;
+        }
     }
 
     // Now do derived values

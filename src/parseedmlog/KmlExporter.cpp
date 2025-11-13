@@ -1,9 +1,9 @@
 #include "KmlExporter.hpp"
 
+#include "MetricUtils.hpp"
 #include "libjpiedm/FlightFile.hpp"
 #include "libjpiedm/MetricId.hpp"
 #include "libjpiedm/ProtocolConstants.hpp"
-#include "MetricUtils.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -429,4 +429,3 @@ void writeKmlOrKmz(const std::filesystem::path &outputPath, const FlightTrackDat
 }
 
 } // namespace parseedmlog::kml
-
