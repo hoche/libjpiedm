@@ -15,8 +15,8 @@
 #include <memory>
 
 namespace jpi_edm {
-struct FlightHeader;
-struct FlightMetricsRecord;
+class FlightHeader;
+class FlightMetricsRecord;
 } // namespace jpi_edm
 
 namespace parseedmlog::kml {
