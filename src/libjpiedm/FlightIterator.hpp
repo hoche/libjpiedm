@@ -178,7 +178,8 @@ class FlightRange
 {
   public:
     FlightRange(std::istream *stream, FlightFile *parser, std::shared_ptr<Metadata> metadata,
-                const std::vector<std::pair<int, long>> *flightDataCounts, std::streamoff headerSize);
+                const std::vector<std::pair<int, long>> *flightDataCounts, std::streamoff headerSize,
+                std::streamoff flightDataStartPos);
 
     [[nodiscard]] FlightIterator begin() const;
     [[nodiscard]] FlightIterator end() const;
@@ -189,6 +190,7 @@ class FlightRange
     std::shared_ptr<Metadata> m_metadata;
     const std::vector<std::pair<int, long>> *m_flightDataCounts;
     std::streamoff m_headerSize;
+    std::streamoff m_flightDataStartPos;
 };
 
 } // namespace jpi_edm

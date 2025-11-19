@@ -160,7 +160,13 @@ FlightIterator::FlightIterator(std::istream *stream, FlightFile *parser, std::sh
         return;
     }
 
-    // Parse the first flight
+    // The stream should already be positioned correctly by FlightRange::begin() for index 0.
+    // For index > 0, we would need to calculate the offset, but iterators are normally
+    // created with index 0 and incremented, so advance() maintains position.
+    // Just ensure stream is in a good state - don't reposition it
+    m_stream->clear();
+
+    // Parse the flight at m_index
     advance();
 }
 
@@ -184,19 +190,28 @@ void FlightIterator::advance()
             throw std::runtime_error("Failed to get stream position before reading flight data");
         }
 
-        // Validate flight data count
+        // Validate flight data count - be more lenient for legacy models
         const std::streamoff MAX_FLIGHT_RECORDS = 1000000;
-        if (flightDataCount.second < 1 || flightDataCount.second > MAX_FLIGHT_RECORDS) {
-            throw std::runtime_error("Invalid flight data count");
+        bool isLegacyModel =
+            (m_metadata && m_metadata->m_configInfo.edm_model > 0 && m_metadata->m_configInfo.edm_model < 800);
+
+        // For legacy models, allow 0 (header only, no data records)
+        if (flightDataCount.second < 0 || flightDataCount.second > MAX_FLIGHT_RECORDS) {
+            if (!isLegacyModel || flightDataCount.second < 0) {
+                throw std::runtime_error("Invalid flight data count");
+            }
         }
 
-        // Calculate total bytes
-        std::streamoff recordCount = flightDataCount.second - 1L;
-        std::streamoff totalBytes;
-        if (recordCount > std::numeric_limits<std::streamoff>::max() / 2) {
+        // Calculate flight data section size
+        // flightDataCount.second gives the size in "byte pairs" (need to multiply by 2)
+        // This represents the TOTAL size of the flight data section
+        // The callback API uses (flightDataCount.second - 1) * 2 as a loop limit,
+        // but the actual flight size is flightDataCount.second * 2
+        std::streamoff flightDataSize;
+        if (flightDataCount.second > std::numeric_limits<std::streamoff>::max() / 2) {
             throw std::runtime_error("Flight data count too large");
         }
-        totalBytes = recordCount * 2;
+        flightDataSize = flightDataCount.second * 2;
 
         // Create flight object
         auto flight = std::make_shared<Flight>(m_metadata);
@@ -216,13 +231,24 @@ void FlightIterator::advance()
         }
 
         // Create FlightView (records will be parsed lazily)
+        // For FlightView, we still use the callback API's calculation for data size
+        std::streamoff recordCount = (flightDataCount.second > 0) ? (flightDataCount.second - 1L) : 0L;
+        std::streamoff totalBytes = recordCount * 2;
         m_currentFlight = FlightView(m_stream, m_parser, flightHeader, flight, dataStartOff, totalBytes);
 
-        // Skip to end of this flight's data for next iteration
-        m_stream->clear();
-        m_stream->seekg(dataStartOff + totalBytes, std::ios::beg);
+        // Read all data records to find where this flight ends (matching callback API behavior)
+        // The callback API loop: while ((stream.tellg() - startOff) < totalBytes) { parseFlightDataRec(...); }
+        // We must do the same to ensure stream position matches
+        while ((m_stream->tellg() - startOff) < totalBytes) {
+            if (!m_stream->good()) {
+                throw std::runtime_error("Stream error while skipping flight data records");
+            }
+            m_parser->parseFlightDataRec(*m_stream, flight);
+        }
+
+        // Stream is now positioned at the start of the next flight
         if (!m_stream->good()) {
-            throw std::runtime_error("Failed to skip to end of flight data");
+            throw std::runtime_error("Stream error after reading flight data");
         }
 
     } catch (const std::exception &) {
@@ -283,9 +309,10 @@ bool FlightIterator::operator!=(const FlightIterator &other) const { return !(*t
 // =============================================================================
 
 FlightRange::FlightRange(std::istream *stream, FlightFile *parser, std::shared_ptr<Metadata> metadata,
-                         const std::vector<std::pair<int, long>> *flightDataCounts, std::streamoff headerSize)
+                         const std::vector<std::pair<int, long>> *flightDataCounts, std::streamoff headerSize,
+                         std::streamoff flightDataStartPos)
     : m_stream(stream), m_parser(parser), m_metadata(metadata), m_flightDataCounts(flightDataCounts),
-      m_headerSize(headerSize)
+      m_headerSize(headerSize), m_flightDataStartPos(flightDataStartPos)
 {
 }
 
@@ -294,6 +321,9 @@ FlightIterator FlightRange::begin() const
     if (!m_stream || !m_parser || !m_metadata || !m_flightDataCounts || m_flightDataCounts->empty()) {
         return FlightIterator(); // Return end iterator
     }
+    // Position stream at start of flight data
+    m_stream->clear();
+    m_stream->seekg(m_flightDataStartPos, std::ios::beg);
     return FlightIterator(m_stream, m_parser, m_metadata, m_flightDataCounts, m_headerSize, 0);
 }
 

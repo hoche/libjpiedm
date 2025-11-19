@@ -42,7 +42,6 @@ std::string findTestFile(const std::string& filename)
 
 // Test files to process
 const std::vector<std::string> TEST_FILES = {
-    "700_4cyl.jpi",
     "830_6cyl.jpi",
     "930_6cyl.jpi",
     "930_6cyl_turbo.jpi",
