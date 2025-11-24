@@ -16,7 +16,53 @@ To build (on every platform):
     cmake ..
     cmake --build . -j
 
-## Using
+## Using to convert JPI files to CSV
+
+The above build process will generate a number of artifacts, including:
+
+- libjpiedm as a static lib
+- a couple of unit test programs
+- _parseedmlog_
+
+_parseedmlog_ will convert JPI files to CSV, and has a few options:
+
+```
+$ ./parseedmlog -h
+Usage: ./parseedmlog[options] jpifile...
+Options:
+    -h              print this help
+    -f <flightno>   only output a specific flight number
+    -l              list flights
+    -o <filename>   output to a file
+    -k <filename>   export flight path to KML or KMZ (requires -f)
+    -v              verbose output of the flight header
+```
+
+What you probably want to do is start by seeing what individual flights are available. For example, a download from a JPI 930 in April 2025 provided a file called U250410.JPI. It had multiple flights:
+
+```
+$ ./parseedmlog -l U250410.JPI
+Flt #183 - 0.89 Hours @ 1 sec 03/21/2025 13:14:56
+Flt #184 - 0.61 Hours @ 1 sec 03/21/2025 15:38:42
+Flt #185 - 0.46 Hours @ 1 sec 03/21/2025 16:29:30
+Flt #186 - 0.49 Hours @ 1 sec 04/05/2025 13:12:02
+Flt #187 - 0.01 Hours @ 1 sec 04/05/2025 14:11:18
+Flt #188 - 0.04 Hours @ 1 sec 04/05/2025 14:12:44
+Flt #189 - 0.01 Hours @ 1 sec 04/05/2025 14:16:06
+Flt #190 - 0.96 Hours @ 1 sec 04/05/2025 15:04:38
+Flt #191 - 1.16 Hours @ 1 sec 04/06/2025 11:36:22
+Flt #192 - 0.46 Hours @ 1 sec 04/06/2025 13:19:48
+```
+
+To convert just one of those flights to CSV, say flight 186, and save it to a file named flight_186.csv, I'd then do something like:
+
+```
+$ ./parseedmlog -f 186 -o flight_186.csv U250410.JPI
+```
+
+At that point, I could open flight_186.csv in something like LibreOffice Calc, or Excel and graph it.
+
+## Using the library in a custom app
 
 libjpiedm streams data straight from an `std::istream`. It never loads an
 entire flight into memory; instead it offers two complementary APIs that parse
