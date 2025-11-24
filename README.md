@@ -62,7 +62,10 @@ $ ./parseedmlog -f 186 -o flight_186.csv U250410.JPI
 
 At that point, I could open flight_186.csv in something like LibreOffice Calc, or Excel and graph it.
 
+
 ## Using the library in a custom app
+
+libjpiedm is designed to be used in other applications.
 
 libjpiedm streams data straight from an `std::istream`. It never loads an
 entire flight into memory; instead it offers two complementary APIs that parse
