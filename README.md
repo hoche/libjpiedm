@@ -62,6 +62,12 @@ $ ./parseedmlog -f 186 -o flight_186.csv U250410.JPI
 
 At that point, I could open flight_186.csv in something like LibreOffice Calc, or Excel and graph it.
 
+If your JPI is hooked up to your GPS and feeds it GPS data, you can also generate a KMZ file to load into google maps by using the -k flag:
+
+```
+./parseedmlog -f 186 -o flight_186.csv -k flight_186_track.kmz U250410.JPI
+```
+
 
 ## Using the library in a custom app
 
@@ -164,33 +170,6 @@ register just the metadata callback and then iterate over flights.
 See `examples/single_flight_example.cpp` and `examples/iterator_example.cpp`
 for complete walk-throughs.
 
-### parseedmlog CLI
-
-The repository ships with a small command-line utility, `parseedmlog`, that
-demonstrates the callback API and mirrors the CSV output produced by JPI’s
-EZTrends tool.
-
-- Build the tool with CMake: `cmake --build build --target parseedmlog`
-- Run it from the build directory (or add the path to your `$PATH`):
-
-```
-./build/parseedmlog [options] flight-log.jpi
-```
-
-Common workflows:
-
-- `parseedmlog -l flight-log.jpi` – list every flight found in the log.
-- `parseedmlog flight-log.jpi` – stream the full CSV to stdout.
-- `parseedmlog -f 12 -o flight12.csv flight-log.jpi` – export only flight 12 to a file.
-- `parseedmlog -f 7 -k track.kmz flight-log.jpi` – emit a KMZ/KML track (requires GPS data).
-
-Useful flags:
-
-- `-f <flightno>` – limit processing to a single flight (needed for KML/KMZ export).
-- `-l` – list flights instead of dumping records.
-- `-o <filename>` – write CSV output to a file instead of stdout.
-- `-k <filename>` – create a KML or KMZ track; requires `-f` and exactly one input file.
-- `-v` – echo metadata and flight headers while parsing.
 
 ## Platforms
 
