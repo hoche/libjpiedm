@@ -90,10 +90,8 @@ void printLatLng(float measurement, bool isLatitude, std::ostream &outStream)
     outStream << std::setfill(' ');
 }
 
-struct FlightRenderRecord {
-    std::shared_ptr<jpi_edm::FlightMetricsRecord> record;
-    std::tm timestamp{};
-};
+// Note: FlightMetricsRecord now contains the timestamp directly
+using FlightRenderRecord = std::shared_ptr<jpi_edm::FlightMetricsRecord>;
 
 bool isMetricSupported(const std::shared_ptr<jpi_edm::FlightMetricsRecord> &rec, jpi_edm::MetricId id)
 {
@@ -140,8 +138,8 @@ void printSingleEngineFlightRecord(const FlightRenderRecord &entry, bool include
     static constexpr jpi_edm::MetricId kChtIds[] = {jpi_edm::CHT11, jpi_edm::CHT12, jpi_edm::CHT13,
                                                     jpi_edm::CHT14, jpi_edm::CHT15, jpi_edm::CHT16};
 
-    const auto &rec = entry.record;
-    const auto &timeinfo = entry.timestamp;
+    const auto &rec = entry;
+    const auto &timeinfo = rec->m_timestamp;
 
     auto previousPrecision = outStream.precision();
     auto previousFlags = outStream.flags();
@@ -290,9 +288,6 @@ void printSingleEngineFlight(const std::vector<FlightRenderRecord> &records,
     }
 
     for (const auto &entry : records) {
-        const auto &rec = entry.record;
-        const auto &timeinfo = entry.timestamp;
-
         printSingleEngineFlightRecord(entry, includeTit1, includeTit2, outStream);
     }
 }
@@ -312,8 +307,8 @@ void printTwinFlightRecord(const FlightRenderRecord &entry, int cylinderCount, s
                                                          jpi_edm::CHT24, jpi_edm::CHT25, jpi_edm::CHT26,
                                                          jpi_edm::CHT27, jpi_edm::CHT28, jpi_edm::CHT29};
 
-    const auto &rec = entry.record;
-    const auto &timeinfo = entry.timestamp;
+    const auto &rec = entry;
+    const auto &timeinfo = rec->m_timestamp;
 
     auto previousPrecision = outStream.precision();
     auto previousFlags = outStream.flags();
@@ -533,7 +528,6 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
     jpi_edm::FlightFile ff;
     std::shared_ptr<jpi_edm::FlightHeader> hdr;
     std::shared_ptr<jpi_edm::Metadata> metadata;
-    time_t recordTime{};
     std::vector<FlightRenderRecord> currentFlightRecords;
     float leftTachStart = std::numeric_limits<float>::quiet_NaN();
     float leftTachEnd = std::numeric_limits<float>::quiet_NaN();
@@ -571,24 +565,23 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
         }
     });
 
-    ff.setFlightHeaderCompletionCb([&hdr, &recordTime, &outStream, &currentFlightRecords, &leftTachStart, &leftTachEnd,
+    ff.setFlightHeaderCompletionCb([&hdr, &outStream, &currentFlightRecords, &leftTachStart, &leftTachEnd,
                                     &rightTachStart, &rightTachEnd](std::shared_ptr<jpi_edm::FlightHeader> fh) {
         hdr = fh;
-
-        std::tm local;
-#ifdef _WIN32
-        recordTime = _mkgmtime(&hdr->startDate);
-        gmtime_s(&local, &recordTime);
-#else
-        recordTime = timegm(&hdr->startDate);
-        gmtime_r(&recordTime, &local);
-#endif
 
         currentFlightRecords.clear();
         leftTachStart = leftTachEnd = std::numeric_limits<float>::quiet_NaN();
         rightTachStart = rightTachEnd = std::numeric_limits<float>::quiet_NaN();
 
         if (g_verbose) {
+            std::tm local;
+#ifdef _WIN32
+            time_t recordTime = _mkgmtime(&hdr->startDate);
+            gmtime_s(&local, &recordTime);
+#else
+            time_t recordTime = timegm(&hdr->startDate);
+            gmtime_r(&recordTime, &local);
+#endif
             outStream << "Flt #" << hdr->flight_num << "\n";
             outStream << "Interval: " << hdr->interval << " sec\n";
             outStream << "Flight Start Time: " << std::put_time(&local, "%m/%d/%Y") << " "
@@ -602,14 +595,8 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
             return;
         }
 
-        std::tm timeinfo;
-#ifdef _WIN32
-        gmtime_s(&timeinfo, &recordTime);
-#else
-        gmtime_r(&recordTime, &timeinfo);
-#endif
-
-        currentFlightRecords.push_back(FlightRenderRecord{rec, timeinfo});
+        // The timestamp is now part of the FlightMetricsRecord
+        currentFlightRecords.push_back(rec);
 
         if (isMetricSupported(rec, jpi_edm::HRS1)) {
             float leftHrs = parseedmlog::getMetric(rec->m_metrics, jpi_edm::HRS1);
@@ -626,8 +613,6 @@ void printFlightData(std::istream &stream, std::optional<int> flightId, std::ost
             }
             rightTachEnd = rightHrs;
         }
-
-        rec->m_isFast ? ++recordTime : recordTime += hdr->interval;
     });
 
     ff.setFlightCompletionCb([&](unsigned long /*stdReqs*/, unsigned long /*fastReqs*/) {

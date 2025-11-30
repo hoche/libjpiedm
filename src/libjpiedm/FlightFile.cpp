@@ -828,6 +828,9 @@ void FlightFile::parseFlightDataRec(std::istream &stream, const std::shared_ptr<
     if (m_flightRecCompletionCb) {
         m_flightRecCompletionCb(flight->getFlightMetricsRecord());
     }
+
+    // Update the record timestamp AFTER the callback so the next record gets the incremented time
+    flight->updateRecordTime();
 }
 
 void FlightFile::parseFlights(std::istream &stream)
@@ -882,6 +885,16 @@ void FlightFile::parseFlights(std::istream &stream)
 
         auto flight = std::make_shared<Flight>(m_metadata);
         flight->m_flightHeader = parseFlightHeader(stream, flightDataCount.first, headerSize);
+
+        // Initialize the record time from the flight header's start date
+        if (flight->m_flightHeader) {
+            std::tm dateCopy = flight->m_flightHeader->startDate;
+#ifdef _WIN32
+            flight->m_recordTime = _mkgmtime(&dateCopy);
+#else
+            flight->m_recordTime = timegm(&dateCopy);
+#endif
+        }
 
         if (!stream.good()) {
             throw std::runtime_error("Stream error after reading flight header");
@@ -1009,6 +1022,16 @@ void FlightFile::parseFlights(std::istream &stream, int flightId)
             // Target flight - parse it fully with callbacks
             auto flight = std::make_shared<Flight>(m_metadata);
             flight->m_flightHeader = flightHeader;
+
+            // Initialize the record time from the flight header's start date
+            if (flightHeader) {
+                std::tm dateCopy = flightHeader->startDate;
+#ifdef _WIN32
+                flight->m_recordTime = _mkgmtime(&dateCopy);
+#else
+                flight->m_recordTime = timegm(&dateCopy);
+#endif
+            }
 
             while ((stream.tellg() - startOff) < estimatedTotalBytes) {
                 if (!stream.good()) {

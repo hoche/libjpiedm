@@ -72,14 +72,21 @@ class FlightMetricsRecord
 {
   public:
     FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &metricMap)
-        : FlightMetricsRecord(isFast, recordSeq, metricMap, std::set<MetricId>{}, std::set<MetricId>{})
+        : FlightMetricsRecord(isFast, recordSeq, metricMap, std::set<MetricId>{}, std::set<MetricId>{}, std::tm{})
     {
     }
 
     FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &metricMap,
                         const std::set<MetricId> &updatedMetrics, const std::set<MetricId> &supportedMetrics)
+        : FlightMetricsRecord(isFast, recordSeq, metricMap, updatedMetrics, supportedMetrics, std::tm{})
+    {
+    }
+
+    FlightMetricsRecord(bool isFast, unsigned long recordSeq, const std::map<MetricId, float> &metricMap,
+                        const std::set<MetricId> &updatedMetrics, const std::set<MetricId> &supportedMetrics,
+                        const std::tm &timestamp)
         : m_isFast(isFast), m_recordSeq(recordSeq), m_metrics(metricMap), m_updatedMetrics(updatedMetrics),
-          m_supportedMetrics(supportedMetrics)
+          m_supportedMetrics(supportedMetrics), m_timestamp(timestamp)
     {
     }
     virtual ~FlightMetricsRecord() = default;
@@ -96,6 +103,7 @@ class FlightMetricsRecord
     std::map<MetricId, float> m_metrics;
     std::set<MetricId> m_updatedMetrics;
     std::set<MetricId> m_supportedMetrics;
+    std::tm m_timestamp{};
 };
 
 class Flight
@@ -114,6 +122,7 @@ class Flight
     void setFastFlag(bool flag) { m_fastFlag = flag; }
     void incrementSequence() { ++m_recordSeq; }
     void updateMetrics(const std::map<int, int> &values);
+    void updateRecordTime();
 
     [[nodiscard]] std::shared_ptr<FlightMetricsRecord> getFlightMetricsRecord();
     [[nodiscard]] bool isMetricSupported(MetricId metricId) const { return m_supportedMetrics.count(metricId) > 0; }
@@ -123,6 +132,7 @@ class Flight
     bool m_fastFlag{false};
     unsigned long m_stdRecCount{0};
     unsigned long m_fastRecCount{0};
+    time_t m_recordTime{0};
 
     const std::shared_ptr<Metadata> m_metadata;
     std::shared_ptr<FlightHeader> m_flightHeader;

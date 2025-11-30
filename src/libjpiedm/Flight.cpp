@@ -262,11 +262,28 @@ void Flight::updateMetrics(const std::map<int, int> &valuesMap)
     }
 }
 
+void Flight::updateRecordTime()
+{
+    if (m_fastFlag) {
+        m_recordTime += 1; // Fast records increment by 1 second
+    } else if (m_flightHeader) {
+        m_recordTime += m_flightHeader->interval; // Standard records use flight interval
+    }
+}
+
 std::shared_ptr<FlightMetricsRecord> Flight::getFlightMetricsRecord()
 {
-    // This is just a copy of the m_metricValues map, with some additional info like fastFlag and seqno
+    // Convert the current record time to std::tm
+    std::tm timeinfo;
+#ifdef _WIN32
+    gmtime_s(&timeinfo, &m_recordTime);
+#else
+    gmtime_r(&m_recordTime, &timeinfo);
+#endif
+
+    // This is just a copy of the m_metricValues map, with some additional info like fastFlag, seqno, and timestamp
     return std::make_shared<FlightMetricsRecord>(m_fastFlag, m_recordSeq, m_metricValues, m_lastUpdatedMetrics,
-                                                 m_supportedMetrics);
+                                                 m_supportedMetrics, timeinfo);
 }
 
 } // namespace jpi_edm
