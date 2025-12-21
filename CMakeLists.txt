@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 # Compiler detection - prefer clang, fallback to gcc
 # This must be set before project() call
-if(NOT DEFINED ENV{CC} AND NOT DEFINED ENV{CXX})
+# Only do compiler detection if not already set by parent CMake
+if(NOT CMAKE_C_COMPILER AND NOT CMAKE_CXX_COMPILER AND NOT DEFINED ENV{CC} AND NOT DEFINED ENV{CXX})
     # Check for clang first
     execute_process(
         COMMAND which clang++
