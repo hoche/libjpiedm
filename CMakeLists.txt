@@ -50,7 +50,11 @@ project(jpiedm
         LANGUAGES CXX
         VERSION 1.0)
 
-set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+# Only set universal build if not already specified by parent
+if(APPLE AND NOT CMAKE_OSX_ARCHITECTURES)
+    set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+endif()
+
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS YES CACHE BOOL "Export all symbols")
 
